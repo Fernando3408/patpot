@@ -30,7 +30,7 @@ class PurchaseController extends Controller
             $query->where('status', $request->status);
         }
 
-        $purchases = $query->latest('ordered_on')->paginate(20)->appends($request->query());
+        $purchases = $query->latest('ordered_on')->get();
 
         return view('purchases.index', compact('purchases'));
     }
@@ -80,7 +80,16 @@ class PurchaseController extends Controller
 
     public function edit(Purchase $compra): View
     {
-        return view('purchases.edit', ['purchase' => $compra, 'suppliers' => Supplier::where('status', true)->orderBy('name')->get()]);
+        $compra->load('lines.input');
+        $inputs = Input::where('status', true)->orderBy('name')->get();
+        $canEditLines = $compra->lines->every(fn ($line) => (float) $line->received_quantity === 0);
+
+        return view('purchases.edit', [
+            'purchase' => $compra,
+            'suppliers' => Supplier::where('status', true)->orderBy('name')->get(),
+            'inputs' => $inputs,
+            'canEditLines' => $canEditLines,
+        ]);
     }
 
     public function update(Request $request, Purchase $compra)
@@ -93,6 +102,7 @@ class PurchaseController extends Controller
                     'ordered_on' => ['sometimes', 'required', 'date'],
                     'expected_on' => ['sometimes', 'nullable', 'date'],
                     'notes' => ['sometimes', 'nullable', 'string'],
+                    'ordered_quantity' => ['sometimes', 'required', 'integer', 'min:1'],
                 ];
             } else {
                 $rules = [
@@ -101,10 +111,26 @@ class PurchaseController extends Controller
                     'ordered_on' => ['required', 'date'],
                     'expected_on' => ['nullable', 'date'],
                     'notes' => ['nullable', 'string'],
+                    'lines' => ['nullable', 'array'],
+                    'lines.*.ordered_quantity' => ['required_with:lines', 'integer', 'min:1'],
                 ];
             }
             $data = $request->validate($rules, ['number.unique' => 'El número de compra ya existe.']);
             $compra->update($data);
+
+            if ($request->ajax() && isset($data['ordered_quantity']) && $compra->lines->count() === 1) {
+                $compra->lines()->first()->update(['ordered_quantity' => $data['ordered_quantity']]);
+            }
+
+            if ($request->has('lines') && $compra->lines->every(fn ($line) => (float) $line->received_quantity === 0)) {
+                $lines = $request->input('lines', []);
+                foreach ($lines as $lineId => $lineData) {
+                    $compra->lines()->where('id', $lineId)->update([
+                        'ordered_quantity' => $lineData['ordered_quantity'],
+                    ]);
+                }
+            }
+
             AuditService::log('ACTUALIZACIÓN DE COMPRA', "Actualizó compra: {$compra->number}", $compra);
 
             if ($request->ajax()) {

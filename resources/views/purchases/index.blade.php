@@ -27,6 +27,7 @@
                         <th>Orden</th>
                         <th>Proveedor</th>
                         <th>Insumos</th>
+                        <th class="text-right" style="width:120px;">Cantidad</th>
                         <th>Estado</th>
                         <th style="width:180px;">Progreso</th>
                         <th class="text-right">Acciones</th>
@@ -45,13 +46,15 @@
                             <td>
                                 <div class="text-xs">
                                     @foreach($purchase->lines->take(5) as $line)
-                                        <div>{{ $line->input?->name ?? '—' }} <span class="text-muted">×{{ number_format($line->ordered_quantity, 0, ',', '.') }}</span></div>
+                                        <div>{{ $line->input?->name ?? '—' }}</div>
                                     @endforeach
                                     @if($purchase->lines->count() > 5)
                                         <div class="text-muted">+{{ $purchase->lines->count() - 5 }} más</div>
                                     @endif
                                 </div>
                             </td>
+                            @php $totalOrdered = $purchase->lines->sum(fn($line) => (float) $line->ordered_quantity); @endphp
+                            <td data-field="ordered_quantity" data-cleanup="int" class="text-right font-bold" data-value="{{ $totalOrdered }}">{{ number_format($totalOrdered, 0, ',', '.') }}</td>
                             <td>
                                 @php
                                     $statusClass = match($purchase->status) {
@@ -122,7 +125,7 @@
                                         </div>
                                         @endif
                                     </template>
-                                    @if(!$purchase->lines->contains(fn($line) => $line->received_quantity > 0))
+                                    @if(!$purchase->lines->contains(fn($line) => $line->received_quantity > 0) && $purchase->lines->count() === 1)
                                     <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
                                     @endif
                                     @if(auth()->user()->canManage())
@@ -142,7 +145,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="mt-4">{{ $purchases->links() }}</div>
+
     @else
         <div class="table-container">
             <div class="data-table-empty">
@@ -162,12 +165,12 @@
             html += '<table class="data-table"><thead><tr><th>Insumo</th><th class="text-right">Pedida</th><th class="text-right">Ya recibido</th><th style="width:150px;">Recibir ahora</th></tr></thead><tbody>';
 
             lines.forEach(function(line) {
-                var pending = line.ordered - line.received;
+                var pending = Math.round(line.ordered) - Math.round(line.received);
                 html += '<tr>';
                 html += '<td>' + line.name + '</td>';
-                html += '<td class="text-right">' + numberFormat(line.ordered) + '</td>';
-                html += '<td class="text-right">' + numberFormat(line.received) + '</td>';
-                html += '<td><input type="number" step="0.0001" min="0" max="' + pending + '" name="received[' + line.id + ']" class="form-control form-control-sm" value="0"></td>';
+                html += '<td class="text-right">' + Math.round(line.ordered).toLocaleString('es-CL') + '</td>';
+                html += '<td class="text-right">' + Math.round(line.received).toLocaleString('es-CL') + '</td>';
+                html += '<td><input type="number" step="1" min="0" max="' + pending + '" name="received[' + line.id + ']" class="form-control form-control-sm" value="0"></td>';
                 html += '</tr>';
             });
 

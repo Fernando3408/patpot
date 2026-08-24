@@ -32,7 +32,7 @@ class OrderController extends Controller
             $query->where('status', $request->status);
         }
 
-        $orders = $query->latest('ordered_on')->paginate(20)->appends($request->query());
+        $orders = $query->latest('ordered_on')->get();
 
         return view('orders.index', compact('orders'));
     }

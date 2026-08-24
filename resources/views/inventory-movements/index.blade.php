@@ -56,9 +56,7 @@
                 </tbody>
             </table>
         </div>
-        <div style="margin-top: 1rem;">
-            {{ $movements->links() }}
-        </div>
+
     @else
         <div class="table-container">
             <div class="data-table-empty">

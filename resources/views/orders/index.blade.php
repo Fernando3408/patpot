@@ -166,7 +166,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="mt-4">{{ $orders->links() }}</div>
+
     @else
         <div class="table-container">
             <div class="data-table-empty">
@@ -190,8 +190,8 @@
                 html += '<tr>';
                 html += '<td>' + line.name + '</td>';
                 html += '<td class="text-right">' + line.stock + '</td>';
-                html += '<td class="text-right">' + numberFormat(line.boxes) + '</td>';
-                html += '<td class="text-right">' + numberFormat(line.dispatched) + '</td>';
+                html += '<td class="text-right">' + Math.round(line.boxes).toLocaleString('es-CL') + '</td>';
+                html += '<td class="text-right">' + Math.round(line.dispatched).toLocaleString('es-CL') + '</td>';
                 html += '<td><input type="number" step="1" min="0" max="' + pending + '" name="quantities[' + line.id + ']" class="form-control form-control-sm" value="0"></td>';
                 html += '</tr>';
             });

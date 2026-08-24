@@ -28,7 +28,7 @@ class ProductionController extends Controller
             $query->where('status', $request->status);
         }
 
-        $productions = $query->latest('planned_on')->paginate(20)->appends($request->query());
+        $productions = $query->latest('planned_on')->get();
 
         return view('productions.index', compact('productions'));
     }
@@ -47,10 +47,10 @@ class ProductionController extends Controller
         return redirect('/produccion');
     }
 
-    public function show(Production $production): View
+    public function show(Production $produccion): View
     {
-        $production->load('product', 'input');
-        return view('productions._detail', compact('production'));
+        $produccion->load('product');
+        return view('productions._detail', ['production' => $produccion]);
     }
 
     public function close(Request $request, Production $produccion): RedirectResponse

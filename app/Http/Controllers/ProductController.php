@@ -22,7 +22,7 @@ class ProductController extends Controller
             });
         }
 
-        $products = $query->orderBy('name')->paginate(20)->appends($request->query());
+        $products = $query->orderBy('name')->get();
 
         return view('products.index', compact('products'));
     }

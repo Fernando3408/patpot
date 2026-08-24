@@ -16,7 +16,7 @@ class AuditLogController extends Controller
             $query->where('action', 'like', "%{$request->action}%");
         }
 
-        $logs = $query->latest()->paginate(50)->appends($request->query());
+        $logs = $query->latest()->get();
 
         return view('audit-logs.index', compact('logs'));
     }

@@ -20,9 +20,11 @@
                         <th>Código</th>
                         <th>Nombre</th>
                         <th class="text-right">Stock</th>
+                        <th class="text-right">Seguridad</th>
                         <th>Unidad</th>
+                        <th class="text-right">Reposición</th>
                         <th class="text-center">Cobertura</th>
-                        <th>Estado</th>
+                        <th>Nivel</th>
                         <th class="text-right">Acciones</th>
                     </tr>
                 </thead>
@@ -37,7 +39,9 @@
                                 @endif
                             </td>
                             <td data-field="stock" data-cleanup="int" class="text-right font-bold">{{ number_format($input->stock, 0, ',', '.') }}</td>
+                            <td data-field="safety_stock" data-cleanup="int" class="text-right text-xs">{{ number_format($input->safety_stock, 0, ',', '.') }}</td>
                             <td data-field="unit" class="text-xs font-bold">{{ $input->unit }}</td>
+                            <td class="text-right text-xs">{{ number_format($input->reorder_point, 0, ',', '.') }}</td>
                             <td data-readonly="true" class="text-xs text-center">
                                 @if($input->coverage_days !== null)
                                     <div style="font-weight:600;margin-bottom:4px;">{{ $input->coverage_days }} días</div>
@@ -53,10 +57,15 @@
                                     —
                                 @endif
                             </td>
-                            <td data-field="status" data-type="select" data-options='[{"value":"1","label":"Activo"},{"value":"0","label":"Inactivo"}]'>
-                                <span class="badge @if($input->status) badge-success @else badge-danger @endif">
-                                    {{ $input->status ? 'Activo' : 'Inactivo' }}
-                                </span>
+                            <td data-readonly="true">
+                                @php $level = $input->inventory_level; @endphp
+                                @if($level === 'ok')
+                                    <span class="badge badge-success">Óptimo</span>
+                                @elseif($level === 'atencion')
+                                    <span class="badge badge-warning" style="background-color:#f59e0b;color:#fff;">Atención</span>
+                                @else
+                                    <span class="badge badge-danger">Crítico</span>
+                                @endif
                             </td>
                             <td class="text-right">
                                 <div class="actions-cell">
@@ -76,7 +85,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="mt-4">{{ $inputs->links() }}</div>
+
     @else
         <div class="table-container">
             <div class="data-table-empty">

@@ -22,7 +22,7 @@ class InventoryMovementController extends Controller
             $query->where('kind', $request->kind);
         }
 
-        $movements = $query->latest()->paginate(50)->appends($request->query());
+        $movements = $query->latest()->get();
 
         return view('inventory-movements.index', compact('movements'));
     }

@@ -26,11 +26,11 @@ class Retail extends Model
 
     protected $casts = [
         'cataloged' => 'boolean',
-        'stock_units' => 'decimal:2',
-        'transit_units' => 'decimal:2',
-        'weekly_sales' => 'decimal:2',
-        'min_stock' => 'decimal:2',
-        'reorder_point' => 'decimal:2',
+        'stock_units' => 'integer',
+        'transit_units' => 'integer',
+        'weekly_sales' => 'integer',
+        'min_stock' => 'integer',
+        'reorder_point' => 'integer',
     ];
 
     public function store(): BelongsTo
@@ -52,41 +52,41 @@ class Retail extends Model
     public function getIsBreakAttribute(): bool
     {
         return $this->cataloged
-            && (float) $this->stock_units <= 0
-            && (float) $this->transit_units <= 0;
+            && (int) $this->stock_units <= 0
+            && (int) $this->transit_units <= 0;
     }
 
     // 2. EN TRÁNSITO: Stock <= 0 pero Tránsito > 0
     public function getIsInTransitAttribute(): bool
     {
         return $this->cataloged
-            && (float) $this->stock_units <= 0
-            && (float) $this->transit_units > 0;
+            && (int) $this->stock_units <= 0
+            && (int) $this->transit_units > 0;
     }
 
     // 3. ATENCIÓN: Stock > 0 pero menor al stock mínimo
     public function getIsWarningAttribute(): bool
     {
         return $this->cataloged
-            && (float) $this->stock_units > 0
-            && (float) $this->stock_units < (float) $this->min_stock;
+            && (int) $this->stock_units > 0
+            && (int) $this->stock_units < (int) $this->min_stock;
     }
 
     public function getCoverageWeeksAttribute(): ?float
     {
-        if ((float) $this->weekly_sales <= 0) {
+        if ((int) $this->weekly_sales <= 0) {
             return null;
         }
 
-        return round((float) $this->stock_units / (float) $this->weekly_sales, 2);
+        return round((int) $this->stock_units / (int) $this->weekly_sales, 1);
     }
 
-    public function getSuggestedReplenishmentUnitsAttribute(): float
+    public function getSuggestedReplenishmentUnitsAttribute(): int
     {
-        $projected = (float) $this->stock_units + (float) $this->transit_units;
-        $needed = (float) $this->min_stock - $projected;
+        $projected = (int) $this->stock_units + (int) $this->transit_units;
+        $needed = (int) $this->min_stock - $projected;
 
-        return $needed > 0 ? round($needed, 2) : 0;
+        return $needed > 0 ? $needed : 0;
     }
 
     public function getSuggestedReplenishmentBoxesAttribute(): int

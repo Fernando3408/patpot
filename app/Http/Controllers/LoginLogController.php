@@ -21,7 +21,7 @@ class LoginLogController extends Controller
             $query->whereHas('user', fn($q) => $q->where('name', 'like', "%{$search}%"));
         }
 
-        $logs = $query->latest()->paginate(50)->appends($request->query());
+        $logs = $query->latest()->get();
 
         return view('admin.login-logs.index', compact('logs'));
     }

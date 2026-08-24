@@ -18,7 +18,7 @@ class PriceController extends Controller
             $query->where('customer_id', $request->customer_id);
         }
 
-        $prices = $query->orderBy('customer_id')->paginate(20)->appends($request->query());
+        $prices = $query->orderBy('customer_id')->get();
 
         return view('prices.index', compact('prices'));
     }

@@ -85,7 +85,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="mt-4">{{ $records->links() }}</div>
+
     @else
         <div class="table-container">
             <div class="data-table-empty">

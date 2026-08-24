@@ -10,7 +10,7 @@ class OrderLine extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['product_id', 'boxes', 'price_box', 'discount_pct', 'dispatched_boxes'];
+    protected $fillable = ['order_id', 'product_id', 'boxes', 'price_box', 'discount_pct', 'dispatched_boxes'];
 
     protected function casts(): array
     {

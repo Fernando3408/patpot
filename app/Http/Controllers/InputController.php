@@ -22,7 +22,7 @@ class InputController extends Controller
             });
         }
 
-        $inputs = $query->orderBy('name')->paginate(20)->appends($request->query());
+        $inputs = $query->orderBy('name')->get();
 
         return view('inputs.index', compact('inputs'));
     }
@@ -87,6 +87,7 @@ class InputController extends Controller
                     'name' => 'sometimes|required|string|max:255',
                     'code' => ['sometimes', 'required', 'string', 'max:255'],
                     'stock' => 'sometimes|required|numeric|min:0',
+                    'safety_stock' => 'sometimes|required|numeric|min:0',
                     'unit' => 'sometimes|required|string|max:50',
                     'status' => 'sometimes|required|boolean',
                 ];

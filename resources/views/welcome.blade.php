@@ -1,100 +1,208 @@
-<x-erp-layout title="Dashboard" subtitle="Lo que requiere una decisión, sin revisar hojas ni fórmulas.">
+<x-erp-layout title="Dashboard" subtitle="Lo que requiere una decision, sin revisar hojas ni formulas.">
 
-    {{-- KPIs principales --}}
-    <div class="dashboard-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); margin-bottom: 1.5rem;">
-        <div class="metric-card">
-            <p class="metric-title">Venta despachada del mes</p>
-            <p class="metric-value">${{ number_format($salesMonth, 0, ',', '.') }}</p>
-        </div>
-        <div class="metric-card" style="border-left: 4px solid {{ $marginMonth >= 0 ? '#166534' : '#991b1b' }};">
-            <p class="metric-title">Margen despachado del mes</p>
-            <p class="metric-value">${{ number_format($marginMonth, 0, ',', '.') }}</p>
-        </div>
-        <div class="metric-card" style="border-left: 4px solid {{ $pendingOrders > 0 ? '#92400e' : '#166534' }};">
-            <p class="metric-title">Pedidos pendientes</p>
-            <p class="metric-value">{{ $pendingOrders }}</p>
-            <p class="text-xs text-muted">Con cajas aún por despachar</p>
-        </div>
-        <div class="metric-card" style="border-left: 4px solid {{ $criticalInputs > 0 ? '#991b1b' : '#166534' }};">
-            <p class="metric-title">Insumos críticos</p>
-            <p class="metric-value">{{ $criticalInputs }}</p>
-            <p class="text-xs text-muted">Riesgo de detener producción</p>
-        </div>
-        <div class="metric-card" style="border-left: 4px solid {{ $retailBreaks > 0 ? '#991b1b' : '#166534' }};">
-            <p class="metric-title">Salas en quiebre</p>
-            <p class="metric-value">{{ $retailBreaks }}</p>
-            <p class="text-xs text-muted">Sin stock ni tránsito</p>
-        </div>
-        <div class="metric-card" style="border-left: 4px solid {{ ($overduePurchases + $overdueOrders) > 0 ? '#991b1b' : '#166534' }};">
-            <p class="metric-title">Atrasados</p>
-            <p class="metric-value">{{ $overduePurchases + $overdueOrders }}</p>
-            <p class="text-xs text-muted">Compras + pedidos atrasados</p>
-        </div>
-        <div class="metric-card" style="border-left: 4px solid {{ $pendingProductions > 0 ? '#92400e' : '#166534' }};">
-            <p class="metric-title">Producciones pendientes</p>
-            <p class="metric-value">{{ $pendingProductions }}</p>
-            <p class="text-xs text-muted">Planificadas o en proceso</p>
-        </div>
-        <div class="metric-card">
-            <p class="metric-title">Stock PT valorizado</p>
-            <p class="metric-value">${{ number_format($stockPT, 0, ',', '.') }}</p>
-            <p class="text-xs text-muted">Costo actual de recetas</p>
-        </div>
-        <div class="metric-card">
-            <p class="metric-title">Stock insumos valorizado</p>
-            <p class="metric-value">${{ number_format($stockInputs, 0, ',', '.') }}</p>
-            <p class="text-xs text-muted">Capital en MP y envases</p>
-        </div>
-        <div class="metric-card">
-            <p class="metric-title">Tareas urgentes</p>
-            <p class="metric-value">{{ $urgentTasks }}</p>
-            <p class="text-xs text-muted">Pendientes con prioridad urgente</p>
-        </div>
-    </div>
+    <div class="dash-fit">
 
-    {{-- Alertas críticas --}}
-    @if($criticalAlerts->count() > 0)
-        <div class="card" style="max-width: 100%; margin-bottom: 1.5rem; border-left: 4px solid #991b1b;">
-            <div class="card__header">
-                <h2 class="card__title">Alertas críticas ({{ $criticalAlerts->count() }})</h2>
+        {{-- BLOQUE 1: ACCIONES URGENTES --}}
+        <div class="dash-urgent-grid">
+            <div class="dash-urgent-card {{ $overdueOrders > 0 ? 'dash-urgent--critical' : '' }}">
+                <span class="dash-urgent-count" style="color: {{ $overdueOrders > 0 ? '#dc2626' : '#16a34a' }}">{{ $overdueOrders }}</span>
+                <span class="dash-urgent-label">Pedidos atrasados</span>
             </div>
-            <div class="card__body">
-                @foreach($criticalAlerts as $alert)
-                    <div style="display: flex; justify-content: space-between; padding: 0.625rem 0; border-bottom: 1px solid #f3efe6;">
-                        <div>
-                            <strong>{{ $alert['title'] }}</strong>
-                            <span class="badge badge-danger" style="margin-left: 0.5rem;">{{ $alert['module'] }}</span>
-                            <br>
-                            <span class="text-xs text-muted">{{ $alert['detail'] }}</span>
+            <div class="dash-urgent-card {{ $overduePurchases > 0 ? 'dash-urgent--critical' : '' }}">
+                <span class="dash-urgent-count" style="color: {{ $overduePurchases > 0 ? '#dc2626' : '#16a34a' }}">{{ $overduePurchases }}</span>
+                <span class="dash-urgent-label">Compras atrasadas</span>
+            </div>
+            <div class="dash-urgent-card {{ $pendingProductions > 0 ? 'dash-urgent--warn' : '' }}">
+                <span class="dash-urgent-count" style="color: {{ $pendingProductions > 0 ? '#d97706' : '#16a34a' }}">{{ $pendingProductions }}</span>
+                <span class="dash-urgent-label">Producciones pendientes</span>
+            </div>
+            <div class="dash-urgent-card {{ $urgentTasks > 0 ? 'dash-urgent--critical' : '' }}">
+                <span class="dash-urgent-count" style="color: {{ $urgentTasks > 0 ? '#dc2626' : '#16a34a' }}">{{ $urgentTasks }}</span>
+                <span class="dash-urgent-label">Tareas urgentes</span>
+            </div>
+        </div>
+
+        {{-- BLOQUE 2: KPIs DE NEGOCIO --}}
+        <div class="dash-kpi-grid">
+            <div class="dash-kpi-card">
+                <p class="dash-kpi-title">Venta del mes</p>
+                <p class="dash-kpi-value">${{ number_format($salesMonth, 0, ',', '.') }}</p>
+            </div>
+            <div class="dash-kpi-card">
+                <p class="dash-kpi-title">Margen del mes</p>
+                <p class="dash-kpi-value" style="color: {{ $marginMonth >= 0 ? '#16a34a' : '#dc2626' }}">
+                    ${{ number_format($marginMonth, 0, ',', '.') }}
+                </p>
+            </div>
+            <div class="dash-kpi-card">
+                <p class="dash-kpi-title">Stock total valorizado</p>
+                <p class="dash-kpi-value">${{ number_format($stockPT + $stockInputs, 0, ',', '.') }}</p>
+            </div>
+        </div>
+
+        {{-- BLOQUE 3: OPERACION Y ANALISIS --}}
+        <div class="dash-bottom-grid">
+
+            <div class="dash-alerts-panel">
+                <div class="dash-panel-header">
+                    <h3>Alertas criticas</h3>
+                    @if($criticalAlerts->count() > 0)
+                        <span class="dash-alerts-badge">{{ $criticalAlerts->count() }}</span>
+                    @endif
+                </div>
+                <div class="dash-alerts-body">
+                    @forelse($criticalAlerts as $alert)
+                        <div class="dash-alert-row">
+                            <div class="dash-alert-info">
+                                <strong>{{ $alert['title'] }}</strong>
+                                <span class="dash-alert-module">{{ $alert['module'] }}</span>
+                                <p class="dash-alert-detail">{{ $alert['detail'] }}</p>
+                            </div>
+                            <a href="{{ $alert['action_url'] }}" class="btn btn-outline-info btn-sm">Ver</a>
                         </div>
-                        <a href="{{ $alert['action_url'] }}" class="btn btn-outline-info btn-sm" style="height: fit-content;">Ver</a>
-                    </div>
-                @endforeach
+                    @empty
+                        <div class="dash-alerts-empty">
+                            <span style="font-size:1.5rem;">&#10003;</span>
+                            <p>Sin alertas criticas</p>
+                        </div>
+                    @endforelse
+                </div>
             </div>
-        </div>
-    @endif
 
-    {{-- Capacidad producible --}}
-    <div class="card" style="max-width: 100%;">
-        <div class="card__header">
-            <h2 class="card__title">Capacidad producible</h2>
-            <span class="text-xs text-muted">Según insumo limitante</span>
-        </div>
-        <div class="card__body">
-            @forelse($productionCapacity as $item)
-                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f3efe6;">
-                    <div>
-                        <strong>{{ $item['product']->name }}</strong>
-                        <span class="text-xs text-muted"> · Stock PT: {{ $item['product']->stock_boxes }} cajas</span>
+            <div class="dash-charts-panel">
+            <div class="dash-chart-card">
+                <div class="dash-chart-header">
+                    <h3>Tendencia de ventas</h3>
+                    <span class="text-xs text-muted">Ultimos 6 meses</span>
+                </div>
+                <div class="dash-chart-body">
+                    @if($salesMonths->count() > 0)
+                        <canvas id="chartSales"></canvas>
+                    @else
+                        <div class="dash-chart-empty">
+                            <span>Sin datos de ventas</span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+                <div class="dash-chart-card">
+                    <div class="dash-chart-header">
+                        <h3>Stock insumos vs seguridad</h3>
+                        <select id="inputSelector" class="dash-select"></select>
                     </div>
-                    <span class="badge badge-info">{{ number_format($item['capacity'] ?? 0, 0) }} cajas</span>
+                    <div class="dash-chart-body">
+                        <canvas id="chartStockInputs"></canvas>
+                    </div>
                 </div>
-            @empty
-                <div class="data-table-empty">
-                    <p>No hay productos con recetas definidas.</p>
-                </div>
-            @endforelse
+            </div>
+
         </div>
+
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var orange = '#df6403';
+            var red = '#dc2626';
+            var green = '#16a34a';
+
+            @if($salesMonths->count() > 0)
+            new Chart(document.getElementById('chartSales'), {
+                type: 'bar',
+                data: {
+                    labels: {!! json_encode($salesMonths->pluck('label')) !!},
+                    datasets: [{
+                        label: 'Ventas',
+                        data: {!! json_encode($salesMonths->pluck('value')) !!},
+                        backgroundColor: orange,
+                        borderRadius: 4,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString('es-CL') } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+            @endif
+
+            var inputsData = {!! json_encode($chartInputsData) !!};
+            var selector = document.getElementById('inputSelector');
+            var gray = '#94a3b8';
+            var greenLine = '#16a34a';
+
+            inputsData.forEach(function(inp, i) {
+                var opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = inp.name;
+                selector.appendChild(opt);
+            });
+
+            var unitMap = { 'kg': 'kilos', 'g': 'gramos', 'gr': 'gramos', 'ml': 'mililitros', 'l': 'litros', 'un': 'unidades', 'unid': 'unidades', 'unidades': 'unidades' };
+            function formatUnit(u) { return unitMap[(u || '').toLowerCase()] || u || 'Unidades'; }
+
+            var criticalIdx = 0;
+            var maxDeficit = 0;
+            inputsData.forEach(function(inp, i) {
+                var deficit = inp.safety - inp.stock;
+                if (deficit > maxDeficit) { maxDeficit = deficit; criticalIdx = i; }
+            });
+            selector.value = criticalIdx;
+
+            var ctxInputs = document.getElementById('chartStockInputs');
+            var chartInputs = new Chart(ctxInputs, {
+                type: 'line',
+                data: {
+                    labels: ['Stock actual', 'Stock seguridad'],
+                    datasets: [{
+                        label: inputsData[criticalIdx].name,
+                        data: [inputsData[criticalIdx].stock, inputsData[criticalIdx].safety],
+                        borderColor: [greenLine, gray],
+                        backgroundColor: [greenLine + '22', gray + '22'],
+                        pointRadius: 6,
+                        pointHoverRadius: 8,
+                        pointBackgroundColor: [greenLine, gray],
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        borderWidth: 3,
+                        tension: 0,
+                        fill: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    return ctx.dataset.label + ': ' + ctx.parsed.y.toLocaleString('es-CL');
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: { beginAtZero: true, title: { display: true, text: formatUnit(inputsData[criticalIdx].unit), font: { size: 11 } } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+
+            selector.addEventListener('change', function() {
+                var idx = parseInt(this.value);
+                var inp = inputsData[idx];
+                chartInputs.data.datasets[0].label = inp.name;
+                chartInputs.data.datasets[0].data = [inp.stock, inp.safety];
+                chartInputs.options.scales.y.title.text = formatUnit(inp.unit);
+                chartInputs.update();
+            });
+        });
+    </script>
 
 </x-erp-layout>

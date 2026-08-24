@@ -7,132 +7,144 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title }} · PatPot ERP</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
 
-    {{-- Fixed Header --}}
-    <header class="app-header">
-        {{-- Top Bar --}}
-        <div class="topbar">
-            <div class="topbar-left">
-                <a href="{{ route('dashboard') }}" class="topbar-brand">
-                    <span class="topbar-brand-mark">PP</span>
-                    <span class="topbar-brand-text">
-                        <strong>PatPot</strong>
-                        <small>ERP operativo</small>
-                    </span>
-                </a>
-            </div>
-            <div class="topbar-right">
-                <span class="topbar-user">{{ auth()->user()->name }}</span>
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-danger btn-sm">Cerrar sesión</button>
-                </form>
-            </div>
+    {{-- Left Sidebar --}}
+    <aside class="app-sidebar">
+        <div class="sidebar-brand">
+            <a href="{{ route('dashboard') }}" class="sidebar-brand-link">
+                <span class="sidebar-brand-mark">PP</span>
+                <div class="sidebar-brand-text">
+                    <strong>PatPot</strong>
+                    <small>ERP operativo</small>
+                </div>
+            </a>
         </div>
 
-    {{-- Horizontal Navigation --}}
-    <nav class="nav-horizontal">
-        <a href="{{ route('dashboard') }}" class="{{ request()->routeIs('dashboard') ? 'active' : '' }}">
-            Home
-        </a>
+        <nav class="sidebar-nav">
+            <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <i data-lucide="home" class="sidebar-link-icon"></i> Dashboard
+            </a>
 
-        {{-- Inventario --}}
-        <div class="nav-dropdown {{ request()->is(['productos*', 'insumos*', 'recetas*']) ? 'active' : '' }}">
-            <button class="nav-dropdown-toggle">
-                Inventario <span class="nav-caret">▾</span>
-            </button>
-            <div class="nav-dropdown-menu">
-                <a href="/productos" class="{{ request()->is('productos*') ? 'active' : '' }}">📦 Productos</a>
-                <a href="/insumos" class="{{ request()->is('insumos*') ? 'active' : '' }}">🧪 Insumos</a>
-                <a href="/recetas" class="{{ request()->is('recetas*') ? 'active' : '' }}">📜 Recetas</a>
+            {{-- Inventario --}}
+            <div class="sidebar-group {{ request()->is(['productos*', 'insumos*', 'recetas*']) ? 'open' : '' }}">
+                <button class="sidebar-group-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span><i data-lucide="package" class="sidebar-link-icon"></i> Inventario</span>
+                    <span class="sidebar-caret">▸</span>
+                </button>
+                <div class="sidebar-group-menu">
+                    <a href="/productos" class="sidebar-link {{ request()->is('productos*') ? 'active' : '' }}">Productos</a>
+                    <a href="/insumos" class="sidebar-link {{ request()->is('insumos*') ? 'active' : '' }}">Insumos</a>
+                    <a href="/recetas" class="sidebar-link {{ request()->is('recetas*') ? 'active' : '' }}">Recetas</a>
+                </div>
             </div>
-        </div>
 
-        {{-- Compras --}}
-        <div class="nav-dropdown {{ request()->is(['compras*', 'proveedores*']) ? 'active' : '' }}">
-            <button class="nav-dropdown-toggle">
-                Compras <span class="nav-caret">▾</span>
-            </button>
-            <div class="nav-dropdown-menu">
-                <a href="/compras" class="{{ request()->is('compras*') ? 'active' : '' }}">🛒 Compras</a>
-                <a href="/proveedores" class="{{ request()->is('proveedores*') ? 'active' : '' }}">🚚 Proveedores</a>
+            {{-- Compras --}}
+            <div class="sidebar-group {{ request()->is(['compras*', 'proveedores*']) ? 'open' : '' }}">
+                <button class="sidebar-group-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span><i data-lucide="shopping-cart" class="sidebar-link-icon"></i> Compras</span>
+                    <span class="sidebar-caret">▸</span>
+                </button>
+                <div class="sidebar-group-menu">
+                    <a href="/compras" class="sidebar-link {{ request()->is('compras*') ? 'active' : '' }}">Compras</a>
+                    <a href="/proveedores" class="sidebar-link {{ request()->is('proveedores*') ? 'active' : '' }}">Proveedores</a>
+                </div>
             </div>
-        </div>
 
-        {{-- Producción --}}
-        <div class="nav-dropdown {{ request()->is('produccion*') ? 'active' : '' }}">
-            <button class="nav-dropdown-toggle">
-                Producción <span class="nav-caret">▾</span>
-            </button>
-            <div class="nav-dropdown-menu">
-                <a href="/produccion" class="{{ request()->is('produccion*') ? 'active' : '' }}">🏭 Producción</a>
+            {{-- Producción --}}
+            <div class="sidebar-group {{ request()->is('produccion*') ? 'open' : '' }}">
+                <button class="sidebar-group-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span><i data-lucide="factory" class="sidebar-link-icon"></i> Producción</span>
+                    <span class="sidebar-caret">▸</span>
+                </button>
+                <div class="sidebar-group-menu">
+                    <a href="/produccion" class="sidebar-link {{ request()->is('produccion*') ? 'active' : '' }}">Producción</a>
+                </div>
             </div>
-        </div>
 
-        {{-- Ventas --}}
-        <div class="nav-dropdown {{ request()->is(['pedidos*', 'precios*', 'clientes*', 'salas*', 'retail*']) || request()->routeIs(['customers.*', 'salas.*']) ? 'active' : '' }}">
-            <button class="nav-dropdown-toggle">
-                Ventas <span class="nav-caret">▾</span>
-            </button>
-            <div class="nav-dropdown-menu">
-                <a href="/pedidos" class="{{ request()->is('pedidos*') ? 'active' : '' }}">📋 Pedidos</a>
-                <a href="/precios" class="{{ request()->is('precios*') ? 'active' : '' }}">🏷️ Precios</a>
-                <a href="{{ route('customers.index') }}" class="{{ request()->routeIs('customers.*') ? 'active' : '' }}">👥 Clientes</a>
-                <a href="{{ route('salas.index') }}" class="{{ request()->routeIs('salas.*') ? 'active' : '' }}">🏢 Salas</a>
-                <a href="/retail" class="{{ request()->is('retail*') ? 'active' : '' }}">🏬 Retail</a>
+            {{-- Ventas --}}
+            <div class="sidebar-group {{ request()->is(['pedidos*', 'precios*', 'clientes*', 'salas*', 'retail*']) || request()->routeIs(['customers.*', 'salas.*']) ? 'open' : '' }}">
+                <button class="sidebar-group-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span><i data-lucide="dollar-sign" class="sidebar-link-icon"></i> Ventas</span>
+                    <span class="sidebar-caret">▸</span>
+                </button>
+                <div class="sidebar-group-menu">
+                    <a href="/pedidos" class="sidebar-link {{ request()->is('pedidos*') ? 'active' : '' }}">Pedidos</a>
+                    <a href="/precios" class="sidebar-link {{ request()->is('precios*') ? 'active' : '' }}">Precios</a>
+                    <a href="{{ route('customers.index') }}" class="sidebar-link {{ request()->routeIs('customers.*') ? 'active' : '' }}">Clientes</a>
+                    <a href="{{ route('salas.index') }}" class="sidebar-link {{ request()->routeIs('salas.*') ? 'active' : '' }}">Salas</a>
+                    <a href="/retail" class="sidebar-link {{ request()->is('retail*') ? 'active' : '' }}">Retail</a>
+                </div>
             </div>
-        </div>
 
-        {{-- Control --}}
-        @php
-            $isAdminControl = request()->routeIs(['movements.*', 'audit.*', 'admin.*']);
-        @endphp
-        <div class="nav-dropdown {{ $isAdminControl ? 'active' : '' }}">
-            <button class="nav-dropdown-toggle">
-                Control <span class="nav-caret">▾</span>
-            </button>
-            <div class="nav-dropdown-menu">
-                <a href="{{ route('tasks.index') }}" class="{{ request()->routeIs('tasks.*') ? 'active' : '' }}">✅ Tareas</a>
-                @if(auth()->check() && auth()->user()->canManage())
-                <a href="{{ route('admin.trash.index') }}" class="{{ request()->routeIs('admin.trash.*') ? 'active' : '' }}">🗑️ Papelera</a>
+            {{-- Control --}}
+            @php
+                $isAdminControl = request()->routeIs(['movements.*', 'audit.*', 'admin.*']);
+            @endphp
+            <div class="sidebar-group {{ $isAdminControl || request()->routeIs('tasks.*') || request()->routeIs('admin.trash.*') ? 'open' : '' }}">
+                <button class="sidebar-group-toggle" onclick="this.parentElement.classList.toggle('open')">
+                    <span><i data-lucide="settings" class="sidebar-link-icon"></i> Control</span>
+                    <span class="sidebar-caret">▸</span>
+                </button>
+                <div class="sidebar-group-menu">
+                    <a href="{{ route('tasks.index') }}" class="sidebar-link {{ request()->routeIs('tasks.*') ? 'active' : '' }}">Tareas</a>
+                    @if(auth()->check() && auth()->user()->canManage())
+                    <a href="{{ route('admin.trash.index') }}" class="sidebar-link {{ request()->routeIs('admin.trash.*') ? 'active' : '' }}">Papelera</a>
+                    @endif
+                    @if(auth()->check() && auth()->user()->isAdmin())
+                    <div class="sidebar-divider"></div>
+                    <a href="{{ route('movements.index') }}" class="sidebar-link {{ request()->routeIs('movements.*') ? 'active' : '' }}">Movimientos</a>
+                    <a href="{{ route('audit.index') }}" class="sidebar-link {{ request()->routeIs('audit.*') ? 'active' : '' }}">Auditoría</a>
+                    <a href="{{ route('admin.index') }}" class="sidebar-link {{ request()->routeIs('admin.*') ? 'active' : '' }}">Administración</a>
+                    @endif
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <span class="sidebar-user">{{ auth()->user()->name }}</span>
+            <form method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button type="submit" class="sidebar-logout">Cerrar sesión</button>
+            </form>
+        </div>
+    </aside>
+
+    {{-- Main Content Area --}}
+    <div class="page-wrapper">
+        {{-- Page Header --}}
+        <header class="page-topbar">
+            <div class="page-topbar-title">
+                <h1>{{ $title }}</h1>
+                @if ($subtitle)
+                <p class="text-sm text-muted">{{ $subtitle }}</p>
                 @endif
-                @if(auth()->check() && auth()->user()->isAdmin())
-                <div class="nav-dropdown-divider"></div>
-                <a href="{{ route('movements.index') }}" class="{{ request()->routeIs('movements.*') ? 'active' : '' }}">📊 Movimientos</a>
-                <a href="{{ route('audit.index') }}" class="{{ request()->routeIs('audit.*') ? 'active' : '' }}">📋 Auditoría</a>
-                <a href="{{ route('admin.index') }}" class="{{ request()->routeIs('admin.*') ? 'active' : '' }}">⚙️ Administración</a>
+            </div>
+            <div class="page-topbar-actions">
+                @if(auth()->check() && auth()->user()->canManage() && !request()->routeIs('dashboard'))
+                <a class="btn btn-outline-info btn-sm" href="{{ route('admin.trash.index') }}"><i data-lucide="trash-2" style="width:14px;height:14px;"></i> Papelera</a>
                 @endif
             </div>
-        </div>
-    </nav>
-    </header>
+        </header>
 
-    {{-- Page Header --}}
-    <header class="page-topbar">
-        <div class="page-topbar-title">
-            <h1>{{ $title }}</h1>
-            @if ($subtitle)
-            <p class="text-sm text-muted">{{ $subtitle }}</p>
+        {{-- Content --}}
+        <main class="page-content">
+            @if (session('success'))
+            <div class="alert alert-success mb-4">{{ session('success') }}</div>
             @endif
-        </div>
-        <div class="page-topbar-actions">
-            @if(auth()->check() && auth()->user()->canManage())
-                <a class="btn btn-outline-info btn-sm" href="{{ route('admin.trash.index') }}">🗑️ Papelera</a>
-            @endif
-        </div>
-    </header>
 
-    {{-- Content --}}
-    <main class="page-content">
-        @if (session('success'))
-        <div class="alert alert-success mb-4">{{ session('success') }}</div>
-        @endif
-
-        {{ $slot }}
-    </main>
+            {{ $slot }}
+        </main>
+    </div>
 
     {{-- Detail Modal --}}
     <div id="detailModal" class="modal-overlay" style="display:none;">
@@ -147,7 +159,21 @@
         </div>
     </div>
 
+    @php
+        $flashType = '';
+        $flashMessage = '';
+        if (session('success')) {
+            $flashType = 'success';
+            $flashMessage = session('success');
+        } elseif ($errors->any()) {
+            $flashType = 'error';
+            $flashMessage = implode('<br>', $errors->all());
+        }
+    @endphp
+    <div id="flash-data" style="display:none" data-type="{{ $flashType }}" data-message="{!! $flashMessage !!}"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script>
         var Toast = Swal.mixin({
             toast: true,
@@ -163,33 +189,16 @@
             }
         });
 
-        @if(session('success'))
-        Toast.fire({ icon: 'success', title: '{!! session("success") !!}' });
-        @endif
-
-        @if($errors->any())
-        var errorMessages = {!! json_encode($errors->all()) !!};
-        Toast.fire({ icon: 'error', title: errorMessages.join('<br>') });
-        @endif
+        var flashEl = document.getElementById('flash-data');
+        if (flashEl && flashEl.dataset.type) {
+            Toast.fire({ icon: flashEl.dataset.type, title: flashEl.dataset.message });
+        }
     </script>
     <script>
         let currentEditingRow = null;
         let originalRowHtml = null;
 
         document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.nav-dropdown-toggle').forEach(function(toggle) {
-                toggle.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    var dropdown = toggle.closest('.nav-dropdown');
-                    var wasOpen = dropdown.classList.contains('open');
-                    document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
-                    if (!wasOpen) dropdown.classList.add('open');
-                });
-            });
-            document.addEventListener('click', function() {
-                document.querySelectorAll('.nav-dropdown.open').forEach(function(d) { d.classList.remove('open'); });
-            });
-
             document.querySelectorAll('.btn-detail-modal').forEach(function(btn) {
                 btn.addEventListener('click', function(e) {
                     e.preventDefault();
@@ -245,7 +254,7 @@
             var cells = row.querySelectorAll('td');
             cells.forEach(function(td) {
                 if (td.querySelector('.actions-cell')) return;
-                if (td.dataset.readonly === 'true') return;
+                if (!td.dataset.field) return;
                 var val = td.dataset.value !== undefined ? td.dataset.value : td.textContent.trim();
                 td.dataset.originalValue = val;
                 if (td.dataset.type === 'select' && td.dataset.options) {
@@ -377,6 +386,31 @@
                 closeDetailModal();
                 cancelInlineEdit();
             }
+        });
+    </script>
+    <script>lucide.createIcons();</script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('.data-table').each(function() {
+                var hasActions = $(this).find('th:last').text().trim().toLowerCase().includes('accion');
+                $(this).DataTable({
+                    language: {
+                        search: "Buscar:",
+                        lengthMenu: "Mostrar _MENU_",
+                        info: "Mostrando _START_ a _END_ de _TOTAL_",
+                        infoEmpty: "Sin resultados",
+                        infoFiltered: "(filtrado de _MAX_)",
+                        paginate: { first: "Primero", last: "Último", next: "Siguiente", previous: "Anterior" },
+                        zeroRecords: "No hay registros"
+                    },
+                    pageLength: 10,
+                    order: [],
+                    columnDefs: hasActions ? [{ orderable: false, targets: -1 }] : [],
+                    dom: '<"top"f>rt<"bottom"lip><"clear">'
+                });
+            });
         });
     </script>
 </body>

@@ -21,7 +21,7 @@ class TaskController extends Controller
                 ->orWhere('owner', 'like', "%{$search}%");
         }
         
-        $tasks = $query->paginate(20)->appends($request->query());
+        $tasks = $query->get();
 
         return view('tasks.index', compact('tasks'));
     }

@@ -57,11 +57,11 @@ class RetailController extends Controller
             'store_id' => 'required|exists:stores,id',
             'product_id' => 'required|exists:products,id',
             'cataloged' => 'required|boolean',
-            'stock_units' => 'required|numeric|min:0',
-            'transit_units' => 'required|numeric|min:0',
-            'weekly_sales' => 'required|numeric|min:0',
-            'min_stock' => 'required|numeric|min:0',
-            'reorder_point' => 'required|numeric|min:0',
+            'stock_units' => 'required|integer|min:0',
+            'transit_units' => 'required|integer|min:0',
+            'weekly_sales' => 'required|integer|min:0',
+            'min_stock' => 'required|integer|min:0',
+            'reorder_point' => 'required|integer|min:0',
         ]);
 
         $exists = Retail::where('store_id', $validated['store_id'])
@@ -75,6 +75,12 @@ class RetailController extends Controller
                 ])
                 ->withInput();
         }
+
+        $validated['stock_units'] = (int) $validated['stock_units'];
+        $validated['transit_units'] = (int) $validated['transit_units'];
+        $validated['weekly_sales'] = (int) $validated['weekly_sales'];
+        $validated['min_stock'] = (int) $validated['min_stock'];
+        $validated['reorder_point'] = (int) $validated['reorder_point'];
 
         $retail = Retail::create($validated);
         AuditService::log('CREACIÓN DE RETAIL', 'Creó registro retail', $retail);
@@ -104,22 +110,22 @@ class RetailController extends Controller
                     'store_id' => 'sometimes|required|exists:stores,id',
                     'product_id' => 'sometimes|required|exists:products,id',
                     'cataloged' => 'sometimes|required|boolean',
-                    'stock_units' => 'sometimes|required|numeric|min:0',
-                    'transit_units' => 'sometimes|required|numeric|min:0',
-                    'weekly_sales' => 'sometimes|required|numeric|min:0',
-                    'min_stock' => 'sometimes|required|numeric|min:0',
-                    'reorder_point' => 'sometimes|required|numeric|min:0',
+                    'stock_units' => 'sometimes|required|integer|min:0',
+                    'transit_units' => 'sometimes|required|integer|min:0',
+                    'weekly_sales' => 'sometimes|required|integer|min:0',
+                    'min_stock' => 'sometimes|required|integer|min:0',
+                    'reorder_point' => 'sometimes|required|integer|min:0',
                 ];
             } else {
                 $rules = [
                     'store_id' => 'required|exists:stores,id',
                     'product_id' => 'required|exists:products,id',
                     'cataloged' => 'required|boolean',
-                    'stock_units' => 'required|numeric|min:0',
-                    'transit_units' => 'required|numeric|min:0',
-                    'weekly_sales' => 'required|numeric|min:0',
-                    'min_stock' => 'required|numeric|min:0',
-                    'reorder_point' => 'required|numeric|min:0',
+                    'stock_units' => 'required|integer|min:0',
+                    'transit_units' => 'required|integer|min:0',
+                    'weekly_sales' => 'required|integer|min:0',
+                    'min_stock' => 'required|integer|min:0',
+                    'reorder_point' => 'required|integer|min:0',
                 ];
             }
             $validated = $request->validate($rules);
@@ -141,6 +147,12 @@ class RetailController extends Controller
                         'product_id' => 'Ya existe un registro retail para esta sala y este producto.',
                     ])
                     ->withInput();
+            }
+
+            foreach (['stock_units', 'transit_units', 'weekly_sales', 'min_stock', 'reorder_point'] as $field) {
+                if (isset($validated[$field])) {
+                    $validated[$field] = (int) $validated[$field];
+                }
             }
 
             $retail->update($validated);

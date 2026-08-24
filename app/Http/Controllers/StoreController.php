@@ -22,7 +22,7 @@ class StoreController extends Controller
             });
         }
 
-        $stores = $query->orderBy('name')->paginate(20)->appends($request->query());
+        $stores = $query->orderBy('name')->get();
 
         return view('stores.index', compact('stores'));
     }
@@ -100,8 +100,9 @@ class StoreController extends Controller
             }
             $validated = $request->validate($rules);
 
-            $exists = Store::where('customer_id', $validated['customer_id'])
-                ->where('code', $validated['code'])
+            $customerId = $validated['customer_id'] ?? $store->customer_id;
+            $exists = Store::where('customer_id', $customerId)
+                ->where('code', $validated['code'] ?? $store->code)
                 ->where('id', '!=', $store->id)
                 ->exists();
 

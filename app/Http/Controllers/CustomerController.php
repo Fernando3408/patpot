@@ -26,7 +26,7 @@ class CustomerController extends Controller
             });
         }
 
-        $customers = $query->orderBy('business_name')->paginate(20)->appends($request->query());
+        $customers = $query->orderBy('business_name')->get();
 
         return view('customers.index', compact('customers'));
     }

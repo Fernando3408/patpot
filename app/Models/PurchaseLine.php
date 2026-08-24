@@ -10,7 +10,7 @@ class PurchaseLine extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['input_id', 'ordered_quantity', 'received_quantity', 'unit_cost'];
+    protected $fillable = ['purchase_id', 'input_id', 'ordered_quantity', 'received_quantity', 'unit_cost'];
 
     protected function casts(): array
     {

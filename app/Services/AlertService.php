@@ -70,7 +70,7 @@ class AlertService
                     'level' => 'critical',
                     'module' => 'Retail',
                     'title' => "{$r->store?->name} · {$r->product?->name}",
-                    'detail' => "Stock {$r->stock_units} unidades; tránsito {$r->transit_units}; venta semanal {$r->weekly_sales}.",
+                    'detail' => "Stock " . (int) $r->stock_units . " unidades; tránsito " . (int) $r->transit_units . "; venta semanal " . (int) $r->weekly_sales . ".",
                     'action_url' => '/retail',
                 ]);
             });

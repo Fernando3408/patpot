@@ -10,7 +10,7 @@ class ShipmentLine extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['order_line_id', 'boxes', 'price_box'];
+    protected $fillable = ['shipment_id', 'order_line_id', 'boxes', 'price_box'];
 
     protected function casts(): array
     {

@@ -99,7 +99,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="mt-4">{{ $productions->links() }}</div>
+
     @else
         <div class="table-container">
             <div class="data-table-empty">
