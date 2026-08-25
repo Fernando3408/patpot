@@ -36,14 +36,26 @@ class HomeController extends Controller
         $pendingOrders = Order::whereIn('status', ['pending', 'partial'])->count();
         $overdueOrders = Order::whereIn('status', ['pending', 'partial'])
             ->where('delivery_on', '<', $now->toDateString())->count();
-        $overduePurchases = Purchase::whereNotIn('status', ['received', 'cancelled'])
+        $overduePurchases = Purchase::where('status', '!=', 'received')
             ->where('expected_on', '<', $now->toDateString())->count();
         $pendingProductions = Production::whereIn('status', ['planned', 'in_progress'])->count();
-        $stockPT = Product::with('recipes.input')->get()
+        $allProductsWithRecipes = Product::with('recipes.input')->get();
+        $stockPT = $allProductsWithRecipes
             ->sum(fn (Product $p) => $p->stock_boxes * $p->cost_per_box);
         $stockInputs = Input::sum(\DB::raw('stock * unit_cost'));
         $urgentTasks = Task::where('status', 'pending')
             ->where('priority', 'urgent')->count();
+
+        // Capacidad producible por producto
+        $productionCapacities = $allProductsWithRecipes->map(fn ($p) => [
+            'name' => $p->name,
+            'capacity' => $p->production_capacity,
+            'stock' => $p->stock_boxes,
+            'limiting' => $p->recipes->isEmpty() ? 'Sin receta' : $p->recipes->map(fn ($r) => [
+                'name' => $r->input?->name ?? '—',
+                'available' => $r->input ? floor((float) $r->input->stock / (float) $r->qty_per_box) : 0,
+            ])->sortBy('available')->first()['name'] ?? '—',
+        ])->filter(fn ($p) => $p['capacity'] !== null)->sortBy('capacity')->values()->toArray();
 
         // Alertas
         $alerts = app(AlertService::class)->getAlerts();
@@ -67,15 +79,15 @@ class HomeController extends Controller
         $marginMonths = collect();
         for ($i = 5; $i >= 0; $i--) {
             $date = $now->copy()->subMonths($i);
-            $marginMonths->push([
-                'label' => $date->format('M'),
-                'value' => (float) ShipmentLine::query()
-                    ->whereHas('shipment', fn ($q) => $q->whereMonth('shipped_on', $date->month)
-                        ->whereYear('shipped_on', $date->year))
-                    ->get()
-                    ->sum(fn (ShipmentLine $line) => $line->price_box * $line->boxes
-                        - (($line->orderLine?->product?->cost_per_box ?? 0) * $line->boxes)),
-            ]);
+            $value = (float) ShipmentLine::query()
+                ->whereHas('shipment', fn ($q) => $q->whereMonth('shipped_on', $date->month)
+                    ->whereYear('shipped_on', $date->year))
+                ->get()
+                ->sum(fn (ShipmentLine $line) => $line->price_box * $line->boxes
+                    - (($line->orderLine?->product?->cost_per_box ?? 0) * $line->boxes));
+            if ($value > 0) {
+                $marginMonths->push(['label' => $date->format('M'), 'value' => $value]);
+            }
         }
 
         // 3. Pedidos pendientes: por estado
@@ -83,7 +95,7 @@ class HomeController extends Controller
         $chartOrderCounts = [
             Order::where('status', 'pending')->count(),
             Order::where('status', 'partial')->count(),
-            Order::where('status', 'dispatched')->count(),
+            Order::where('status', 'completed')->count(),
         ];
 
         // 4. Pedidos atrasados: a tiempo vs atrasados
@@ -104,11 +116,11 @@ class HomeController extends Controller
         ];
 
         // 6. Producciones: por estado
-        $chartProdLabels = ['Planificada', 'En proceso', 'Completada'];
+        $chartProdLabels = ['Planificada', 'En proceso', 'Cerrada'];
         $chartProdCounts = [
             Production::where('status', 'planned')->count(),
             Production::where('status', 'in_progress')->count(),
-            Production::where('status', 'completed')->count(),
+            Production::where('status', 'closed')->count(),
         ];
 
         // 7. Stock PT: por producto
@@ -147,6 +159,7 @@ class HomeController extends Controller
             'chartPTLabels', 'chartPTValues',
             'chartInputsData',
             'chartTaskLabels', 'chartTaskCounts',
+            'productionCapacities',
         ));
     }
 }

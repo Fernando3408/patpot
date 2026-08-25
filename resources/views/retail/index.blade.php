@@ -1,12 +1,5 @@
 <x-erp-layout title="Retail y Quiebres" subtitle="Monitorea el stock en punto de venta y detecta quiebres de inventario.">
     <div class="page-header">
-        <form method="GET" action="{{ route('retail.index') }}" class="search-form">
-            <input type="text" name="search" class="form-control" placeholder="Buscar por sala, producto..." value="{{ request('search') }}">
-            <button type="submit" class="btn btn-outline-success btn-sm">Buscar</button>
-            @if(request('search'))
-                <a href="{{ route('retail.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
         <div class="page-header-actions">
             <a href="{{ route('retail.create') }}" class="btn btn-outline-primary btn-sm">+ Nuevo registro retail</a>
         </div>
@@ -22,7 +15,7 @@
                         <th class="text-right">Stock</th>
                         <th>Quiebre</th>
                         <th class="text-right">Reposición</th>
-                        <th class="text-right">Acciones</th>
+                        <th class="text-right"></th>
                     </tr>
                 </thead>
                 <tbody>

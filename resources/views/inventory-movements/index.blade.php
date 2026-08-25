@@ -1,20 +1,22 @@
 <x-erp-layout title="Movimientos de inventario" subtitle="Historial de todos los ajustes, recepciones, consumos y despachos.">
 
     <div class="page-header">
-        <form method="GET" class="search-form">
-            <input type="date" name="from" class="form-control" value="{{ request('from') }}">
-            <input type="date" name="to" class="form-control" value="{{ request('to') }}">
-            <select name="kind" class="form-control">
-                <option value="">Todos los tipos</option>
-                @foreach(['Recepción de compra', 'Consumo de producción', 'Ingreso producto terminado', 'Despacho de pedido', 'Ajuste'] as $k)
-                    <option value="{{ $k }}" {{ request('kind') === $k ? 'selected' : '' }}>{{ $k }}</option>
-                @endforeach
-            </select>
-            <button type="submit" class="btn btn-outline-success btn-sm">Filtrar</button>
-            @if(request()->hasAny(['from', 'to', 'kind']))
-                <a href="{{ route('movements.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
+        <div class="page-header-filters">
+            <form method="GET" class="search-form">
+                <input type="date" name="from" class="form-control" value="{{ request('from') }}">
+                <input type="date" name="to" class="form-control" value="{{ request('to') }}">
+                <select name="kind" class="form-control">
+                    <option value="">Todos los tipos</option>
+                    @foreach(['Recepción de compra', 'Consumo de producción', 'Ingreso producto terminado', 'Despacho de pedido', 'Ajuste'] as $k)
+                        <option value="{{ $k }}" {{ request('kind') === $k ? 'selected' : '' }}>{{ $k }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="btn btn-outline-success btn-sm">Filtrar</button>
+                @if(request()->hasAny(['from', 'to', 'kind']))
+                    <a href="{{ route('movements.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
+                @endif
+            </form>
+        </div>
     </div>
 
     @if($movements->count() > 0)
@@ -46,7 +48,7 @@
                                     <span class="text-muted">—</span>
                                 @endif
                             </td>
-                            <td class="text-right font-bold" style="color: {{ $m->quantity >= 0 ? '#166534' : '#991b1b' }}">
+                            <td class="text-right font-bold {{ $m->quantity >= 0 ? 'text-positive' : 'text-negative' }}">
                                 {{ $m->quantity >= 0 ? '+' : '' }}{{ number_format($m->quantity, 2, ',', '.') }}
                             </td>
                             <td class="text-xs">{{ $m->reference ?? '—' }}</td>

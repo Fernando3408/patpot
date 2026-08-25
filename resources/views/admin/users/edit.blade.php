@@ -31,7 +31,7 @@
                         @endforeach
                     </div>
                 </div>
-                <div style="margin-top:1.5rem;text-align:right;">
+                <div class="form-actions-end">
                     <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
                 </div>
             </form>

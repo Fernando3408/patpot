@@ -1,19 +1,21 @@
 <x-erp-layout title="Pedidos y despachos" subtitle="Gestiona pedidos por cliente y descuenta automáticamente el stock al despachar.">
     <div class="page-header">
-        <form method="GET" action="{{ route('pedidos.index') }}" class="search-form">
-            <input type="date" name="from" class="form-control" value="{{ request('from') }}" placeholder="Desde">
-            <input type="date" name="to" class="form-control" value="{{ request('to') }}" placeholder="Hasta">
-            <select name="status" class="form-control">
-                <option value="">Todos los estados</option>
-                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pendiente</option>
-                <option value="partial" {{ request('status') === 'partial' ? 'selected' : '' }}>Parcial</option>
-                <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completado</option>
-            </select>
-            <button type="submit" class="btn btn-outline-success btn-sm">Filtrar</button>
-            @if(request()->hasAny(['from', 'to', 'status']))
-                <a href="{{ route('pedidos.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
+        <div class="page-header-filters">
+            <form method="GET" action="{{ route('pedidos.index') }}" class="search-form">
+                <input type="date" name="from" class="form-control" value="{{ request('from') }}" placeholder="Desde">
+                <input type="date" name="to" class="form-control" value="{{ request('to') }}" placeholder="Hasta">
+                <select name="status" class="form-control">
+                    <option value="">Todos los estados</option>
+                    <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pendiente</option>
+                    <option value="partial" {{ request('status') === 'partial' ? 'selected' : '' }}>Parcial</option>
+                    <option value="completed" {{ request('status') === 'completed' ? 'selected' : '' }}>Completado</option>
+                </select>
+                <button type="submit" class="btn btn-outline-success btn-sm">Filtrar</button>
+                @if(request()->hasAny(['from', 'to', 'status']))
+                    <a href="{{ route('pedidos.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
+                @endif
+            </form>
+        </div>
         <div class="page-header-actions">
             <a href="{{ route('pedidos.create') }}" class="btn btn-outline-primary btn-sm">＋ Nuevo pedido</a>
         </div>
@@ -28,9 +30,10 @@
                         <th>Cliente</th>
                         <th>Productos</th>
                         <th class="text-right">Total</th>
+                        <th class="text-right">Margen</th>
                         <th>Estado</th>
-                        <th style="width:180px;">Progreso</th>
-                        <th class="text-right">Acciones</th>
+                        <th class="th-progreso">Progreso</th>
+                        <th class="text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -59,8 +62,16 @@
                             <td class="text-right">
                                 @php
                                     $orderTotal = $order->lines->sum(fn($line) => $line->boxes * $line->price_box * (1 - ($line->discount_pct ?? 0) / 100));
+                                    $orderCost = $order->lines->sum(fn($line) => $line->boxes * ($line->product?->cost_per_box ?? 0));
+                                    $orderMargin = $orderTotal - $orderCost;
                                 @endphp
                                 <strong>${{ number_format($orderTotal, 0, ',', '.') }}</strong>
+                            </td>
+                            <td class="text-right">
+                                <span class="{{ $orderMargin >= 0 ? 'text-positive' : 'text-negative' }} fw-600">${{ number_format($orderMargin, 0, ',', '.') }}</span>
+                                @if($orderTotal > 0)
+                                    <span class="text-xs text-muted">{{ number_format($orderMargin / $orderTotal * 100, 1) }}%</span>
+                                @endif
                             </td>
                             <td data-readonly="true">
                                 @php
@@ -110,7 +121,7 @@
                                             <div class="card__header"><h2 class="card__title">Líneas de pedido ({{ $order->lines->count() }} productos)</h2></div>
                                             <div class="card__body">
                                                 <table class="data-table">
-                                                    <thead><tr><th>Producto</th><th class="text-right">Cajas</th><th class="text-right">Precio/caja</th><th class="text-right">Descuento</th><th class="text-right">Subtotal</th><th class="text-right">Despachado</th><th class="text-center" style="width:180px;">Progreso</th></tr></thead>
+                                                    <thead><tr><th>Producto</th><th class="text-right">Cajas</th><th class="text-right">Precio/caja</th><th class="text-right">Descuento</th><th class="text-right">Subtotal</th><th class="text-right">Despachado</th><th class="text-center th-progreso">Progreso</th></tr></thead>
                                                     <tbody>
                                                         @php $grandTotal = 0; @endphp
                                                         @foreach($order->lines as $line)
@@ -135,7 +146,7 @@
                                                                 </td>
                                                             </tr>
                                                         @endforeach
-                                                        <tr style="font-weight:700;background:#f8f9fa;">
+                                                        <tr class="row-total">
                                                             <td colspan="4" class="text-right">Total:</td>
                                                             <td class="text-right">${{ number_format($grandTotal, 0, ',', '.') }}</td>
                                                             <td colspan="2"></td>
@@ -183,7 +194,7 @@
 
             var html = '<form method="POST" action="' + url + '">';
             html += '<input type="hidden" name="_token" value="' + document.querySelector('meta[name="csrf-token"]').content + '">';
-            html += '<table class="data-table"><thead><tr><th>Producto</th><th class="text-right">Stock</th><th class="text-right">Pedida</th><th class="text-right">Ya despachado</th><th style="width:130px;">Despachar ahora</th></tr></thead><tbody>';
+            html += '<table class="data-table"><thead><tr><th>Producto</th><th class="text-right">Stock</th><th class="text-right">Pedida</th><th class="text-right">Ya despachado</th><th class="text-right th-cajas">Despachar ahora</th></tr></thead><tbody>';
 
             lines.forEach(function(line) {
                 var pending = Math.min(line.boxes - line.dispatched, line.stock);
@@ -197,7 +208,7 @@
             });
 
             html += '</tbody></table>';
-            html += '<div class="form-group mt-4"><label class="form-label">Fecha de despacho</label><input type="date" name="shipped_on" class="form-control" value="' + new Date().toISOString().slice(0, 10) + '" style="width:200px;"></div>';
+            html += '<div class="form-group mt-4"><label class="form-label">Fecha de despacho</label><input type="date" name="shipped_on" class="form-control input-date" value="' + new Date().toISOString().slice(0, 10) + '"></div>';
             html += '<div class="form-actions mt-4"><button type="button" class="btn btn-outline-warning" onclick="closeDetailModal()">Cancelar</button> <button type="submit" class="btn btn-primary">Confirmar despacho</button></div>';
             html += '</form>';
 

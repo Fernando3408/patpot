@@ -58,7 +58,7 @@ class Product extends Model
 
     public function getCostPerBoxAttribute(): float
     {
-        return round($this->recipes->sum(fn (Recipe $recipe): float => (float) $recipe->qty_per_box * (float) $recipe->input->unit_cost), 2);
+        return round($this->recipes->sum(fn (Recipe $recipe): float => $recipe->input ? (float) $recipe->qty_per_box * (float) $recipe->input->unit_cost : 0), 2);
     }
 
     public function getProductionCapacityAttribute(): ?float
@@ -67,7 +67,12 @@ class Product extends Model
             return null;
         }
 
-        return floor($this->recipes->min(fn (Recipe $recipe): float => (float) $recipe->input->stock / (float) $recipe->qty_per_box));
+        $filtered = $this->recipes->filter(fn (Recipe $recipe) => $recipe->input && $recipe->qty_per_box > 0);
+        if ($filtered->isEmpty()) {
+            return null;
+        }
+
+        return floor($filtered->min(fn (Recipe $recipe): float => (float) $recipe->input->stock / (float) $recipe->qty_per_box));
     }
 
     public function deleter(): BelongsTo
@@ -81,9 +86,7 @@ class Product extends Model
         $this->prices()->delete();
         $this->retail()->delete();
         $this->recipes()->delete();
-        $this->orderLines()->each(function (OrderLine $line) {
-            $line->delete();
-        });
+        $this->orderLines()->delete();
 
         return parent::delete();
     }

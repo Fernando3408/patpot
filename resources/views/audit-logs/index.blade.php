@@ -1,13 +1,6 @@
 <x-erp-layout title="Historial de auditoría" subtitle="Registro de todas las acciones realizadas en el sistema.">
 
     <div class="page-header">
-        <form method="GET" class="search-form">
-            <input type="text" name="action" class="form-control" placeholder="Buscar por acción (Ej: DESPACHO, RECEPCIÓN...)" value="{{ request('action') }}">
-            <button type="submit" class="btn btn-outline-success btn-sm">Buscar</button>
-            @if(request('action'))
-                <a href="{{ route('audit.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
     </div>
 
     @if($logs->count() > 0)

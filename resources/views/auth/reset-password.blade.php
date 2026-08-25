@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Crear cuenta - PatPot</title>
+    <title>Restablecer contraseña - PatPot</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -14,26 +14,22 @@
             
             <div class="auth-header">
                 <p class="auth-brand">PatPot</p>
-                <h1 class="auth-title">Crear cuenta</h1>
-                <p class="auth-subtitle">Regístrate para acceder al ERP operativo.</p>
+                <h1 class="auth-title">Restablecer contraseña</h1>
+                <p class="auth-subtitle">Ingresa tu nueva contraseña.</p>
             </div>
 
-            <form method="POST" action="{{ route('admin.users.store') }}">
+            <form method="POST" action="{{ route('password.update') }}">
                 @csrf
 
-                <div class="form-group mb-4">
-                    <label class="form-label" for="name">Nombre</label>
-                    <input 
-                        id="name" 
-                        name="name" 
-                        type="text" 
-                        class="form-input" 
-                        value="{{ old('name') }}" 
-                        autocomplete="name" 
-                        required 
-                        autofocus
-                    >
-                </div>
+                <input type="hidden" name="token" value="{{ $token }}">
+
+                @if($errors->any())
+                    <div class="alert-error">
+                        @foreach($errors->all() as $error)
+                            <p class="alert-error-text">{{ $error }}</p>
+                        @endforeach
+                    </div>
+                @endif
 
                 <div class="form-group mb-4">
                     <label class="form-label" for="email">Correo electrónico</label>
@@ -42,14 +38,15 @@
                         name="email" 
                         type="email" 
                         class="form-input" 
-                        value="{{ old('email') }}" 
+                        value="{{ $email ?? old('email') }}" 
                         autocomplete="email" 
-                        required
+                        required 
+                        autofocus
                     >
                 </div>
 
                 <div class="form-group mb-4">
-                    <label class="form-label" for="password">Contraseña</label>
+                    <label class="form-label" for="password">Nueva contraseña</label>
                     <input 
                         id="password" 
                         name="password" 
@@ -58,11 +55,10 @@
                         autocomplete="new-password" 
                         required
                     >
-                    <small class="form-hint">Mínimo 8 caracteres.</small>
                 </div>
 
                 <div class="form-group form-group--mb-lg">
-                    <label class="form-label" for="password_confirmation">Confirmar contraseña</label>
+                    <label class="form-label" for="password_confirmation">Confirmar contrasena</label>
                     <input 
                         id="password_confirmation" 
                         name="password_confirmation" 
@@ -74,14 +70,13 @@
                 </div>
 
                 <button type="submit" class="btn btn-primary btn-full">
-                    Crear cuenta
+                    Restablecer contraseña
                 </button>
-            </form>
 
-            <p class="auth-footer">
-                ¿Ya tienes cuenta? 
-                <a href="{{ route('login') }}" class="auth-link">Inicia sesion</a>
-            </p>
+                <div class="forgot-password-row">
+                    <a href="{{ route('login') }}" class="link-muted">Volver al inicio de sesión</a>
+                </div>
+            </form>
 
         </div>
     </div>

@@ -1,19 +1,8 @@
 <x-erp-layout title="Papelera" subtitle="Registros eliminados. Puedes recuperar o eliminar definitivamente.">
     <div class="page-header">
-        <form method="GET" action="{{ route('admin.trash.index') }}" class="search-form">
-            <input type="text" name="search" class="form-control" placeholder="Buscar por nombre..." value="{{ request('search') }}">
-            <button type="submit" class="btn btn-outline-success btn-sm">Buscar</button>
-            @if(request('search'))
-                <a href="{{ route('admin.trash.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
-        <div class="page-header-actions">
-            <button type="button" class="btn btn-outline-success btn-sm" onclick="restoreSelected()">Recuperar seleccionados</button>
-            <button type="button" class="btn btn-outline-danger btn-sm" onclick="deleteSelected()">Eliminar definitivamente</button>
-        </div>
     </div>
 
-    <div style="margin-bottom:1rem;">
+    <div class="mb-4">
         <input type="checkbox" id="selectAll"> <label for="selectAll">Seleccionar todo</label>
     </div>
 
@@ -28,38 +17,36 @@
 
     @foreach($modules as $key => $module)
     @if($module['items']->isNotEmpty())
-    <h3 style="margin-top:1.5rem;">{{ $module['label'] }}</h3>
+    <h3 class="mt-6">{{ $module['label'] }}</h3>
     <div class="table-container">
         <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width:40px;"><input type="checkbox" class="group-check" data-group="{{ $key }}"></th>
+                    <th class="th-narrow"><input type="checkbox" class="group-check" data-group="{{ $key }}"></th>
                     <th>Nombre</th>
                     <th>Eliminado el</th>
                     <th>Eliminado por</th>
-                    <th class="text-right">Acciones</th>
+                    <th class="text-right"></th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($module['items'] as $item)
                 <tr>
-                    <td><input type="checkbox" name="ids[]" value="{{ $item->id }}" class="trash-check" data-group="{{ $key }}"></td>
-                    <td>{{ $item->name ?? $item->business_name ?? $item->code ?? '—' }}</td>
-                    <td>{{ $item->deleted_at->format('d-m-Y H:i') }}</td>
-                    <td>{{ $item->deleter?->name ?? '—' }}</td>
+                    <td><input type="checkbox" class="trash-check" name="ids[]" value="{{ $key }}_{{ $item->id }}"></td>
+                    <td class="font-bold">{{ $item->name ?? $item->trade_name ?? '—' }}</td>
+                    <td class="text-xs text-muted">{{ $item->deleted_at?->format('d/m/Y H:i') ?? '—' }}</td>
+                    <td class="text-xs text-muted">{{ $item->deleted_by ? \App\Models\User::withTrashed()->find($item->deleted_by)?->name ?? '—' : '—' }}</td>
                     <td class="text-right">
-                        <form method="POST" action="{{ route('admin.trash.restore') }}" style="display:inline;">
-                            @csrf
-                            <input type="hidden" name="model" value="{{ $key }}">
-                            <input type="hidden" name="id" value="{{ $item->id }}">
-                            <button class="btn btn-outline-success btn-sm">Recuperar</button>
-                        </form>
-                        <form method="POST" action="{{ route('admin.trash.force-delete') }}" style="display:inline;" onsubmit="return confirm('¿Eliminar permanentemente?')">
-                            @csrf
-                            <input type="hidden" name="model" value="{{ $key }}">
-                            <input type="hidden" name="id" value="{{ $item->id }}">
-                            <button class="btn btn-danger btn-sm">Eliminar</button>
-                        </form>
+                        <div class="actions-cell">
+                            <form method="POST" action="{{ route('admin.trash.restore', ['entity' => $key, 'id' => $item->id]) }}" class="inline-form" style="display:inline;">
+                                @csrf
+                                <button type="submit" class="btn btn-outline-success btn-sm">Recuperar</button>
+                            </form>
+                            <form method="POST" action="{{ route('admin.trash.force-delete', ['entity' => $key, 'id' => $item->id]) }}" class="inline-form" style="display:inline;">
+                                @csrf
+                                <button type="submit" class="btn btn-danger btn-sm btn-delete">Eliminar</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 @endforeach
@@ -69,67 +56,35 @@
     @endif
     @endforeach
 
-    @php $allEmpty = true; @endphp
-    @foreach($modules as $module)
-    @if($module['items']->isNotEmpty())
-    @php $allEmpty = false; @endphp
+    @php
+    $hasAny = $deletedProducts->count() || $deletedInputs->count() || $deletedCustomers->count() || $deletedSuppliers->count() || $deletedStores->count() || $deletedRetails->count();
+    @endphp
+
+    @if($hasAny)
+    <div class="mt-6">
+        <form method="POST" action="{{ route('admin.trash.restore-multiple') }}">
+            @csrf
+            <input type="hidden" name="selections" id="selectedItems" value="">
+            <button type="submit" class="btn btn-outline-success btn-sm" onclick="gatherSelected()">Recuperar seleccionados</button>
+        </form>
+    </div>
     @endif
-    @endforeach
-    @if($allEmpty)
+
+    @if(!$hasAny)
     <div class="data-table-empty">
-        <p>La papelera está vacía.</p>
+        <p>No hay registros en la papelera.</p>
     </div>
     @endif
 
     <script>
-        document.getElementById('selectAll')?.addEventListener('change', function() {
-            document.querySelectorAll('.trash-check').forEach(c => c.checked = this.checked);
+        document.getElementById('selectAll').addEventListener('change', function() {
+            document.querySelectorAll('.trash-check').forEach(function(cb) { cb.checked = document.getElementById('selectAll').checked; });
         });
 
-        document.querySelectorAll('.group-check').forEach(g => {
-            g.addEventListener('change', function() {
-                document.querySelectorAll('.trash-check[data-group="' + this.dataset.group + '"]').forEach(c => c.checked = this.checked);
-            });
-        });
-
-        function restoreSelected() {
-            submitMultiple('{{ route("admin.trash.restore-multiple") }}');
-        }
-
-        function deleteSelected() {
-            if (!confirm('¿Eliminar permanentemente los seleccionados?')) return;
-            submitMultiple('{{ route("admin.trash.force-delete-multiple") }}');
-        }
-
-        function submitMultiple(url) {
-            var checked = document.querySelectorAll('.trash-check:checked');
-            if (!checked.length) {
-                alert('Selecciona al menos uno.');
-                return;
-            }
-            var model = checked[0].dataset.group;
-            var tmp = document.createElement('form');
-            tmp.method = 'POST';
-            tmp.action = url;
-            var tokenInput = document.createElement('input');
-            tokenInput.type = 'hidden';
-            tokenInput.name = '_token';
-            tokenInput.value = '{{ csrf_token() }}';
-            tmp.appendChild(tokenInput);
-            var modelInput = document.createElement('input');
-            modelInput.type = 'hidden';
-            modelInput.name = 'model';
-            modelInput.value = model;
-            tmp.appendChild(modelInput);
-            checked.forEach(function(c) {
-                var input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'ids[]';
-                input.value = c.value;
-                tmp.appendChild(input);
-            });
-            document.body.appendChild(tmp);
-            tmp.submit();
+        function gatherSelected() {
+            var selected = [];
+            document.querySelectorAll('.trash-check:checked').forEach(function(cb) { selected.push(cb.value); });
+            document.getElementById('selectedItems').value = JSON.stringify(selected);
         }
     </script>
 </x-erp-layout>

@@ -82,6 +82,7 @@ class ProductionController extends Controller
                     'product_id' => ['sometimes', 'required', 'exists:products,id'],
                     'planned_boxes' => ['sometimes', 'required', 'integer', 'gt:0'],
                     'planned_on' => ['sometimes', 'required', 'date'],
+                    'status' => ['sometimes', 'required', 'in:planned,in_progress,closed'],
                     'notes' => ['sometimes', 'nullable', 'string'],
                 ];
             } else {
@@ -90,6 +91,7 @@ class ProductionController extends Controller
                     'product_id' => ['required', 'exists:products,id'],
                     'planned_boxes' => ['required', 'integer', 'gt:0'],
                     'planned_on' => ['required', 'date'],
+                    'status' => ['sometimes', 'required', 'in:planned,in_progress,closed'],
                     'notes' => ['nullable', 'string'],
                 ];
             }

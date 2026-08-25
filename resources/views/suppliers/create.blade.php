@@ -58,7 +58,7 @@
 
                 </div>
 
-                <div class="form-actions" style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 0.75rem;">
+                <div class="form-actions">
                     <a href="{{ route('proveedores.index') }}" class="btn btn-outline-warning">Cancelar</a>
                     <button type="submit" class="btn btn-primary">
                         Guardar proveedor

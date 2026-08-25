@@ -39,9 +39,9 @@
                     <thead>
                         <tr>
                             <th>Insumo</th>
-                            <th style="width: 150px;">Cantidad</th>
-                            <th style="width: 150px;">Costo unitario</th>
-                            <th style="width: 50px;"></th>
+                            <th class="th-cantidad">Cantidad</th>
+                            <th class="th-precio">Costo unitario</th>
+                            <th class="th-action"></th>
                         </tr>
                     </thead>
                     <tbody>

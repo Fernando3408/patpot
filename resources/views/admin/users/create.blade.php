@@ -18,14 +18,22 @@
                     <div class="form-group">
                         <label class="form-label">Contraseña</label>
                         <input type="password" name="password" class="form-input" required>
-                        <small style="display:block;margin-top:0.25rem;font-size:0.75rem;color:#64748b;">Mínimo 8 caracteres.</small>
+                        <small class="form-hint">Mínimo 8 caracteres.</small>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Confirmar contraseña</label>
                         <input type="password" name="password_confirmation" class="form-input" required>
                     </div>
+                    <div class="form-group">
+                        <label class="form-label">Rol</label>
+                        <select name="role" class="form-input">
+                            <option value="produccion" {{ old('role') === 'produccion' ? 'selected' : '' }}>Producción</option>
+                            <option value="ventas" {{ old('role') === 'ventas' ? 'selected' : '' }}>Ventas</option>
+                            <option value="administrativo" {{ old('role', 'administrativo') === 'administrativo' ? 'selected' : '' }}>Administrativo</option>
+                        </select>
+                    </div>
                 </div>
-                <div style="margin-top:1.5rem;text-align:right;">
+                <div class="form-actions-end">
                     <button type="submit" class="btn btn-primary btn-sm">Crear usuario</button>
                 </div>
             </form>

@@ -1,17 +1,19 @@
 <x-erp-layout title="Precios por Cliente" subtitle="Gestiona precios especiales por cliente y producto con ofertas vigentes.">
     <div class="page-header">
-        <form method="GET" action="{{ route('precios.index') }}" class="search-form">
-            <select name="customer_id" class="form-control">
-                <option value="">Todos los clientes</option>
-                @foreach(\App\Models\Customer::where('status', true)->orderBy('business_name')->get() as $c)
-                    <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->business_name }}</option>
-                @endforeach
-            </select>
-            <button type="submit" class="btn btn-outline-success btn-sm">Filtrar</button>
-            @if(request('customer_id'))
-                <a href="{{ route('precios.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
+        <div class="page-header-filters">
+            <form method="GET" action="{{ route('precios.index') }}" class="search-form">
+                <select name="customer_id" class="form-control">
+                    <option value="">Todos los clientes</option>
+                    @foreach(\App\Models\Customer::where('status', true)->orderBy('business_name')->get() as $c)
+                        <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->business_name }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="btn btn-outline-success btn-sm">Filtrar</button>
+                @if(request('customer_id'))
+                    <a href="{{ route('precios.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
+                @endif
+            </form>
+        </div>
         <div class="page-header-actions">
             <a href="{{ route('precios.create') }}" class="btn btn-outline-primary btn-sm">+ Nuevo precio</a>
         </div>
@@ -28,7 +30,7 @@
                         <th class="text-right">Oferta</th>
                         <th>Vigente hasta</th>
                         <th>Estado</th>
-                        <th class="text-right">Acciones</th>
+                        <th class="text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -51,7 +53,7 @@
                             </td>
                             <td class="text-right" data-field="offer_price">
                                 @if ($price->offer_price)
-                                    <strong style="color: #6a9c3b;">${{ number_format($price->offer_price, 0, ',', '.') }}</strong>
+                                    <strong class="text-price">${{ number_format($price->offer_price, 0, ',', '.') }}</strong>
                                 @else
                                     <span class="text-muted">—</span>
                                 @endif

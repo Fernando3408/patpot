@@ -60,7 +60,7 @@
                 @foreach($input->recipes as $recipe)
                     <tr>
                         <td>{{ $recipe->product?->name ?? '—' }}</td>
-                        <td class="text-right">{{ number_format($recipe->qty_per_box, 4, ',', '.') }}</td>
+                        <td class="text-right">{{ $recipe->qty_per_box == floor($recipe->qty_per_box) ? number_format($recipe->qty_per_box, 0, ',', '.') : number_format($recipe->qty_per_box, 2, ',', '.') }}</td>
                     </tr>
                 @endforeach
             </tbody>

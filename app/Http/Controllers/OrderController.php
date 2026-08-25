@@ -45,7 +45,7 @@ class OrderController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->merge(['lines' => array_values(array_filter($request->input('lines', []), fn (array $line): bool => filled($line['product_id'] ?? null)))]);
-        $data = $request->validate(['number' => ['required', 'string', 'max:255', 'unique:orders,number'], 'customer_id' => ['required', 'exists:customers,id'], 'store_id' => ['nullable', 'exists:stores,id'], 'ordered_on' => ['required', 'date'], 'delivery_on' => ['required', 'date'], 'notes' => ['nullable', 'string'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'exists:products,id'], 'lines.*.boxes' => ['required', 'integer', 'gt:0'], 'lines.*.price_box' => ['nullable', 'numeric', 'min:0'], 'lines.*.discount_pct' => ['nullable', 'numeric', 'between:0,100']]);
+        $data = $request->validate(['number' => ['required', 'string', 'max:255', 'unique:orders,number'], 'customer_id' => ['required', 'exists:customers,id'], 'store_id' => ['nullable', 'exists:stores,id'], 'ordered_on' => ['required', 'date'], 'delivery_on' => ['nullable', 'date'], 'notes' => ['nullable', 'string'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'exists:products,id'], 'lines.*.boxes' => ['required', 'integer', 'gt:0'], 'lines.*.price_box' => ['nullable', 'numeric', 'min:0'], 'lines.*.discount_pct' => ['nullable', 'numeric', 'between:0,100']]);
         $this->ensureStoreBelongsToCustomer($data);
         foreach ($data['lines'] as &$line) {
             if (blank($line['price_box'] ?? null)) {
@@ -53,7 +53,7 @@ class OrderController extends Controller
                 $line['price_box'] = $price?->effective_price ?? Product::query()->findOrFail($line['product_id'])->sale_price_box;
             }
         } unset($line);
-        $order = Order::create(collect($data)->except('lines')->all());
+        $order = Order::create(collect($data)->except('lines')->all() + ['status' => 'pending']);
         $order->lines()->createMany($data['lines']);
         AuditService::log('CREACIÓN DE PEDIDO', "Creó pedido: {$order->number}", $order);
 

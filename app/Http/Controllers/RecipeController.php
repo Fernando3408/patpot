@@ -84,6 +84,12 @@ class RecipeController extends Controller
         return view('recipes.edit', compact('product', 'inputs'));
     }
 
+    public function show(Product $product)
+    {
+        $product->load('recipes.input');
+        return view('recipes._detail', compact('product'));
+    }
+
     public function update(Request $request, Product $product)
     {
         $validator = Validator::make($request->all(), [

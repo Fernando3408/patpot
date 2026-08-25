@@ -57,6 +57,11 @@ class Input extends Model
         return $this->hasMany(PurchaseLine::class);
     }
 
+    public function inventoryMovements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class);
+    }
+
     public function getCoverageWeeksAttribute(): ?float
     {
         if ((float) $this->weekly_consumption <= 0) {

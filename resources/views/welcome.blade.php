@@ -5,38 +5,49 @@
         {{-- BLOQUE 1: ACCIONES URGENTES --}}
         <div class="dash-urgent-grid">
             <div class="dash-urgent-card {{ $overdueOrders > 0 ? 'dash-urgent--critical' : '' }}">
-                <span class="dash-urgent-count" style="color: {{ $overdueOrders > 0 ? '#dc2626' : '#16a34a' }}">{{ $overdueOrders }}</span>
+                <span class="dash-urgent-count {{ $overdueOrders > 0 ? 'text-urgent' : 'text-ok' }}">{{ $overdueOrders }}</span>
                 <span class="dash-urgent-label">Pedidos atrasados</span>
             </div>
             <div class="dash-urgent-card {{ $overduePurchases > 0 ? 'dash-urgent--critical' : '' }}">
-                <span class="dash-urgent-count" style="color: {{ $overduePurchases > 0 ? '#dc2626' : '#16a34a' }}">{{ $overduePurchases }}</span>
+                <span class="dash-urgent-count {{ $overduePurchases > 0 ? 'text-urgent' : 'text-ok' }}">{{ $overduePurchases }}</span>
                 <span class="dash-urgent-label">Compras atrasadas</span>
             </div>
             <div class="dash-urgent-card {{ $pendingProductions > 0 ? 'dash-urgent--warn' : '' }}">
-                <span class="dash-urgent-count" style="color: {{ $pendingProductions > 0 ? '#d97706' : '#16a34a' }}">{{ $pendingProductions }}</span>
+                <span class="dash-urgent-count {{ $pendingProductions > 0 ? 'text-warning-color' : 'text-ok' }}">{{ $pendingProductions }}</span>
                 <span class="dash-urgent-label">Producciones pendientes</span>
             </div>
             <div class="dash-urgent-card {{ $urgentTasks > 0 ? 'dash-urgent--critical' : '' }}">
-                <span class="dash-urgent-count" style="color: {{ $urgentTasks > 0 ? '#dc2626' : '#16a34a' }}">{{ $urgentTasks }}</span>
+                <span class="dash-urgent-count {{ $urgentTasks > 0 ? 'text-urgent' : 'text-ok' }}">{{ $urgentTasks }}</span>
                 <span class="dash-urgent-label">Tareas urgentes</span>
             </div>
         </div>
 
         {{-- BLOQUE 2: KPIs DE NEGOCIO --}}
         <div class="dash-kpi-grid">
-            <div class="dash-kpi-card">
-                <p class="dash-kpi-title">Venta del mes</p>
+            <div class="dash-kpi-card kpi-clickable" onclick="openSalesModal()">
+                <p class="dash-kpi-title">Venta del mes <span class="kpi-link-detail">&#9656; ver detalle</span></p>
                 <p class="dash-kpi-value">${{ number_format($salesMonth, 0, ',', '.') }}</p>
             </div>
             <div class="dash-kpi-card">
                 <p class="dash-kpi-title">Margen del mes</p>
-                <p class="dash-kpi-value" style="color: {{ $marginMonth >= 0 ? '#16a34a' : '#dc2626' }}">
+                <p class="dash-kpi-value {{ $marginMonth >= 0 ? 'text-positive' : 'text-negative' }}">
                     ${{ number_format($marginMonth, 0, ',', '.') }}
                 </p>
             </div>
             <div class="dash-kpi-card">
-                <p class="dash-kpi-title">Stock total valorizado</p>
+                <p class="dash-kpi-title">Stock producto terminado</p>
+                <p class="dash-kpi-value">${{ number_format($stockPT, 0, ',', '.') }}</p>
+                <p class="dash-kpi-hint">Costo de recetas</p>
+            </div>
+            <div class="dash-kpi-card">
+                <p class="dash-kpi-title">Stock insumos</p>
+                <p class="dash-kpi-value">${{ number_format($stockInputs, 0, ',', '.') }}</p>
+                <p class="dash-kpi-hint">Materias primas y envases</p>
+            </div>
+            <div class="dash-kpi-card">
+                <p class="dash-kpi-title">Inventario total</p>
                 <p class="dash-kpi-value">${{ number_format($stockPT + $stockInputs, 0, ',', '.') }}</p>
+                <p class="dash-kpi-hint">PT + insumos</p>
             </div>
         </div>
 
@@ -62,7 +73,7 @@
                         </div>
                     @empty
                         <div class="dash-alerts-empty">
-                            <span style="font-size:1.5rem;">&#10003;</span>
+                            <span class="icon-lg">&#10003;</span>
                             <p>Sin alertas criticas</p>
                         </div>
                     @endforelse
@@ -70,28 +81,39 @@
             </div>
 
             <div class="dash-charts-panel">
-            <div class="dash-chart-card">
-                <div class="dash-chart-header">
-                    <h3>Tendencia de ventas</h3>
-                    <span class="text-xs text-muted">Ultimos 6 meses</span>
-                </div>
-                <div class="dash-chart-body">
-                    @if($salesMonths->count() > 0)
-                        <canvas id="chartSales"></canvas>
-                    @else
-                        <div class="dash-chart-empty">
-                            <span>Sin datos de ventas</span>
+                <div class="dash-charts-row">
+                    <div class="dash-chart-card">
+                        <div class="dash-chart-header">
+                            <h3>Capacidad producible</h3>
+                            <span class="text-xs text-muted">Segun insumo limitante</span>
                         </div>
-                    @endif
-                </div>
-            </div>
-                <div class="dash-chart-card">
-                    <div class="dash-chart-header">
-                        <h3>Stock insumos vs seguridad</h3>
-                        <select id="inputSelector" class="dash-select"></select>
+                        <div class="dash-chart-body">
+                            @if(count($productionCapacities) > 0)
+                                @foreach($productionCapacities as $cap)
+                                    <div class="capacity-row">
+                                        <div>
+                                            <strong class="capacity-name">{{ $cap['name'] }}</strong>
+                                            <span class="text-xs text-muted"> · Limita: {{ $cap['limiting'] }}</span>
+                                        </div>
+                                        <div class="capacity-value">
+                                            <strong>{{ number_format($cap['capacity'], 0, ',', '.') }}</strong>
+                                            <span class="text-xs text-muted">cajas</span>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @else
+                                <div class="dash-chart-empty"><span>Sin datos de produccion</span></div>
+                            @endif
+                        </div>
                     </div>
-                    <div class="dash-chart-body">
-                        <canvas id="chartStockInputs"></canvas>
+                    <div class="dash-chart-card">
+                        <div class="dash-chart-header">
+                            <h3>Stock insumos vs seguridad</h3>
+                            <select id="inputSelector" class="dash-select"></select>
+                        </div>
+                        <div class="dash-chart-body">
+                            <canvas id="chartStockInputs"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -105,31 +127,6 @@
             var orange = '#df6403';
             var red = '#dc2626';
             var green = '#16a34a';
-
-            @if($salesMonths->count() > 0)
-            new Chart(document.getElementById('chartSales'), {
-                type: 'bar',
-                data: {
-                    labels: {!! json_encode($salesMonths->pluck('label')) !!},
-                    datasets: [{
-                        label: 'Ventas',
-                        data: {!! json_encode($salesMonths->pluck('value')) !!},
-                        backgroundColor: orange,
-                        borderRadius: 4,
-                        barPercentage: 0.6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString('es-CL') } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-            @endif
 
             var inputsData = {!! json_encode($chartInputsData) !!};
             var selector = document.getElementById('inputSelector');
@@ -203,6 +200,62 @@
                 chartInputs.update();
             });
         });
+    </script>
+
+    <div id="salesModal" class="sales-modal-overlay" onclick="if(event.target===this)closeSalesModal()">
+        <div class="sales-modal-content">
+            <div class="sales-modal-header">
+                <h3 class="sales-modal-title">Venta ultimos 6 meses</h3>
+                <button onclick="closeSalesModal()" class="sales-modal-close">&times;</button>
+            </div>
+            <div class="sales-chart-area">
+                <canvas id="chartSalesModal"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var salesModalChart = null;
+
+        function openSalesModal() {
+            var modal = document.getElementById('salesModal');
+            modal.style.display = 'flex';
+
+            requestAnimationFrame(function() {
+                var ctx = document.getElementById('chartSalesModal').getContext('2d');
+                if (salesModalChart) { salesModalChart.destroy(); }
+
+                var labels = {!! json_encode($salesMonths->pluck('label')) !!};
+                var values = {!! json_encode($salesMonths->pluck('value')) !!};
+
+                salesModalChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Ventas',
+                            data: values,
+                            backgroundColor: '#df6403',
+                            borderRadius: 6,
+                            barPercentage: 0.55
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { callback: function(v) { return '$' + v.toLocaleString('es-CL'); } } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            });
+        }
+
+        function closeSalesModal() {
+            document.getElementById('salesModal').style.display = 'none';
+        }
     </script>
 
 </x-erp-layout>

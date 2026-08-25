@@ -1,19 +1,21 @@
 <x-erp-layout title="Compras y recepciones" subtitle="Controla órdenes de compra, material en tránsito y recepciones parciales.">
     <div class="page-header">
-        <form method="GET" action="{{ route('compras.index') }}" class="search-form">
-            <input type="date" name="from" class="form-control" value="{{ request('from') }}" placeholder="Desde">
-            <input type="date" name="to" class="form-control" value="{{ request('to') }}" placeholder="Hasta">
-            <select name="status" class="form-control">
-                <option value="">Todos los estados</option>
-                <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>En tránsito</option>
-                <option value="partial" {{ request('status') === 'partial' ? 'selected' : '' }}>Parcial</option>
-                <option value="received" {{ request('status') === 'received' ? 'selected' : '' }}>Recibida</option>
-            </select>
-            <button type="submit" class="btn btn-outline-success btn-sm">Filtrar</button>
-            @if(request()->hasAny(['from', 'to', 'status']))
-                <a href="{{ route('compras.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
+        <div class="page-header-filters">
+            <form method="GET" action="{{ route('compras.index') }}" class="search-form">
+                <input type="date" name="from" class="form-control" value="{{ request('from') }}" placeholder="Desde">
+                <input type="date" name="to" class="form-control" value="{{ request('to') }}" placeholder="Hasta">
+                <select name="status" class="form-control">
+                    <option value="">Todos los estados</option>
+                    <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>En tránsito</option>
+                    <option value="partial" {{ request('status') === 'partial' ? 'selected' : '' }}>Parcial</option>
+                    <option value="received" {{ request('status') === 'received' ? 'selected' : '' }}>Recibida</option>
+                </select>
+                <button type="submit" class="btn btn-outline-success btn-sm">Filtrar</button>
+                @if(request()->hasAny(['from', 'to', 'status']))
+                    <a href="{{ route('compras.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
+                @endif
+            </form>
+        </div>
         <div class="page-header-actions">
             <a href="{{ route('compras.create') }}" class="btn btn-outline-primary btn-sm">+ Nueva compra</a>
         </div>
@@ -27,15 +29,15 @@
                         <th>Orden</th>
                         <th>Proveedor</th>
                         <th>Insumos</th>
-                        <th class="text-right" style="width:120px;">Cantidad</th>
+                        <th class="text-right th-cantidad">Cantidad</th>
                         <th>Estado</th>
-                        <th style="width:180px;">Progreso</th>
-                        <th class="text-right">Acciones</th>
+                        <th class="th-progreso">Progreso</th>
+                        <th class="text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($purchases as $purchase)
-                        <tr data-update-url="{{ route('compras.update', $purchase) }}">
+                        <tr @if($purchase->status !== 'received' && !$purchase->lines->contains(fn($line) => $line->received_quantity > 0)) data-update-url="{{ route('compras.update', $purchase) }}" @endif>
                             <td>
                                 <div class="font-bold">{{ $purchase->number }}</div>
                                 <div class="text-xs text-muted">
@@ -57,13 +59,13 @@
                             <td data-field="ordered_quantity" data-cleanup="int" class="text-right font-bold" data-value="{{ $totalOrdered }}">{{ number_format($totalOrdered, 0, ',', '.') }}</td>
                             <td>
                                 @php
-                                    $statusClass = match($purchase->status) {
-                                        'received' => 'text-success',
-                                        'partial' => 'text-warning',
-                                        default => 'text-info',
+                                    $badgeClass = match($purchase->status) {
+                                        'received' => 'badge-success',
+                                        'partial' => 'badge-warning',
+                                        default => 'badge-info',
                                     };
                                 @endphp
-                                <span class="font-bold {{ $statusClass }}">
+                                <span class="badge {{ $badgeClass }}">
                                     {{ $purchase->status === 'received' ? 'Recibida' : ($purchase->status === 'partial' ? 'Parcial' : 'En tránsito') }}
                                 </span>
                             </td>
@@ -99,7 +101,7 @@
                                             <div class="card__header"><h2 class="card__title">Líneas ({{ $purchase->lines->count() }} insumos)</h2></div>
                                             <div class="card__body">
                                                 <table class="data-table">
-                                                    <thead><tr><th>Insumo</th><th class="text-right">Pedida</th><th class="text-right">Costo</th><th class="text-right">Recibido</th><th class="text-center" style="width:200px;">Progreso</th></tr></thead>
+                                                    <thead><tr><th>Insumo</th><th class="text-right">Pedida</th><th class="text-right">Costo</th><th class="text-right">Recibido</th><th class="text-center th-progreso">Progreso</th></tr></thead>
                                                     <tbody>
                                                         @foreach($purchase->lines as $line)
                                                             @php
@@ -125,7 +127,7 @@
                                         </div>
                                         @endif
                                     </template>
-                                    @if(!$purchase->lines->contains(fn($line) => $line->received_quantity > 0) && $purchase->lines->count() === 1)
+                                    @if($purchase->status !== 'received' && !$purchase->lines->contains(fn($line) => $line->received_quantity > 0))
                                     <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
                                     @endif
                                     @if(auth()->user()->canManage())
@@ -162,7 +164,7 @@
 
             var html = '<form method="POST" action="' + url + '">';
             html += '<input type="hidden" name="_token" value="' + document.querySelector('meta[name="csrf-token"]').content + '">';
-            html += '<table class="data-table"><thead><tr><th>Insumo</th><th class="text-right">Pedida</th><th class="text-right">Ya recibido</th><th style="width:150px;">Recibir ahora</th></tr></thead><tbody>';
+            html += '<table class="data-table"><thead><tr><th>Insumo</th><th class="text-right">Pedida</th><th class="text-right">Ya recibido</th><th class="text-right col-input">Recibir ahora</th></tr></thead><tbody>';
 
             lines.forEach(function(line) {
                 var pending = Math.round(line.ordered) - Math.round(line.received);

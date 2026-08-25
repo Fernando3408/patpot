@@ -1,12 +1,5 @@
 <x-erp-layout title="Insumos" subtitle="Gestiona el inventario de materias primas con niveles de alerta y sugerencias de compra.">
     <div class="page-header">
-        <form method="GET" action="{{ route('inputs.index') }}" class="search-form">
-            <input type="text" name="search" class="form-control" placeholder="Buscar por nombre, código, categoría..." value="{{ request('search') }}">
-            <button type="submit" class="btn btn-outline-success btn-sm">Buscar</button>
-            @if(request('search'))
-                <a href="{{ route('inputs.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
         <div class="page-header-actions">
             <a href="{{ route('inputs.create') }}" class="btn btn-outline-primary btn-sm">+ Nuevo insumo</a>
         </div>
@@ -25,7 +18,7 @@
                         <th class="text-right">Reposición</th>
                         <th class="text-center">Cobertura</th>
                         <th>Nivel</th>
-                        <th class="text-right">Acciones</th>
+                        <th class="text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -44,14 +37,14 @@
                             <td class="text-right text-xs">{{ number_format($input->reorder_point, 0, ',', '.') }}</td>
                             <td data-readonly="true" class="text-xs text-center">
                                 @if($input->coverage_days !== null)
-                                    <div style="font-weight:600;margin-bottom:4px;">{{ $input->coverage_days }} días</div>
+                                    <div class="fw-600 mb-1">{{ $input->coverage_days }} días</div>
                                     @php
                                         $maxDays = 90;
                                         $pct = min(($input->coverage_days / $maxDays) * 100, 100);
                                         $color = $input->coverage_days <= 7 ? '#dc2626' : ($input->coverage_days <= 21 ? '#f59e0b' : '#16a34a');
                                     @endphp
-                                    <div style="background:#e5e7eb;border-radius:4px;height:6px;width:100%;overflow:hidden;">
-                                        <div style="width:{{ $pct }}%;height:100%;background:{{ $color }};border-radius:4px;"></div>
+                                    <div class="coverage-bar-bg">
+                                        <div class="coverage-bar-fill" style="width:{{ $pct }}%;background:{{ $color }};"></div>
                                     </div>
                                 @else
                                     —
@@ -62,13 +55,14 @@
                                 @if($level === 'ok')
                                     <span class="badge badge-success">Óptimo</span>
                                 @elseif($level === 'atencion')
-                                    <span class="badge badge-warning" style="background-color:#f59e0b;color:#fff;">Atención</span>
+                                    <span class="badge badge-warning">Atencion</span>
                                 @else
                                     <span class="badge badge-danger">Crítico</span>
                                 @endif
                             </td>
                             <td class="text-right">
                                 <div class="actions-cell">
+                                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="openAdjustModal({{ $input->id }}, '{{ addslashes($input->name) }}', {{ $input->stock }}, '{{ $input->unit }}')">Ajustar</button>
                                     <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
                                     <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('inputs.show', $input) }}" data-title="Detalle: {{ $input->name }}">Ver detalle</button>
                                     @if(auth()->user()->canManage())
@@ -93,4 +87,48 @@
             </div>
         </div>
     @endif
+
+    <script>
+        function openAdjustModal(id, name, currentStock, unit) {
+            var modal = document.getElementById('detailModal');
+            var body = document.getElementById('detailModalBody');
+            document.getElementById('detailModalTitle').textContent = 'Ajustar stock';
+
+            var html = '<div class="mb-3"><strong>' + name + '</strong><br>Stock actual: <strong>' + Math.round(currentStock).toLocaleString('es-CL') + '</strong> ' + unit + '</div>';
+            html += '<form id="adjustForm">';
+            html += '<input type="hidden" name="_token" value="' + document.querySelector('meta[name="csrf-token"]').content + '">';
+            html += '<div class="form-grid">';
+            html += '<div class="form-group"><label class="form-label">Tipo de ajuste</label><select name="type" class="form-control"><option value="add">Sumar</option><option value="subtract">Restar</option><option value="set">Fijar stock real</option></select></div>';
+            html += '<div class="form-group"><label class="form-label">Cantidad</label><input type="number" step="0.01" min="0" name="qty" class="form-control" required></div>';
+            html += '<div class="form-group col-span-full"><label class="form-label">Motivo *</label><input type="text" name="reason" class="form-control" required placeholder="Ej: Conteo fisico, merma, correccion..."></div>';
+            html += '</div>';
+            html += '<div class="form-actions mt-4"><button type="button" class="btn btn-outline-warning" onclick="closeDetailModal()">Cancelar</button> <button type="submit" class="btn btn-primary">Confirmar ajuste</button></div>';
+            html += '</form>';
+
+            body.innerHTML = html;
+            modal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+
+            document.getElementById('adjustForm').onsubmit = function(e) {
+                e.preventDefault();
+                var fd = new FormData(this);
+                fetch('/insumos/' + id + '/adjust', {
+                    method: 'POST',
+                    body: fd,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).then(function(r) { return r.json(); })
+                .then(function(json) {
+                    if (json.errors) {
+                        var msgs = Object.values(json.errors).flat().join('\n');
+                        Swal.fire('Error', msgs, 'error');
+                    } else {
+                        Swal.fire('Ajustado', 'Stock actualizado a ' + Math.round(json.stock).toLocaleString('es-CL') + ' ' + unit, 'success');
+                        setTimeout(function() { location.reload(); }, 800);
+                    }
+                }).catch(function() {
+                    Swal.fire('Error', 'No se pudo ajustar.', 'error');
+                });
+            };
+        }
+    </script>
 </x-erp-layout>

@@ -1,14 +1,14 @@
 @if(!request()->ajax())
 <x-erp-layout title="Editar tarea" subtitle="Actualizar datos de la tarea.">
 
-    <div class="card" style="max-width: 100%;">
+    <div class="card card--full">
         <div class="card__body">
             <form method="POST" action="{{ route('tasks.update', $task) }}">
                 @csrf
                 @method('PUT')
                 <div class="form-grid">
-                    <div class="form-group" style="grid-column: 1 / -1;">
-                        <label class="form-label">Título *</label>
+                    <div class="form-group col-span-full">
+                        <label class="form-label">Titulo *</label>
                         <input type="text" name="title" class="form-input" required value="{{ old('title', $task->title) }}">
                     </div>
                     <div class="form-group">
@@ -16,7 +16,7 @@
                         <input type="text" name="owner" class="form-input" value="{{ old('owner', $task->owner) }}">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Fecha límite *</label>
+                        <label class="form-label">Fecha limite *</label>
                         <input type="date" name="due_on" class="form-input" required value="{{ old('due_on', $task->due_on?->format('Y-m-d')) }}">
                     </div>
                     <div class="form-group">
@@ -28,9 +28,9 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Módulo</label>
+                        <label class="form-label">Modulo</label>
                         <select name="module" class="form-input">
-                            @foreach(['General', 'Pedidos', 'Producción', 'Insumos', 'Compras', 'Retail', 'Calidad', 'Finanzas'] as $mod)
+                            @foreach(['General', 'Pedidos', 'Produccion', 'Insumos', 'Compras', 'Retail', 'Calidad', 'Finanzas'] as $mod)
                                 <option value="{{ $mod }}" {{ old('module', $task->module) === $mod ? 'selected' : '' }}>{{ $mod }}</option>
                             @endforeach
                         </select>
@@ -43,7 +43,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="form-group" style="grid-column: 1 / -1;">
+                    <div class="form-group col-span-full">
                         <label class="form-label">Notas</label>
                         <textarea name="notes" class="form-input" rows="3">{{ old('notes', $task->notes) }}</textarea>
                     </div>

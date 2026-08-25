@@ -13,8 +13,10 @@ use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\PurchaseController;
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RegisteredUserController;
+use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\RetailController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\SupplierController;
@@ -25,6 +27,14 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('guest')->group(function (): void {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->middleware('throttle:login');
+
+    Route::get('/olvidar-contrasena', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+    Route::post('/olvidar-contrasena', [ForgotPasswordController::class, 'sendResetLinkEmail'])
+        ->middleware('throttle:5,1')
+        ->name('password.email');
+
+    Route::get('/restablecer-contrasena/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/restablecer-contrasena', [ResetPasswordController::class, 'reset'])->name('password.update');
 });
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
@@ -33,7 +43,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/', [HomeController::class, 'index'])->name('dashboard');
-    Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard');
+    Route::get('/dashboard', [HomeController::class, 'index']);
 
     /* Productos */
 
@@ -64,6 +74,10 @@ Route::middleware('auth')->group(function (): void {
 
     Route::delete('/insumos/{input}', [InputController::class, 'destroy'])->name('inputs.destroy');
     Route::get('/insumos/{input}', [InputController::class, 'show'])->name('inputs.show');
+    Route::post('/insumos/{input}/adjust', [InputController::class, 'adjust'])
+        ->middleware('canManage')
+        ->name('inputs.adjust');
+    Route::get('/export/{entity}', [InputController::class, 'export'])->name('export.csv');
 
     /* Recetas */
 
@@ -74,6 +88,8 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/recetas', [RecipeController::class, 'store'])->name('recipes.store');
 
     Route::get('/recetas/{product}/edit', [RecipeController::class, 'edit'])->name('recipes.edit');
+
+    Route::get('/recetas/{product}', [RecipeController::class, 'show'])->name('recipes.show');
 
     Route::put('/recetas/{product}', [RecipeController::class, 'update'])->name('recipes.update');
 
@@ -203,10 +219,15 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/', [AdminController::class, 'index'])->name('index');
         Route::get('/usuarios/{user}/editar', [AdminController::class, 'edit'])->name('users.edit');
         Route::put('/usuarios/{user}', [AdminController::class, 'update'])->name('users.update');
+        Route::delete('/usuarios/{user}', [AdminController::class, 'destroy'])->name('users.destroy');
+        Route::post('/usuarios/{user}/toggle-status', [AdminController::class, 'toggleStatus'])->name('users.toggle-status');
 
         /* Crear usuario */
         Route::get('/usuarios/crear', [RegisteredUserController::class, 'create'])->name('users.create');
         Route::post('/usuarios', [RegisteredUserController::class, 'store'])->name('users.store');
+
+        /* Bitácora de accesos */
+        Route::get('/bitacora-login', [LoginLogController::class, 'index'])->name('login-logs.index');
     });
 
 });

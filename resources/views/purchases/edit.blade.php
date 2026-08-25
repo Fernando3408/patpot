@@ -1,5 +1,5 @@
 @if(!request()->ajax())
-<x-erp-layout title="Editar compra" subtitle="{{ $canEditLines ? 'Modifica las cantidades de los ítems que aún no se han recepcionado.' : 'Las recepciones ya iniciaron, no puedes editar las cantidades.' }}">
+<x-erp-layout title="Editar compra" subtitle="{{ $canEditLines ? 'Modifica las cantidades de los items que aun no se han recepcionado.' : 'Las recepciones ya iniciaron, no puedes editar las cantidades.' }}">
     <div class="form-card">
         <form method="POST" action="{{ route('compras.update', $purchase) }}">
             @csrf
@@ -7,7 +7,7 @@
 
             <div class="form-grid mb-4">
                 <div class="form-group">
-                    <label class="form-label">Número OC</label>
+                    <label class="form-label">Numero OC</label>
                     <input name="number" class="form-control" value="{{ old('number', $purchase->number) }}" required>
                 </div>
                 <div class="form-group">
@@ -19,7 +19,7 @@
                     </select>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Fecha emisión</label>
+                    <label class="form-label">Fecha emision</label>
                     <input type="date" name="ordered_on" class="form-control" value="{{ old('ordered_on', $purchase->ordered_on->format('Y-m-d')) }}" required>
                 </div>
                 <div class="form-group">
@@ -35,22 +35,22 @@
 
             @if($purchase->lines->isNotEmpty())
                 <div class="mb-4">
-                    <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.75rem;">Ítems — cantidad pedida</h3>
+                    <h3 class="section-subtitle">Items — cantidad pedida</h3>
                     <div class="table-container">
                         <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Insumo</th>
-                                    <th style="width:150px;" class="text-right">Cantidad</th>
+                                    <th class="th-cantidad text-right">Cantidad</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($purchase->lines as $line)
                                     <tr>
-                                        <td class="font-bold">{{ $line->input->name ?? '—' }} <span class="text-xs text-muted">×{{ number_format($line->unit_cost, 0, ',', '.') }}</span></td>
+                                        <td class="font-bold">{{ $line->input->name ?? '—' }} <span class="text-xs text-muted">x{{ number_format($line->unit_cost, 0, ',', '.') }}</span></td>
                                         <td class="text-right">
                                             @if($canEditLines)
-                                                <input type="number" name="lines[{{ $line->id }}][ordered_quantity]" class="form-control form-control-sm text-right" value="{{ $line->ordered_quantity }}" min="1" required style="width:120px;display:inline-block;">
+                                                <input type="number" name="lines[{{ $line->id }}][ordered_quantity]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ $line->ordered_quantity }}" min="1" required>
                                             @else
                                                 <span class="font-bold">{{ $line->ordered_quantity }}</span>
                                             @endif
@@ -61,7 +61,7 @@
                         </table>
                     </div>
                     @if(!$canEditLines)
-                        <p class="text-xs text-muted mt-2">No puedes editar cantidades porque ya se recepcionaron ítems.</p>
+                        <p class="text-xs text-muted mt-2">No puedes editar cantidades porque ya se recepcionaron items.</p>
                     @endif
                 </div>
             @endif

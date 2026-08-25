@@ -66,13 +66,12 @@ class ProductController extends Controller
     {
         try {
             if ($request->ajax()) {
-                $rules = [
-                    'name' => 'sometimes|required|string|max:255',
-                    'sku' => ['sometimes', 'required', 'string', 'max:255', Rule::unique(Product::class)->ignore($product)],
-                    'stock_boxes' => 'sometimes|required|integer|min:0',
-                    'sale_price_box' => 'sometimes|nullable|numeric|min:0',
-                    'status' => 'sometimes|required|in:active,inactive',
-                ];
+            $rules = [
+                'name' => 'sometimes|required|string|max:255',
+                'sku' => ['sometimes', 'required', 'string', 'max:255', Rule::unique(Product::class)->ignore($product)],
+                'sale_price_box' => 'sometimes|nullable|numeric|min:0',
+                'status' => 'sometimes|required|in:active,inactive',
+            ];
             } else {
                 $rules = [
                     'name' => 'required|string|max:255',
@@ -86,13 +85,6 @@ class ProductController extends Controller
                 ];
             }
             $validated = $request->validate($rules);
-
-            if (isset($validated['sale_price_box'])) {
-                $validated['sale_price_box'] = (float) str_replace(['$', '.'], '', $validated['sale_price_box']);
-            }
-            if (isset($validated['stock_boxes'])) {
-                $validated['stock_boxes'] = (int) str_replace('.', '', $validated['stock_boxes']);
-            }
 
             $product->update($validated);
             AuditService::log('ACTUALIZACIÓN DE PRODUCTO', "Actualizó producto: {$product->name}", $product);

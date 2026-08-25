@@ -3,7 +3,7 @@
     <div class="form-card">
         
         {{-- Ficha Informativa del Producto --}}
-        <div class="mb-4 p-4" style="background-color: var(--bg-surface-secondary, #f8fafc); border-radius: 8px;">
+        <div class="mb-4 p-4 section-alt-bg">
             <div class="form-grid">
                 <div>
                     <span class="text-xs text-muted">Producto:</span>
@@ -38,12 +38,12 @@
                     <table class="data-table">
                         <thead>
                             <tr>
-                                <th class="text-center" style="width: 80px;">Incluir</th>
+                                <th class="text-center th-narrow">Incluir</th>
                                 <th>Insumo</th>
-                                <th>Código</th>
+                                <th>Codigo</th>
                                 <th class="text-center">Unidad</th>
                                 <th class="text-right">Costo unitario</th>
-                                <th class="text-right" style="width: 180px;">Cantidad por caja</th>
+                                <th class="text-right th-progreso">Cantidad por caja</th>
                                 <th class="text-right">Costo por caja</th>
                             </tr>
                         </thead>
@@ -53,7 +53,6 @@
                                     $rawQuantity = old("ingredients.{$input->id}.qty_per_box", $recipeQuantities->get($input->id));
                                     $isSelected = old("ingredients.{$input->id}.selected", $recipeQuantities->has($input->id));
                                     
-                                    // Limpieza de cantidad a flotante para cálculos
                                     $quantity = is_numeric($rawQuantity) ? (float) $rawQuantity : null;
                                     $lineCost = $isSelected && $quantity ? $quantity * (float) $input->unit_cost : 0;
                                     $totalCost += $lineCost;
@@ -95,9 +94,9 @@
                             @endforeach
                         </tbody>
                         <tfoot>
-                            <tr style="background-color: var(--bg-surface-secondary, #f8fafc);">
+                            <tr class="row-alt-bg">
                                 <th colspan="6" class="text-right font-bold">Costo estimado por caja:</th>
-                                <th class="text-right font-bold text-lg" style="color: var(--primary-color, #2563eb);">
+                                <th class="text-right font-bold text-lg text-primary-brand">
                                     ${{ number_format($totalCost, 0, ',', '.') }}
                                 </th>
                             </tr>
@@ -105,7 +104,7 @@
                     </table>
                 </div>
 
-                {{-- Botones de Acción --}}
+                {{-- Botones de Accion --}}
                 <div class="form-actions">
                     <button type="submit" class="btn btn-primary">
                         Guardar receta

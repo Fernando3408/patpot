@@ -41,8 +41,8 @@
                 @foreach($product->recipes as $recipe)
                     <tr>
                         <td>{{ $recipe->input?->name ?? '—' }}</td>
-                        <td class="text-right">{{ number_format($recipe->qty_per_box, 4, ',', '.') }}</td>
-                        <td class="text-right">${{ number_format($recipe->cost ?? 0, 0, ',', '.') }}</td>
+                        <td class="text-right">{{ $recipe->qty_per_box == floor($recipe->qty_per_box) ? number_format($recipe->qty_per_box, 0, ',', '.') : number_format($recipe->qty_per_box, 2, ',', '.') }}</td>
+                        <td class="text-right">${{ number_format($recipe->qty_per_box * (float) ($recipe->input?->unit_cost ?? 0), 0, ',', '.') }}</td>
                     </tr>
                 @endforeach
             </tbody>

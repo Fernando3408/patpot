@@ -193,7 +193,7 @@ class InventoryService
                 $product->decrement('stock_boxes', $quantity);
                 $line->increment('dispatched_boxes', $quantity);
                 $shipment->lines()->create(['order_line_id' => $line->id, 'boxes' => $quantity, 'price_box' => $line->price_box]);
-                $total += $quantity * (float) $line->price_box * (1 - ((float) ($line->discount_pct ?? $lockedOrder->customer->discount)) / 100);
+                $total += $quantity * (float) $line->price_box * (1 - ((float) ($line->discount_pct ?? $lockedOrder->customer->discount ?? 0)) / 100);
                 InventoryMovement::query()->create(['product_id' => $product->id, 'kind' => 'Despacho de pedido', 'quantity' => -$quantity, 'reference' => $lockedOrder->number, 'user_id' => auth()->id()]);
             }
             if ($shipment->lines()->doesntExist()) {

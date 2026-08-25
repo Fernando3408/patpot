@@ -41,7 +41,7 @@ class TrashController extends Controller
 
     public function restore(Request $request)
     {
-        $model = $this->getModel($request->model);
+        $model = $this->getModel($request->entity);
         $item = $model::withTrashed()->findOrFail($request->id);
         $item->update(['deleted_by' => null, 'status' => $this->activeStatus($model)]);
         $item->restore();
@@ -53,7 +53,7 @@ class TrashController extends Controller
 
     public function forceDelete(Request $request)
     {
-        $model = $this->getModel($request->model);
+        $model = $this->getModel($request->entity);
         $item = $model::withTrashed()->findOrFail($request->id);
         AuditService::log('ELIMINACIÓN PERMANENTE', 'Eliminó permanentemente: '.($item->name ?? $item->business_name ?? $item->number ?? 'Registro'), $item);
         $this->cascadeForceDelete($item);
@@ -63,24 +63,37 @@ class TrashController extends Controller
 
     public function restoreMultiple(Request $request)
     {
-        $model = $this->getModel($request->model);
-        $items = $model::withTrashed()->whereIn('id', $request->ids)->get();
-        $items->each->update(['deleted_by' => null, 'status' => $this->activeStatus($model)]);
-        $items->each->restore();
-        AuditService::log('RESTAURACIÓN', "Restauró {$items->count()} registros del modelo: {$request->model}");
-        $items->each(fn ($item) => $this->cascadeRestore($item));
+        $selections = json_decode($request->input('selections', '[]'), true) ?? [];
+        foreach ($selections as $selection) {
+            $parts = explode('_', $selection);
+            $id = array_pop($parts);
+            $entity = implode('_', $parts);
+            $model = $this->getModel($entity);
+            $item = $model::withTrashed()->find($id);
+            if ($item) {
+                $item->update(['deleted_by' => null, 'status' => $this->activeStatus($model)]);
+                $item->restore();
+                AuditService::log('RESTAURACIÓN', 'Restauró registro: '.($item->name ?? $item->business_name ?? $item->number ?? 'Registro'), $item);
+                $this->cascadeRestore($item);
+            }
+        }
 
         return back()->with('success', 'Registros restaurados.');
     }
 
     public function forceDeleteMultiple(Request $request)
     {
-        $model = $this->getModel($request->model);
-        $items = $model::withTrashed()->whereIn('id', $request->ids)->get();
-
-        AuditService::log('ELIMINACIÓN PERMANENTE', "Eliminó permanentemente {$items->count()} registros del modelo: {$request->model}");
-        foreach ($items as $item) {
-            $this->cascadeForceDelete($item);
+        $selections = json_decode($request->input('selections', '[]'), true) ?? [];
+        foreach ($selections as $selection) {
+            $parts = explode('_', $selection);
+            $id = array_pop($parts);
+            $entity = implode('_', $parts);
+            $model = $this->getModel($entity);
+            $item = $model::withTrashed()->find($id);
+            if ($item) {
+                AuditService::log('ELIMINACIÓN PERMANENTE', 'Eliminó permanentemente: '.($item->name ?? $item->business_name ?? $item->number ?? 'Registro'), $item);
+                $this->cascadeForceDelete($item);
+            }
         }
 
         return back()->with('success', 'Registros eliminados permanentemente.');
@@ -149,36 +162,51 @@ class TrashController extends Controller
         if ($class === Input::class) {
             $item->recipes()->withTrashed()
                 ->whereHas('product')
-                ->restore();
+                ->each(function ($recipe) {
+                    $recipe->update(['deleted_by' => null]);
+                    $recipe->restore();
+                });
         } elseif ($class === Product::class) {
-            $item->recipes()->withTrashed()->restore();
-            $item->productions()->withTrashed()->restore();
-            $item->prices()->withTrashed()->restore();
-            $item->retail()->withTrashed()->restore();
-            $item->orderLines()->withTrashed()->restore();
+            $item->recipes()->withTrashed()->each(function ($r) { $r->update(['deleted_by' => null]); $r->restore(); });
+            $item->productions()->withTrashed()->each(function ($p) { $p->update(['deleted_by' => null]); $p->restore(); });
+            $item->prices()->withTrashed()->each(function ($p) { $p->update(['deleted_by' => null]); $p->restore(); });
+            $item->retail()->withTrashed()->each(function ($r) { $r->update(['deleted_by' => null]); $r->restore(); });
+            $item->orderLines()->withTrashed()->each(function ($l) { $l->update(['deleted_by' => null]); $l->restore(); });
         } elseif ($class === Customer::class) {
             $item->stores()->withTrashed()->each(function ($store) {
+                $store->update(['deleted_by' => null]);
                 $store->restore();
-                $store->retail()->withTrashed()->restore();
+                $store->retail()->withTrashed()->each(function ($r) { $r->update(['deleted_by' => null]); $r->restore(); });
             });
             $item->orders()->withTrashed()->each(function ($order) {
+                $order->update(['deleted_by' => null]);
                 $order->restore();
-                $order->lines()->withTrashed()->restore();
-                $order->shipments()->withTrashed()->restore();
+                $order->lines()->withTrashed()->each(function ($l) { $l->update(['deleted_by' => null]); $l->restore(); });
+                $order->shipments()->withTrashed()->each(function ($shipment) {
+                    $shipment->update(['deleted_by' => null]);
+                    $shipment->restore();
+                    $shipment->lines()->withTrashed()->each(function ($l) { $l->update(['deleted_by' => null]); $l->restore(); });
+                });
             });
-            $item->prices()->withTrashed()->restore();
+            $item->prices()->withTrashed()->each(function ($p) { $p->update(['deleted_by' => null]); $p->restore(); });
         } elseif ($class === Supplier::class) {
             $item->inputs()->withTrashed()->each(function ($input) {
+                $input->update(['deleted_by' => null]);
                 $input->restore();
-                $input->recipes()->withTrashed()->restore();
+                $input->recipes()->withTrashed()->each(function ($r) { $r->update(['deleted_by' => null]); $r->restore(); });
             });
-            $item->purchases()->withTrashed()->restore();
+            $item->purchases()->withTrashed()->each(function ($p) { $p->update(['deleted_by' => null]); $p->restore(); });
         } elseif ($class === Store::class) {
-            $item->retail()->withTrashed()->restore();
+            $item->retail()->withTrashed()->each(function ($r) { $r->update(['deleted_by' => null]); $r->restore(); });
             $item->orders()->withTrashed()->each(function ($order) {
+                $order->update(['deleted_by' => null]);
                 $order->restore();
-                $order->lines()->withTrashed()->restore();
-                $order->shipments()->withTrashed()->restore();
+                $order->lines()->withTrashed()->each(function ($l) { $l->update(['deleted_by' => null]); $l->restore(); });
+                $order->shipments()->withTrashed()->each(function ($shipment) {
+                    $shipment->update(['deleted_by' => null]);
+                    $shipment->restore();
+                    $shipment->lines()->withTrashed()->each(function ($l) { $l->update(['deleted_by' => null]); $l->restore(); });
+                });
             });
         }
     }

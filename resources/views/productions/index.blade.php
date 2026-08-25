@@ -1,18 +1,21 @@
 <x-erp-layout title="Producción" subtitle="Planifica la fabricación y cierra cada orden con movimientos automáticos de stock.">
     <div class="page-header">
-        <form method="GET" action="{{ route('produccion.index') }}" class="search-form">
-            <input type="date" name="from" class="form-control" value="{{ request('from') }}" placeholder="Desde">
-            <input type="date" name="to" class="form-control" value="{{ request('to') }}" placeholder="Hasta">
-            <select name="status" class="form-control">
-                <option value="">Todos los estados</option>
-                <option value="planned" {{ request('status') === 'planned' ? 'selected' : '' }}>Planificada</option>
-                <option value="closed" {{ request('status') === 'closed' ? 'selected' : '' }}>Cerrada</option>
-            </select>
-            <button type="submit" class="btn btn-outline-success btn-sm">Filtrar</button>
-            @if(request()->hasAny(['from', 'to', 'status']))
-                <a href="{{ route('produccion.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
+        <div class="page-header-filters">
+            <form method="GET" action="{{ route('produccion.index') }}" class="search-form">
+                <input type="date" name="from" class="form-control" value="{{ request('from') }}" placeholder="Desde">
+                <input type="date" name="to" class="form-control" value="{{ request('to') }}" placeholder="Hasta">
+                <select name="status" class="form-control">
+                    <option value="">Todos los estados</option>
+                    <option value="planned" {{ request('status') === 'planned' ? 'selected' : '' }}>Planificada</option>
+                    <option value="in_progress" {{ request('status') === 'in_progress' ? 'selected' : '' }}>En proceso</option>
+                    <option value="closed" {{ request('status') === 'closed' ? 'selected' : '' }}>Cerrada</option>
+                </select>
+                <button type="submit" class="btn btn-outline-success btn-sm">Filtrar</button>
+                @if(request()->hasAny(['from', 'to', 'status']))
+                    <a href="{{ route('produccion.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
+                @endif
+            </form>
+        </div>
         <div class="page-header-actions">
             <a href="{{ route('produccion.create') }}" class="btn btn-outline-primary btn-sm">+ Nueva producción</a>
         </div>
@@ -27,7 +30,7 @@
                         <th>Producto</th>
                         <th>Plan / Real</th>
                         <th>Estado</th>
-                        <th class="text-right">Acciones</th>
+                        <th class="text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -47,21 +50,26 @@
                                 @endif
                                 cajas
                             </td>
-                            <td data-field="status" data-type="select" data-options='[{"value":"planned","label":"Planificada"},{"value":"closed","label":"Cerrada"}]'>
+                            <td data-field="status" data-type="select" data-options='[{"value":"planned","label":"Planificada"},{"value":"in_progress","label":"En proceso"},{"value":"closed","label":"Cerrada"}]'>
                                 @php
                                     $statusClass = match($production->status) {
                                         'closed' => 'text-success',
+                                        'in_progress' => 'text-warning',
                                         default => 'text-info',
                                     };
                                 @endphp
                                 <span class="font-bold {{ $statusClass }}">
-                                    {{ $production->status === 'closed' ? 'Cerrada' : 'Planificada' }}
+                                    {{ match($production->status) {
+                                        'closed' => 'Cerrada',
+                                        'in_progress' => 'En proceso',
+                                        default => 'Planificada',
+                                    } }}
                                 </span>
                             </td>
                             <td class="text-right">
                                 <div class="actions-cell">
+                                    <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('productions.show', $production) }}" data-title="Detalle: {{ $production->number }}">Ver detalle</button>
                                     @if($production->status !== 'closed')
-                                        <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('productions.show', $production) }}" data-title="Detalle: {{ $production->number }}">Ver detalle</button>
                                         <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
 
                                         @if(auth()->user()->canManage())
@@ -74,7 +82,7 @@
 
                                         <details class="d-inline-block">
                                             <summary class="btn btn-primary btn-sm">Cerrar</summary>
-                                            <div class="mt-2 p-3 bg-light border rounded" style="width: 250px; text-align: left;">
+                                            <div class="mt-2 p-3 bg-light border rounded tooltip-box">
                                                 <form method="POST" action="{{ route('productions.close', $production) }}">
                                                     @csrf
                                                     <div class="form-group mb-2">

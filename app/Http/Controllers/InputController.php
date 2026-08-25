@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Input;
+use App\Models\InventoryMovement;
 use App\Models\Supplier;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
@@ -141,10 +142,112 @@ class InputController extends Controller
             ]);
         }
 
+        if ($input->inventoryMovements()->exists()) {
+            return back()->withErrors([
+                'delete' => 'No puedes eliminar este insumo porque tiene movimientos de inventario registrados.',
+            ]);
+        }
+
         $input->update(['deleted_by' => auth()->id()]);
         $input->delete();
         AuditService::log('ELIMINACIÓN DE INSUMO', "Eliminó insumo: {$input->name}", $input);
 
         return redirect('/insumos');
+    }
+
+    public function adjust(Request $request, Input $input)
+    {
+        $validated = $request->validate([
+            'type' => 'required|in:add,subtract,set',
+            'qty' => 'required|numeric|min:0.01',
+            'reason' => 'required|string|max:255',
+        ]);
+
+        $before = (float) $input->stock;
+        $qty = (float) $validated['qty'];
+
+        match ($validated['type']) {
+            'add' => $input->stock = $before + $qty,
+            'subtract' => $input->stock = max(0, $before - $qty),
+            'set' => $input->stock = $qty,
+        };
+
+        $input->save();
+
+        InventoryMovement::create([
+            'input_id' => $input->id,
+            'kind' => 'Ajuste de inventario',
+            'quantity' => $input->stock - $before,
+            'reference' => strtoupper($validated['type']),
+            'notes' => $validated['reason'],
+            'user_id' => auth()->id(),
+        ]);
+
+        AuditService::log('AJUSTAR INSUMO', "{$input->name}: {$before} → {$input->stock}. {$validated['reason']}", $input);
+
+        return response()->json(['success' => true, 'stock' => $input->stock]);
+    }
+
+    public function export(Request $request, string $entity)
+    {
+        $filename = "PatPot_{$entity}_" . now()->format('Y-m-d') . '.csv';
+
+        $callback = function () use ($entity, $filename) {
+            $handle = fopen('php://output', 'w');
+            fwrite($handle, "\xEF\xBB\xBF");
+
+            match ($entity) {
+                'inputs' => $this->exportInputs($handle),
+                'products' => $this->exportProducts($handle),
+                'retail' => $this->exportRetail($handle),
+                default => null,
+            };
+
+            fclose($handle);
+        };
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+        ];
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    private function exportInputs($handle): void
+    {
+        fputcsv($handle, ['Código', 'Nombre', 'Categoría', 'Unidad', 'Stock', 'Seguridad', 'Consumo semanal', 'Plazo (días)', 'Proveedor'], ';');
+        foreach (Input::with('supplier')->orderBy('name')->get() as $input) {
+            fputcsv($handle, [
+                $input->code, $input->name, $input->category, $input->unit,
+                $input->stock, $input->safety_stock, $input->weekly_consumption,
+                $input->lead_time_days, $input->supplier?->name ?? '',
+            ], ';');
+        }
+    }
+
+    private function exportProducts($handle): void
+    {
+        fputcsv($handle, ['SKU', 'Nombre', 'Stock (cajas)', 'Precio/caja', 'Costo/caja', 'Estado'], ';');
+        foreach (\App\Models\Product::orderBy('name')->get() as $p) {
+            fputcsv($handle, [
+                $p->sku, $p->name, $p->stock_boxes, $p->sale_price_box, $p->cost_per_box, $p->status,
+            ], ';');
+        }
+    }
+
+    private function exportRetail($handle): void
+    {
+        fputcsv($handle, ['Sala', 'Código', 'Ciudad', 'Producto', 'SKU', 'Stock', 'Tránsito', 'Venta semanal', 'Quiebre', 'Reposición'], ';');
+        foreach (\App\Models\Retail::with('store.customer', 'product')->orderBy('store_id')->get() as $r) {
+            fputcsv($handle, [
+                $r->store?->name ?? '', $r->store?->code ?? '', $r->store?->city ?? '',
+                $r->product?->name ?? '', $r->product?->sku ?? '',
+                $r->stock_units, $r->transit_units, $r->weekly_sales,
+                $r->is_break ? 'Sí' : 'No', $r->suggested_replenishment_boxes,
+            ], ';');
+        }
     }
 }

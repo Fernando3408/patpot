@@ -48,7 +48,7 @@ class Supplier extends Model
             $purchase->lines()->delete();
             $purchase->delete();
         });
-        $this->inputs()->each(fn (Input $input) => $input->delete());
+        $this->inputs()->delete();
 
         return parent::delete();
     }

@@ -10,7 +10,7 @@
             <div>
                 <strong>Precio oferta:</strong>
                 @if($price->offer_price)
-                    <span style="color:#6a9c3b;">${{ number_format($price->offer_price, 0, ',', '.') }}</span>
+                    <span class="text-price">${{ number_format($price->offer_price, 0, ',', '.') }}</span>
                 @else
                     —
                 @endif

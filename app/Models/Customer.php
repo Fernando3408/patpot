@@ -56,7 +56,7 @@ class Customer extends Model
         $this->stores()->each(fn (Store $s) => $s->delete());
         $this->prices()->delete();
         $this->orders()->each(function (Order $order) {
-            $order->lines()->each(fn (OrderLine $line) => $line->delete());
+            $order->lines()->delete();
             $order->shipments()->each(fn (Shipment $s) => $s->lines()->delete());
             $order->shipments()->delete();
             $order->delete();

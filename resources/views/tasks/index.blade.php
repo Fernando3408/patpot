@@ -1,12 +1,5 @@
 <x-erp-layout title="Tareas" subtitle="Pendientes operacionales conectados con compras, pedidos, producción y retail.">
     <div class="page-header">
-        <form method="GET" action="{{ route('tasks.index') }}" class="search-form">
-            <input type="text" name="search" class="form-control" placeholder="Buscar por título, responsable..." value="{{ request('search') }}">
-            <button type="submit" class="btn btn-outline-success btn-sm">Buscar</button>
-            @if(request('search'))
-                <a href="{{ route('tasks.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
         <div class="page-header-actions">
             <a href="{{ route('tasks.create') }}" class="btn btn-outline-primary btn-sm">＋ Nueva tarea</a>
         </div>
@@ -22,12 +15,12 @@
                         <th>Fecha límite</th>
                         <th>Prioridad</th>
                         <th>Estado</th>
-                        <th class="text-right">Acciones</th>
+                        <th class="text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($tasks as $task)
-                        <tr style="{{ $task->is_overdue ? 'background-color: #fef2f2;' : '' }}" data-update-url="{{ route('tasks.update', $task) }}">
+                        <tr class="{{ $task->is_overdue ? 'row-overdue' : '' }}" data-update-url="{{ route('tasks.update', $task) }}">
                             <td data-field="title" data-value="{{ $task->title }}">
                                 <strong>{{ $task->title }}</strong>
                                 @if($task->notes)

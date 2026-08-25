@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Iniciar sesión - PatPot</title>
+    <title>Recuperar contraseña - PatPot</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
@@ -14,11 +14,17 @@
             
             <div class="auth-header">
                 <p class="auth-brand">PatPot</p>
-                <h1 class="auth-title">Iniciar sesión</h1>
-                <p class="auth-subtitle">Accede al ERP operativo.</p>
+                <h1 class="auth-title">Recuperar contraseña</h1>
+                <p class="auth-subtitle">Ingresa tu correo y te enviaremos un enlace para restablecerla.</p>
             </div>
 
-            <form method="POST" action="{{ route('login') }}">
+            @if(session('status'))
+                <div class="alert-success">
+                    <p class="alert-success-text">{{ session('status') }}</p>
+                </div>
+            @endif
+
+            <form method="POST" action="{{ route('password.email') }}">
                 @csrf
 
                 @if($errors->any())
@@ -43,30 +49,13 @@
                     >
                 </div>
 
-                <div class="form-group mb-4">
-                    <label class="form-label" for="password">Contraseña</label>
-                    <input 
-                        id="password" 
-                        name="password" 
-                        type="password" 
-                        class="form-input" 
-                        autocomplete="current-password" 
-                        required
-                    >
-                </div>
-
-                <div class="checkbox-row">
-                    <input type="checkbox" id="remember" name="remember" value="1">
-                    <label for="remember" class="checkbox-label">Mantener mi sesión iniciada</label>
-                </div>
+                <button type="submit" class="btn btn-primary btn-full">
+                    Enviar enlace de recuperación
+                </button>
 
                 <div class="forgot-password-row">
-                    <a href="{{ route('password.request') }}" class="link-brand">¿Olvidaste tu contraseña?</a>
+                    <a href="{{ route('login') }}" class="link-muted">Volver al inicio de sesión</a>
                 </div>
-
-                <button type="submit" class="btn btn-primary btn-full">
-                    Entrar al ERP
-                </button>
             </form>
 
         </div>

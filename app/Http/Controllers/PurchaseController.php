@@ -48,7 +48,7 @@ class PurchaseController extends Controller
             ['number.unique' => 'El número de compra ya existe.']
         );
         $this->ensureWholeUnitLines($data['lines']);
-        $purchase = Purchase::create(collect($data)->except('lines')->all());
+        $purchase = Purchase::create(collect($data)->except('lines')->all() + ['status' => 'pending']);
         foreach ($data['lines'] as $line) {
             $purchase->lines()->create($line);
             Input::query()->findOrFail($line['input_id'])->increment('transit', $line['ordered_quantity']);

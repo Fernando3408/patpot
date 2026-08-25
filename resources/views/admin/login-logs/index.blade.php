@@ -1,12 +1,5 @@
 <x-erp-layout title="Registro de ingresos" subtitle="Historial de inicio de sesión de usuarios.">
     <div class="page-header">
-        <form method="GET" action="{{ route('admin.login-logs.index') }}" class="search-form">
-            <input type="text" name="search" class="form-control" placeholder="Buscar por usuario..." value="{{ request('search') }}">
-            <button type="submit" class="btn btn-outline-success btn-sm">Buscar</button>
-            @if(request('search'))
-                <a href="{{ route('admin.login-logs.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
     </div>
 
     <div class="table-container">

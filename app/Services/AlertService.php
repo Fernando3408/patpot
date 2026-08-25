@@ -29,7 +29,7 @@ class AlertService
             });
 
         // Compras atrasadas
-        Purchase::whereNotIn('status', ['received', 'cancelled'])
+        Purchase::where('status', '!=', 'received')
             ->where('expected_on', '<', now()->toDateString())
             ->with('supplier')
             ->get()

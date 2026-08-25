@@ -1,12 +1,5 @@
 <x-erp-layout title="Clientes" subtitle="Gestiona los clientes, sus condiciones de pago y descuentos.">
     <div class="page-header">
-        <form method="GET" action="{{ route('customers.index') }}" class="search-form">
-            <input type="text" name="search" class="form-control" placeholder="Buscar por razón social, nombre, RUT..." value="{{ request('search') }}">
-            <button type="submit" class="btn btn-outline-success btn-sm">Buscar</button>
-            @if(request('search'))
-                <a href="{{ route('customers.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
         <div class="page-header-actions">
             <a href="{{ route('customers.create') }}" class="btn btn-outline-primary btn-sm">+ Nuevo cliente</a>
         </div>
@@ -24,7 +17,7 @@
                         <th>Pago</th>
                         <th>Descuento</th>
                         <th>Estado</th>
-                        <th class="text-right">Acciones</th>
+                        <th class="text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,7 +33,7 @@
                             <td data-field="rut" class="text-xs">{{ $customer->rut ?? '—' }}</td>
                             <td data-field="contact" class="text-xs">{{ $customer->contact ?? '—' }}</td>
                             <td data-field="payment_terms" class="text-xs">{{ $customer->payment_terms ?? '—' }}</td>
-                            <td data-field="discount" class="text-xs font-bold">{{ $customer->discount }}%</td>
+                            <td data-field="discount" data-value="{{ $customer->discount }}" data-cleanup="int" class="text-xs font-bold">{{ $customer->discount }}%</td>
                             <td data-field="status" data-type="select" data-options='[{"value":"1","label":"Activo"},{"value":"0","label":"Inactivo"}]'>
                                 <span class="badge {{ $customer->status ? 'badge-success' : 'badge-danger' }}">
                                     {{ $customer->status ? 'Activo' : 'Inactivo' }}

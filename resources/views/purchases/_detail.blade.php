@@ -40,7 +40,7 @@
                         <th class="text-right">Cantidad pedida</th>
                         <th class="text-right">Costo unitario</th>
                         <th class="text-right">Recibido</th>
-                        <th class="text-center" style="width:200px;">Progreso</th>
+                        <th class="text-center th-progreso">Progreso</th>
                     </tr>
                 </thead>
                 <tbody>

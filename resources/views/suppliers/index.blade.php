@@ -1,12 +1,5 @@
 <x-erp-layout title="Proveedores" subtitle="Gestiona proveedores, tiempos de entrega y condiciones de pago.">
     <div class="page-header">
-        <form method="GET" action="{{ route('proveedores.index') }}" class="search-form">
-            <input type="text" name="search" class="form-control" placeholder="Buscar por nombre, RUT, contacto..." value="{{ request('search') }}">
-            <button type="submit" class="btn btn-outline-success btn-sm">Buscar</button>
-            @if(request('search'))
-                <a href="{{ route('proveedores.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
         <div class="page-header-actions">
             <a href="{{ route('proveedores.create') }}" class="btn btn-outline-primary btn-sm">+ Nuevo proveedor</a>
         </div>
@@ -22,7 +15,7 @@
                         <th>Contacto</th>
                         <th class="text-center">Lead time</th>
                         <th>Estado</th>
-                        <th class="text-right">Acciones</th>
+                        <th class="text-right"></th>
                     </tr>
                 </thead>
                 <tbody>

@@ -54,10 +54,10 @@
                         <thead>
                             <tr>
                                 <th>Producto</th>
-                                <th style="width: 130px;">Cajas</th>
-                                <th style="width: 160px;">Precio/caja</th>
-                                <th style="width: 130px;">Desc. %</th>
-                                <th style="width: 50px;"></th>
+                                <th class="th-cajas">Cajas</th>
+                                <th class="th-precio">Precio/caja</th>
+                                <th class="th-descuento">Desc. %</th>
+                                <th class="th-action"></th>
                             </tr>
                         </thead>
                         <tbody>

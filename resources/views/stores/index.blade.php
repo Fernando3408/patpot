@@ -1,12 +1,5 @@
 <x-erp-layout title="Salas y Locales" subtitle="Gestiona las salas o locales asociados a cada cliente.">
     <div class="page-header">
-        <form method="GET" action="{{ route('salas.index') }}" class="search-form">
-            <input type="text" name="search" class="form-control" placeholder="Buscar por nombre, código, ciudad..." value="{{ request('search') }}">
-            <button type="submit" class="btn btn-outline-success btn-sm">Buscar</button>
-            @if(request('search'))
-                <a href="{{ route('salas.index') }}" class="btn btn-outline-warning btn-sm">Limpiar</a>
-            @endif
-        </form>
         <div class="page-header-actions">
             <a href="{{ route('salas.create') }}" class="btn btn-outline-primary btn-sm">+ Nueva sala</a>
         </div>
@@ -22,7 +15,7 @@
                         <th>Nombre</th>
                         <th>Ciudad</th>
                         <th>Estado</th>
-                        <th class="text-right">Acciones</th>
+                        <th class="text-right"></th>
                     </tr>
                 </thead>
                 <tbody>

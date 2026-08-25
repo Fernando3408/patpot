@@ -12,6 +12,9 @@
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
     <link rel="manifest" href="{{ asset('site.webmanifest') }}">
     <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
@@ -104,6 +107,7 @@
                     <div class="sidebar-divider"></div>
                     <a href="{{ route('movements.index') }}" class="sidebar-link {{ request()->routeIs('movements.*') ? 'active' : '' }}">Movimientos</a>
                     <a href="{{ route('audit.index') }}" class="sidebar-link {{ request()->routeIs('audit.*') ? 'active' : '' }}">Auditoría</a>
+                    <a href="{{ route('admin.login-logs.index') }}" class="sidebar-link {{ request()->routeIs('admin.login-logs.*') ? 'active' : '' }}"><i data-lucide="clock" class="sidebar-link-icon icon-brand"></i> Bitácora de accesos</a>
                     <a href="{{ route('admin.index') }}" class="sidebar-link {{ request()->routeIs('admin.*') ? 'active' : '' }}">Administración</a>
                     @endif
                 </div>
@@ -130,25 +134,33 @@
                 @endif
             </div>
             <div class="page-topbar-actions">
+                <div class="quick-menu-wrapper">
+                    <button type="button" class="btn btn-primary btn-sm quick-menu-trigger" id="quickBtn">
+                        <span class="plus-icon">+</span> Ingreso rápido
+                    </button>
+                    <div id="quickMenu" class="quick-menu-dropdown" style="display:none;">
+                        <a href="/pedidos/create" class="quick-menu-item">Nuevo pedido</a>
+                        <a href="/compras/create" class="quick-menu-item">Nueva compra</a>
+                        <a href="/produccion/create" class="quick-menu-item">Nueva producción</a>
+                        <a href="/retail/create" class="quick-menu-item">Actualizar retail</a>
+                        <a href="/tareas/create" class="quick-menu-item">Nueva tarea</a>
+                    </div>
+                </div>
                 @if(auth()->check() && auth()->user()->canManage() && !request()->routeIs('dashboard'))
-                <a class="btn btn-outline-info btn-sm" href="{{ route('admin.trash.index') }}"><i data-lucide="trash-2" style="width:14px;height:14px;"></i> Papelera</a>
+                <a class="btn btn-outline-info btn-sm" href="{{ route('admin.trash.index') }}"><i data-lucide="trash-2" class="icon-sm"></i> Papelera</a>
                 @endif
             </div>
         </header>
 
         {{-- Content --}}
         <main class="page-content">
-            @if (session('success'))
-            <div class="alert alert-success mb-4">{{ session('success') }}</div>
-            @endif
-
             {{ $slot }}
         </main>
     </div>
 
     {{-- Detail Modal --}}
     <div id="detailModal" class="modal-overlay" style="display:none;">
-        <div class="modal-container" style="max-width:800px;">
+        <div class="modal-container modal-container--wide">
             <div class="modal-header">
                 <h3 id="detailModalTitle">Detalle</h3>
                 <button class="modal-close" onclick="closeDetailModal()">&times;</button>
@@ -381,17 +393,53 @@
             }
         }
 
+        document.addEventListener('dblclick', function(e) {
+            var td = e.target.closest('td[data-field]');
+            if (td && td.dataset.readonly !== 'true') {
+                var row = td.closest('tr');
+                if (row && row.dataset.updateUrl) enableInlineEdit(row);
+            }
+        });
+
         document.addEventListener('keydown', function(e) {
             if (e.key === 'Escape') {
                 closeDetailModal();
                 cancelInlineEdit();
+                var qm = document.getElementById('quickMenu');
+                if (qm) qm.style.display = 'none';
             }
         });
+
+        document.addEventListener('click', function(e) {
+            var qm = document.getElementById('quickMenu');
+            var btn = document.getElementById('quickBtn');
+            if (qm && qm.style.display !== 'none' && !qm.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+                qm.style.display = 'none';
+            }
+        });
+
+        var quickBtn = document.getElementById('quickBtn');
+        if (quickBtn) {
+            quickBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                var qm = document.getElementById('quickMenu');
+                var isVisible = qm.style.display === 'block';
+                qm.style.display = isVisible ? 'none' : 'block';
+            });
+        }
     </script>
     <script>lucide.createIcons();</script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script>
+        $.fn.dataTable.ext.type.detect.unshift(function (d) {
+            return /[\$\€\£]?\s?[\d\.\,]+/.test(d.replace(/\s/g, '')) ? 'currency' : null;
+        });
+
+        $.fn.dataTable.ext.type.order['currency-pre'] = function (d) {
+            return parseFloat(d.replace(/[^\d\-,]/g, '').replace(/\./g, '').replace(',', '.')) || 0;
+        };
+
         $(document).ready(function() {
             $('.data-table').each(function() {
                 var hasActions = $(this).find('th:last').text().trim().toLowerCase().includes('accion');
@@ -411,6 +459,32 @@
                     dom: '<"top"f>rt<"bottom"lip><"clear">'
                 });
             });
+
+            var headerFilters = document.querySelector('.page-header-filters');
+            var headerActions = document.querySelector('.page-header-actions');
+            if (headerFilters || headerActions) {
+                var filter = document.querySelector('.dataTables_filter');
+                if (filter) {
+                    var searchInput = filter.querySelector('label') || filter;
+
+                    var container = document.createElement('div');
+                    container.className = 'dataTables-filter-row';
+
+                    var leftSide = document.createElement('div');
+                    leftSide.className = 'dataTables-filter-left';
+                    if (headerFilters) leftSide.appendChild(headerFilters);
+
+                    var rightSide = document.createElement('div');
+                    rightSide.className = 'dataTables-filter-right';
+                    rightSide.appendChild(searchInput);
+                    if (headerActions) rightSide.appendChild(headerActions);
+
+                    container.appendChild(leftSide);
+                    container.appendChild(rightSide);
+                    filter.innerHTML = '';
+                    filter.appendChild(container);
+                }
+            }
         });
     </script>
 </body>

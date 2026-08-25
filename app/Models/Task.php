@@ -8,11 +8,6 @@ class Task extends Model
 {
     protected $fillable = ['title', 'owner', 'due_on', 'priority', 'module', 'status', 'notes', 'completed_on'];
 
-    protected $attributes = [
-        'priority' => 'medium',
-        'status' => 'pending',
-    ];
-
     protected function casts(): array
     {
         return ['due_on' => 'date', 'completed_on' => 'date'];
