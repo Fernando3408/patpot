@@ -33,11 +33,11 @@
                                 $margin = $product->sale_price_box - $product->cost_per_box;
                                 $marginPct = $product->sale_price_box > 0 ? round($margin / $product->sale_price_box * 100, 1) : 0;
                             @endphp
-                            <td class="text-right">
+                            <td data-calculated="true" class="text-right">
                                 <span class="{{ $margin >= 0 ? 'text-positive' : 'text-negative' }} fw-600">${{ number_format($margin, 0, ',', '.') }}</span>
                                 <span class="text-xs text-muted">{{ $marginPct }}%</span>
                             </td>
-                            <td class="text-right">
+                            <td data-calculated="true" class="text-right">
                                 @php $cap = $product->production_capacity; @endphp
                                 @if($cap !== null)
                                     <strong>{{ number_format($cap, 0, ',', '.') }}</strong> <span class="text-xs text-muted">cajas</span>
@@ -77,4 +77,20 @@
             </div>
         </div>
     @endif
+
+    <script>
+        window.onInlineEditSuccess = function(row, json) {
+            var cells = Array.from(row.querySelectorAll('td'));
+            if (json.cost_per_box != null) {
+                cells[4].innerHTML = '$' + Math.round(json.cost_per_box).toLocaleString('es-CL');
+            }
+            if (json.margin != null) {
+                var cls = json.margin >= 0 ? 'text-positive' : 'text-negative';
+                cells[5].innerHTML = '<span class="' + cls + ' fw-600">$' + Math.round(json.margin).toLocaleString('es-CL') + '</span><span class="text-xs text-muted">' + json.margin_pct + '%</span>';
+            }
+            if (json.production_capacity != null) {
+                cells[6].innerHTML = '<strong>' + Math.round(json.production_capacity).toLocaleString('es-CL') + '</strong> <span class="text-xs text-muted">cajas</span>';
+            }
+        };
+    </script>
 </x-erp-layout>

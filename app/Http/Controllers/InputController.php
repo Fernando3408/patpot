@@ -76,7 +76,7 @@ class InputController extends Controller
 
     public function show(Input $input)
     {
-        $input->load('supplier', 'recipes.product');
+        $input->load('supplier', 'recipes.product.productions');
         return view('inputs._detail', compact('input'));
     }
 
@@ -86,11 +86,20 @@ class InputController extends Controller
             if ($request->ajax()) {
                 $rules = [
                     'name' => 'sometimes|required|string|max:255',
-                    'code' => ['sometimes', 'required', 'string', 'max:255'],
+                    'code' => ['sometimes', 'required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('inputs', 'code')->ignore($input->id)],
                     'stock' => 'sometimes|required|numeric|min:0',
                     'safety_stock' => 'sometimes|required|numeric|min:0',
+                    'weekly_consumption' => 'sometimes|numeric|min:0',
                     'unit' => 'sometimes|required|string|max:50',
                     'status' => 'sometimes|required|boolean',
+                    'lead_time_days' => 'sometimes|required|integer|min:0',
+                    'target_weeks' => 'sometimes|required|integer|min:0',
+                    'min_purchase' => 'sometimes|required|numeric|min:0',
+                    'purchase_multiple' => 'sometimes|required|integer|min:1',
+                    'unit_cost' => 'sometimes|nullable|numeric|min:0',
+                    'transit' => 'sometimes|required|numeric|min:0',
+                    'supplier_id' => 'sometimes|nullable|exists:suppliers,id',
+                    'category' => 'sometimes|nullable|string|max:255',
                 ];
             } else {
                 $rules = [
@@ -117,7 +126,17 @@ class InputController extends Controller
             AuditService::log('ACTUALIZACIÓN DE INSUMO', "Actualizó insumo: {$input->name}", $input);
 
             if ($request->ajax()) {
-                return response()->json(['success' => true]);
+                $input->refresh();
+                $input->load('recipes.product.productions');
+                return response()->json([
+                    'success' => true,
+                    'coverage_days' => $input->coverage_days,
+                    'reorder_point' => $input->reorder_point,
+                    'projected_stock' => $input->projected_stock,
+                    'inventory_level' => $input->inventory_level,
+                    'weekly_consumption' => $input->weekly_consumption,
+                    'unit_cost' => $input->unit_cost,
+                ]);
             }
             return redirect('/insumos');
         } catch (\Illuminate\Validation\ValidationException $e) {

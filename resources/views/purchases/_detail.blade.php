@@ -69,3 +69,44 @@
         </div>
     </div>
     @endif
+
+    @if($purchase->receptions->count())
+    <div class="card mt-4">
+        <div class="card__header">
+            <h2 class="card__title">Historial de recepciones ({{ $purchase->receptions->count() }})</h2>
+        </div>
+        <div class="card__body">
+            @php $runningTotal = 0; @endphp
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Insumo</th>
+                        <th class="text-right">Recibido</th>
+                        <th class="text-right">Costo unitario</th>
+                        <th class="text-right">Subtotal</th>
+                        <th class="text-right">Acumulado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($purchase->receptions->sortBy('received_on') as $reception)
+                        @foreach($reception->lines as $rl)
+                            @php
+                                $runningTotal += (float) $rl->quantity;
+                                $subtotal = $rl->quantity * $rl->unit_cost;
+                            @endphp
+                            <tr>
+                                <td>{{ $reception->received_on->format('d/m/Y') }}</td>
+                                <td>{{ $rl->purchaseLine->input?->name ?? '—' }}</td>
+                                <td class="text-right">{{ number_format($rl->quantity, 0, ',', '.') }}</td>
+                                <td class="text-right">${{ number_format($rl->unit_cost, 0, ',', '.') }}</td>
+                                <td class="text-right">${{ number_format($subtotal, 0, ',', '.') }}</td>
+                                <td class="text-right font-bold">{{ number_format($runningTotal, 0, ',', '.') }}</td>
+                            </tr>
+                        @endforeach
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif

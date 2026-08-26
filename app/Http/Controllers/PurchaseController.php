@@ -18,7 +18,7 @@ class PurchaseController extends Controller
 
     public function index(Request $request): View
     {
-        $query = Purchase::with(['supplier', 'lines.input']);
+        $query = Purchase::with(['supplier', 'lines.input', 'receptions.lines.purchaseLine.input']);
 
         if ($request->filled('from')) {
             $query->where('ordered_on', '>=', $request->from);
@@ -60,21 +60,61 @@ class PurchaseController extends Controller
 
     public function show(Purchase $purchase)
     {
-        $purchase->load('supplier', 'lines.input');
+        $purchase->load('supplier', 'lines.input', 'receptions.lines.purchaseLine.input');
         return view('purchases._detail', compact('purchase'));
     }
 
-    public function receive(Request $request, Purchase $compra): RedirectResponse
+    public function receive(Request $request, Purchase $compra)
     {
-        $data = $request->validate(['received' => ['required', 'array'], 'received.*' => ['nullable', 'numeric', 'min:0']]);
+        $data = $request->validate([
+            'received' => ['required', 'array'],
+            'received.*' => ['nullable', 'numeric', 'min:0'],
+            'received_on' => ['required', 'date'],
+        ]);
         $compra->load('lines.input');
         foreach ($compra->lines as $line) {
             if ($this->requiresWholeQuantity($line->input) && fmod((float) ($data['received'][$line->id] ?? 0), 1.0) !== 0.0) {
                 throw ValidationException::withMessages(['received' => "{$line->input->name} debe recibirse en unidades enteras."]);
             }
         }
-        $this->inventoryService->receivePurchase($compra, $data['received']);
+        $this->inventoryService->receivePurchase($compra, $data['received'], $data['received_on']);
 
+        if ($request->ajax()) {
+            $compra->refresh()->load('lines', 'receptions.lines.purchaseLine.input');
+            $totalOrdered = $compra->lines->sum(fn($l) => (float) $l->ordered_quantity);
+            $totalReceived = $compra->lines->sum(fn($l) => (float) $l->received_quantity);
+            $pct = $totalOrdered > 0 ? round(($totalReceived / $totalOrdered) * 100) : 0;
+            $statusLabel = match($compra->status) {
+                'received' => 'Recibida',
+                'partial' => 'Parcial',
+                default => 'En tránsito',
+            };
+            $history = [];
+            $runningTotal = 0;
+            foreach ($compra->receptions->sortBy(fn($r) => $r->received_on ? $r->received_on->format('Y-m-d') : '') as $reception) {
+                foreach ($reception->lines as $rl) {
+                    $runningTotal += (float) $rl->quantity;
+                    $history[] = [
+                        'date' => $reception->received_on ? $reception->received_on->format('d/m/Y') : '—',
+                        'input' => $rl->purchaseLine->input?->name ?? '—',
+                        'quantity' => number_format($rl->quantity, 0, ',', '.'),
+                        'unit_cost' => '$' . number_format($rl->unit_cost, 0, ',', '.'),
+                        'subtotal' => '$' . number_format($rl->quantity * $rl->unit_cost, 0, ',', '.'),
+                        'accumulated' => number_format($runningTotal, 0, ',', '.'),
+                    ];
+                }
+            }
+            return response()->json([
+                'success' => true,
+                'status' => $compra->status,
+                'statusLabel' => $statusLabel,
+                'pct' => $pct,
+                'totalReceived' => $totalReceived,
+                'totalOrdered' => $totalOrdered,
+                'history' => $history,
+                'historyCount' => $compra->receptions->count(),
+            ]);
+        }
         return redirect('/compras')->with('success', 'Recepción registrada correctamente.');
     }
 

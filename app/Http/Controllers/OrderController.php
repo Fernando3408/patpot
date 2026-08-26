@@ -62,15 +62,52 @@ class OrderController extends Controller
 
     public function show(Order $order): View
     {
-        $order->load('customer', 'store', 'lines.product');
+        $order->load('customer', 'store', 'lines.product', 'shipments.lines.orderLine.product');
         return view('orders._detail', compact('order'));
     }
 
-    public function dispatch(Request $request, Order $pedido): RedirectResponse
+    public function dispatch(Request $request, Order $pedido)
     {
         $data = $request->validate(['quantities' => ['required', 'array'], 'quantities.*' => ['nullable', 'integer', 'min:0'], 'shipped_on' => ['required', 'date']]);
         $this->inventoryService->dispatchOrder($pedido, $data['quantities'], $data['shipped_on']);
 
+        if ($request->ajax()) {
+            $pedido->refresh()->load('lines', 'shipments.lines.orderLine.product');
+            $totalBoxes = $pedido->lines->sum(fn($l) => (float) $l->boxes);
+            $totalDispatched = $pedido->lines->sum(fn($l) => (float) $l->dispatched_boxes);
+            $pct = $totalBoxes > 0 ? round(($totalDispatched / $totalBoxes) * 100) : 0;
+            $statusLabel = match($pedido->status) {
+                'completed' => 'Completado',
+                'partial' => 'Parcial',
+                default => 'Pendiente',
+            };
+            $history = [];
+            $runningTotal = 0;
+            foreach ($pedido->shipments->sortBy(fn($s) => $s->shipped_on ? $s->shipped_on->format('Y-m-d') : '') as $shipment) {
+                foreach ($shipment->lines as $sl) {
+                    $runningTotal += (float) $sl->boxes;
+                    $subtotal = (float) $sl->boxes * (float) ($sl->price_box ?? 0);
+                    $history[] = [
+                        'date' => $shipment->shipped_on ? $shipment->shipped_on->format('d/m/Y') : '—',
+                        'product' => $sl->orderLine->product?->name ?? '—',
+                        'boxes' => (int) $sl->boxes,
+                        'price_box' => '$' . number_format((float) ($sl->price_box ?? 0), 0, ',', '.'),
+                        'subtotal' => '$' . number_format($subtotal, 0, ',', '.'),
+                        'accumulated' => (int) $runningTotal,
+                    ];
+                }
+            }
+            return response()->json([
+                'success' => true,
+                'status' => $pedido->status,
+                'statusLabel' => $statusLabel,
+                'pct' => $pct,
+                'totalDispatched' => $totalDispatched,
+                'totalBoxes' => $totalBoxes,
+                'history' => $history,
+                'historyCount' => $pedido->shipments->count(),
+            ]);
+        }
         return redirect('/pedidos')->with('success', 'Despacho registrado correctamente.');
     }
 

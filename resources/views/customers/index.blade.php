@@ -33,7 +33,7 @@
                             <td data-field="rut" class="text-xs">{{ $customer->rut ?? '—' }}</td>
                             <td data-field="contact" class="text-xs">{{ $customer->contact ?? '—' }}</td>
                             <td data-field="payment_terms" class="text-xs">{{ $customer->payment_terms ?? '—' }}</td>
-                            <td data-field="discount" data-value="{{ $customer->discount }}" data-cleanup="int" class="text-xs font-bold">{{ $customer->discount }}%</td>
+                            <td data-field="discount" data-value="{{ (int) $customer->discount }}" data-cleanup="int" class="text-xs font-bold">{{ $customer->discount }}%</td>
                             <td data-field="status" data-type="select" data-options='[{"value":"1","label":"Activo"},{"value":"0","label":"Inactivo"}]'>
                                 <span class="badge {{ $customer->status ? 'badge-success' : 'badge-danger' }}">
                                     {{ $customer->status ? 'Activo' : 'Inactivo' }}

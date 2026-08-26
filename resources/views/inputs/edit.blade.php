@@ -79,6 +79,13 @@
                 <div class="form-group">
                     <label class="form-label" for="weekly_consumption">Consumo semanal</label>
                     <input type="number" step="1" min="0" id="weekly_consumption" name="weekly_consumption" class="form-control" value="{{ old('weekly_consumption', $input->weekly_consumption) }}" required>
+                    @php $auto = $input->auto_weekly_consumption; @endphp
+                    @if($auto > 0)
+                        <div class="text-xs text-muted mt-1">
+                            Promedio real (últimas 8 sem): <strong>{{ number_format($auto, 0, ',', '.') }}</strong>
+                            <button type="button" class="btn btn-outline-primary btn-sm" style="font-size:0.7rem;padding:0.1rem 0.4rem;margin-left:4px;" onclick="document.getElementById('weekly_consumption').value = Math.round({{ $auto }});">Usar promedio</button>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="form-group">

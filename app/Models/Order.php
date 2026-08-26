@@ -11,7 +11,7 @@ class Order extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['number', 'customer_id', 'store_id', 'ordered_on', 'delivery_on', 'notes'];
+    protected $fillable = ['number', 'customer_id', 'store_id', 'ordered_on', 'delivery_on', 'notes', 'status'];
 
     protected function casts(): array
     {

@@ -174,7 +174,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::resource('compras', PurchaseController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
     Route::get('/compras/{compra}', [PurchaseController::class, 'show'])->name('purchases.show');
-    Route::post('/compras/{compra}/recepciones', [PurchaseController::class, 'receive'])->name('purchases.receive');
+    Route::post('/compras/{compra}/recepciones', [PurchaseController::class, 'receive'])->middleware('canManage')->name('purchases.receive');
 
     /* Producción */
 
@@ -186,7 +186,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::resource('pedidos', OrderController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
     Route::get('/pedidos/{pedido}', [OrderController::class, 'show'])->name('orders.show');
-    Route::post('/pedidos/{pedido}/despachos', [OrderController::class, 'dispatch'])->name('orders.dispatch');
+    Route::post('/pedidos/{pedido}/despachos', [OrderController::class, 'dispatch'])->middleware('canManage')->name('orders.dispatch');
 
     /* Tareas */
 

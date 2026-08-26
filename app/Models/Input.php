@@ -68,7 +68,7 @@ class Input extends Model
             return null;
         }
 
-        return round((float) $this->stock / (float) $this->weekly_consumption, 2);
+        return round((float) $this->projected_stock / (float) $this->weekly_consumption, 2);
     }
 
     public function getCoverageDaysAttribute(): ?float
@@ -78,7 +78,19 @@ class Input extends Model
             return null;
         }
 
-        return round((float) $this->stock / $daily, 0);
+        return round((float) $this->projected_stock / $daily, 0);
+    }
+
+    public function getAutoWeeklyConsumptionAttribute(): float
+    {
+        $from = now()->subWeeks(8);
+        $totalConsumed = \DB::table('inventory_movements')
+            ->where('input_id', $this->id)
+            ->where('kind', 'Consumo de producción')
+            ->where('created_at', '>=', $from)
+            ->sum(\DB::raw('ABS(quantity)'));
+
+        return round((float) $totalConsumed / 8, 2);
     }
 
     public function getReorderPointAttribute(): float
@@ -110,9 +122,14 @@ class Input extends Model
 
     public function getInventoryLevelAttribute(): string
     {
-        $projected = $this->projected_stock;
+        $stock = (float) $this->stock;
+        $projected = round((float) $this->projected_stock, 0);
 
-        if ($projected <= 0) {
+        if ($stock <= 0) {
+            return 'critico';
+        }
+
+        if ($this->coverage_days !== null && $this->coverage_days <= 0) {
             return 'critico';
         }
 
@@ -183,7 +200,7 @@ class Input extends Model
     {
         $unit = mb_strtolower($this->unit);
 
-        return str_contains($unit, 'kg') || str_contains($unit, 'caja');
+        return ! str_contains($unit, 'kg') && ! str_contains($unit, 'litro');
     }
 
     public function deleter(): BelongsTo

@@ -34,17 +34,39 @@ class HomeController extends Controller
             });
 
         $pendingOrders = Order::whereIn('status', ['pending', 'partial'])->count();
+        $pendingOrdersList = Order::whereIn('status', ['pending', 'partial'])
+            ->with('customer', 'lines.product', 'store')
+            ->orderBy('delivery_on')
+            ->get();
         $overdueOrders = Order::whereIn('status', ['pending', 'partial'])
             ->where('delivery_on', '<', $now->toDateString())->count();
+        $overdueOrdersList = Order::whereIn('status', ['pending', 'partial'])
+            ->where('delivery_on', '<', $now->toDateString())
+            ->with('customer', 'lines.product', 'store')
+            ->orderBy('delivery_on')
+            ->get();
         $overduePurchases = Purchase::where('status', '!=', 'received')
             ->where('expected_on', '<', $now->toDateString())->count();
+        $overduePurchasesList = Purchase::where('status', '!=', 'received')
+            ->where('expected_on', '<', $now->toDateString())
+            ->with('supplier', 'lines.input')
+            ->orderBy('expected_on')
+            ->get();
         $pendingProductions = Production::whereIn('status', ['planned', 'in_progress'])->count();
+        $pendingProductionsList = Production::whereIn('status', ['planned', 'in_progress'])
+            ->with('product')
+            ->orderBy('planned_on')
+            ->get();
         $allProductsWithRecipes = Product::with('recipes.input')->get();
         $stockPT = $allProductsWithRecipes
             ->sum(fn (Product $p) => $p->stock_boxes * $p->cost_per_box);
         $stockInputs = Input::sum(\DB::raw('stock * unit_cost'));
         $urgentTasks = Task::where('status', 'pending')
             ->where('priority', 'urgent')->count();
+        $urgentTasksList = Task::where('status', 'pending')
+            ->where('priority', 'urgent')
+            ->orderBy('due_on')
+            ->get();
 
         // Capacidad producible por producto
         $productionCapacities = $allProductsWithRecipes->map(fn ($p) => [
@@ -148,9 +170,9 @@ class HomeController extends Controller
         ];
 
         return view('welcome', compact(
-            'salesMonth', 'marginMonth', 'pendingOrders', 'overdueOrders',
-            'overduePurchases', 'pendingProductions', 'stockPT', 'stockInputs',
-            'urgentTasks', 'alerts', 'criticalAlerts',
+            'salesMonth', 'marginMonth', 'pendingOrders', 'pendingOrdersList', 'overdueOrders', 'overdueOrdersList',
+            'overduePurchases', 'overduePurchasesList', 'pendingProductions', 'pendingProductionsList', 'stockPT', 'stockInputs',
+            'urgentTasks', 'urgentTasksList', 'alerts', 'criticalAlerts',
             'salesMonths', 'marginMonths',
             'chartOrderLabels', 'chartOrderCounts',
             'chartOverdueLabels', 'chartOverdueCounts',

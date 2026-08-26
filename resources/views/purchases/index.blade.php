@@ -37,7 +37,7 @@
                 </thead>
                 <tbody>
                     @foreach($purchases as $purchase)
-                        <tr @if($purchase->status !== 'received' && !$purchase->lines->contains(fn($line) => $line->received_quantity > 0)) data-update-url="{{ route('compras.update', $purchase) }}" @endif>
+                        <tr data-purchase-id="{{ $purchase->id }}" @if($purchase->status !== 'received' && !$purchase->lines->contains(fn($line) => $line->received_quantity > 0)) data-update-url="{{ route('compras.update', $purchase) }}" @endif>
                             <td>
                                 <div class="font-bold">{{ $purchase->number }}</div>
                                 <div class="text-xs text-muted">
@@ -56,7 +56,7 @@
                                 </div>
                             </td>
                             @php $totalOrdered = $purchase->lines->sum(fn($line) => (float) $line->ordered_quantity); @endphp
-                            <td data-field="ordered_quantity" data-cleanup="int" class="text-right font-bold" data-value="{{ $totalOrdered }}">{{ number_format($totalOrdered, 0, ',', '.') }}</td>
+                            <td data-field="ordered_quantity" data-cleanup="int" class="text-right font-bold" data-value="{{ (int) $totalOrdered }}">{{ number_format($totalOrdered, 0, ',', '.') }}</td>
                             <td>
                                 @php
                                     $badgeClass = match($purchase->status) {
@@ -126,11 +126,40 @@
                                             </div>
                                         </div>
                                         @endif
+                                        @if($purchase->receptions->count())
+                                        <div class="card mt-4">
+                                            <div class="card__header"><h2 class="card__title">Historial de recepciones ({{ $purchase->receptions->count() }})</h2></div>
+                                            <div class="card__body">
+                                                @php $runningTotal = 0; @endphp
+                                                <table class="data-table">
+                                                    <thead><tr><th>Fecha</th><th>Insumo</th><th class="text-right">Recibido</th><th class="text-right">Costo</th><th class="text-right">Subtotal</th><th class="text-right">Acumulado</th></tr></thead>
+                                                    <tbody>
+                                                        @foreach($purchase->receptions->sortBy('received_on') as $reception)
+                                                            @foreach($reception->lines as $rl)
+                                                                @php
+                                                                    $runningTotal += (float) $rl->quantity;
+                                                                    $subtotal = $rl->quantity * $rl->unit_cost;
+                                                                @endphp
+                                                                <tr>
+                                                                    <td>{{ $reception->received_on->format('d/m/Y') }}</td>
+                                                                    <td>{{ $rl->purchaseLine->input?->name ?? '—' }}</td>
+                                                                    <td class="text-right">{{ number_format($rl->quantity, 0, ',', '.') }}</td>
+                                                                    <td class="text-right">${{ number_format($rl->unit_cost, 0, ',', '.') }}</td>
+                                                                    <td class="text-right">${{ number_format($subtotal, 0, ',', '.') }}</td>
+                                                                    <td class="text-right font-bold">{{ number_format($runningTotal, 0, ',', '.') }}</td>
+                                                                </tr>
+                                                            @endforeach
+                                                        @endforeach
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        @endif
                                     </template>
                                     @if($purchase->status !== 'received' && !$purchase->lines->contains(fn($line) => $line->received_quantity > 0))
                                     <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
                                     @endif
-                                    @if(auth()->user()->canManage())
+                                    @if(auth()->user()->canManage() && $purchase->status !== 'received' && !$purchase->lines->contains(fn($line) => $line->received_quantity > 0))
                                         <form method="POST" action="{{ route('compras.destroy', $purchase) }}" class="inline-form" style="display:inline;">
                                             @csrf
                                             @method('DELETE')
@@ -161,6 +190,8 @@
             var modal = document.getElementById('detailModal');
             var body = document.getElementById('detailModalBody');
             document.getElementById('detailModalTitle').textContent = 'Recibir mercadería';
+            var match = url.match(/\/compras\/(\d+)\//);
+            modal.dataset.purchaseId = match ? match[1] : '';
 
             var html = '<form method="POST" action="' + url + '">';
             html += '<input type="hidden" name="_token" value="' + document.querySelector('meta[name="csrf-token"]').content + '">';
@@ -177,7 +208,8 @@
             });
 
             html += '</tbody></table>';
-            html += '<div class="form-actions mt-4"><button type="button" class="btn btn-outline-warning" onclick="closeDetailModal()">Cancelar</button> <button type="submit" class="btn btn-primary">Confirmar recepción</button></div>';
+            html += '<div class="form-group mt-4"><label class="form-label">Fecha de recepción</label><input type="date" name="received_on" class="form-control input-date" value="' + new Date().toISOString().slice(0, 10) + '" required></div>';
+            html += '<div class="form-actions mt-4"><button type="button" class="btn btn-outline-warning" onclick="closeDetailModal()">Cancelar</button> <button type="button" class="btn btn-primary" onclick="submitReceiveForm(this, \'' + url + '\')">Confirmar recepción</button></div>';
             html += '</form>';
 
             body.innerHTML = html;
@@ -187,6 +219,122 @@
 
         function numberFormat(n) {
             return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+
+        function updatePurchaseRow(json) {
+            var purchaseId = document.getElementById('detailModal').dataset.purchaseId;
+            if (!purchaseId) return;
+            var row = document.querySelector('tr[data-purchase-id="' + purchaseId + '"]');
+            if (!row) return;
+            var allTds = row.querySelectorAll('td');
+            var statusTd = allTds[allTds.length - 3];
+            var progressTd = allTds[allTds.length - 2];
+            var badgeClass = { received: 'badge-success', partial: 'badge-warning' }[json.status] || 'badge-info';
+            statusTd.innerHTML = '<span class="badge ' + badgeClass + '">' + json.statusLabel + '</span>';
+            var barClass = json.pct >= 100 ? 'progress-bar-success' : (json.pct > 0 ? 'progress-bar-warning' : 'progress-bar-info');
+            progressTd.innerHTML = '<div class="progress-bar-container"><div class="progress-bar ' + barClass + '" style="width: ' + json.pct + '%;"></div></div><span class="text-xs text-muted">' + json.totalReceived.toLocaleString('es-CL') + ' / ' + json.totalOrdered.toLocaleString('es-CL') + '</span>';
+            if (json.status === 'received') {
+                var actionsTd = allTds[allTds.length - 1];
+                var receiveBtn = actionsTd.querySelector('.btn-primary');
+                if (receiveBtn) receiveBtn.remove();
+                var editBtn = actionsTd.querySelector('.btn-edit-inline');
+                if (editBtn) editBtn.remove();
+                var deleteForm = actionsTd.querySelector('.inline-form');
+                if (deleteForm) deleteForm.remove();
+            }
+        }
+
+        function updateReceivedInModal(form) {
+            var inputs = form.querySelectorAll('input[name^="received["]');
+            var modalBody = document.getElementById('detailModalBody');
+            var modalRows = modalBody.querySelectorAll('table tbody tr');
+            inputs.forEach(function(inp) {
+                var match = inp.name.match(/received\[(\d+)\]/);
+                if (!match) return;
+                var lineId = match[1];
+                var receivedNow = parseInt(inp.value) || 0;
+                if (receivedNow <= 0) return;
+                for (var j = 0; j < modalRows.length; j++) {
+                    var mInputs = modalRows[j].querySelectorAll('input[name="received[' + lineId + ']"]');
+                    if (mInputs.length > 0) {
+                        var receivedCell = modalRows[j].querySelectorAll('td')[2];
+                        var current = parseInt(receivedCell.textContent.replace(/\./g, '').replace(/,/g, '')) || 0;
+                        receivedCell.textContent = (current + receivedNow).toLocaleString('es-CL');
+                        break;
+                    }
+                }
+            });
+        }
+
+        function rebuildPurchaseHistory(json, purchaseId) {
+            if (!json.history || !json.history.length) return;
+            var row = document.querySelector('tr[data-purchase-id="' + purchaseId + '"]');
+            if (!row) return;
+            var template = row.querySelector('template');
+            if (!template) return;
+            var content = template.content;
+            var existingCard = content.querySelector('.card:last-child');
+            if (existingCard && existingCard.querySelector('.card__title') && existingCard.querySelector('.card__title').textContent.indexOf('Historial') !== -1) {
+                existingCard.remove();
+            }
+            var card = document.createElement('div');
+            card.className = 'card mt-4';
+            var html = '<div class="card__header"><h2 class="card__title">Historial de recepciones (' + json.historyCount + ')</h2></div>';
+            html += '<div class="card__body"><table class="data-table"><thead><tr><th>Fecha</th><th>Insumo</th><th class="text-right">Recibido</th><th class="text-right">Costo</th><th class="text-right">Subtotal</th><th class="text-right">Acumulado</th></tr></thead><tbody>';
+            json.history.forEach(function(h) {
+                html += '<tr><td>' + h.date + '</td><td>' + h.input + '</td><td class="text-right">' + h.quantity + '</td><td class="text-right">' + h.unit_cost + '</td><td class="text-right">' + h.subtotal + '</td><td class="text-right font-bold">' + h.accumulated + '</td></tr>';
+            });
+            html += '</tbody></table></div>';
+            card.innerHTML = html;
+            content.appendChild(card);
+        }
+
+        function submitReceiveForm(btn, url) {
+            var form = btn.closest('form');
+            var formData = new FormData(form);
+            var purchaseId = document.getElementById('detailModal').dataset.purchaseId;
+            btn.disabled = true;
+            btn.textContent = 'Procesando...';
+
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(json) {
+                if (json.errors) {
+                    Swal.fire('Error', Object.values(json.errors).flat().join('\n'), 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Confirmar recepción';
+                } else {
+                    Swal.fire({ icon: 'success', title: 'Recepción registrada', timer: 1200, showConfirmButton: false });
+                    updatePurchaseRow(json);
+                    updateReceivedInModal(form);
+                    rebuildPurchaseHistory(json, purchaseId);
+                    form.querySelectorAll('input').forEach(function(inp) { inp.disabled = true; });
+                    btn.textContent = '✓ Recibido';
+                    btn.className = 'btn btn-success';
+                    var cancelBtn = form.querySelector('.btn-outline-warning');
+                    if (cancelBtn) {
+                        cancelBtn.textContent = 'Ver historial';
+                        cancelBtn.className = 'btn btn-outline-info';
+                        cancelBtn.onclick = function() {
+                            closeDetailModal();
+                            var row = document.querySelector('tr[data-purchase-id="' + purchaseId + '"]');
+                            if (row) {
+                                var detailBtn = row.querySelector('.btn-outline-info');
+                                if (detailBtn) detailBtn.click();
+                            }
+                        };
+                    }
+                }
+            })
+            .catch(function() {
+                Swal.fire('Error', 'No se pudo procesar.', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Confirmar recepción';
+            });
         }
     </script>
 </x-erp-layout>

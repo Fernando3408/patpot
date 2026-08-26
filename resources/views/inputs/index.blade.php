@@ -15,6 +15,8 @@
                         <th class="text-right">Stock</th>
                         <th class="text-right">Seguridad</th>
                         <th>Unidad</th>
+                        <th class="text-right">Costo</th>
+                        <th class="text-center">Consumo sem.</th>
                         <th class="text-right">Reposición</th>
                         <th class="text-center">Cobertura</th>
                         <th>Nivel</th>
@@ -34,8 +36,17 @@
                             <td data-field="stock" data-cleanup="int" class="text-right font-bold">{{ number_format($input->stock, 0, ',', '.') }}</td>
                             <td data-field="safety_stock" data-cleanup="int" class="text-right text-xs">{{ number_format($input->safety_stock, 0, ',', '.') }}</td>
                             <td data-field="unit" class="text-xs font-bold">{{ $input->unit }}</td>
-                            <td class="text-right text-xs">{{ number_format($input->reorder_point, 0, ',', '.') }}</td>
-                            <td data-readonly="true" class="text-xs text-center">
+                            <td data-field="unit_cost" data-cleanup="int" class="text-right text-xs font-bold">${{ number_format($input->unit_cost, 0, ',', '.') }}</td>
+                            <td data-field="weekly_consumption" data-cleanup="int" data-value="{{ (int) $input->weekly_consumption }}" data-calculated="true" class="text-center text-xs">
+                                <div class="fw-600">{{ number_format($input->weekly_consumption, 0, ',', '.') }}</div>
+                                @php $auto = $input->auto_weekly_consumption; @endphp
+                                @if($auto > 0 && $auto != $input->weekly_consumption)
+                                    <div class="text-muted" style="font-size:0.7rem;">Real: {{ number_format($auto, 0, ',', '.') }}</div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" style="font-size:0.65rem;padding:0.1rem 0.3rem;margin-top:2px;" onclick="useAverage(this, {{ $auto }})">Usar promedio</button>
+                                @endif
+                            </td>
+                            <td data-calculated="true" class="text-right text-xs">{{ number_format($input->reorder_point, 0, ',', '.') }}</td>
+                            <td data-calculated="true" data-readonly="true" class="text-xs text-center">
                                 @if($input->coverage_days !== null)
                                     <div class="fw-600 mb-1">{{ $input->coverage_days }} días</div>
                                     @php
@@ -50,7 +61,7 @@
                                     —
                                 @endif
                             </td>
-                            <td data-readonly="true">
+                            <td data-calculated="true" data-readonly="true">
                                 @php $level = $input->inventory_level; @endphp
                                 @if($level === 'ok')
                                     <span class="badge badge-success">Óptimo</span>
@@ -89,6 +100,70 @@
     @endif
 
     <script>
+        function updateInputRowCells(row, json) {
+            var cells = row.querySelectorAll('td');
+            var allCells = Array.from(cells);
+            var reorderCell = allCells[7];
+            if (reorderCell) reorderCell.textContent = json.reorder_point != null ? Math.round(json.reorder_point).toLocaleString('es-CL') : '—';
+            var coverageCell = allCells[8];
+            if (coverageCell && json.coverage_days != null) {
+                var maxDays = 90;
+                var pct = Math.min((json.coverage_days / maxDays) * 100, 100);
+                var color = json.coverage_days <= 7 ? '#dc2626' : (json.coverage_days <= 21 ? '#f59e0b' : '#16a34a');
+                coverageCell.innerHTML = '<div class="fw-600 mb-1">' + Math.round(json.coverage_days) + ' días</div><div class="coverage-bar-bg"><div class="coverage-bar-fill" style="width:' + pct + '%;background:' + color + ';"></div></div>';
+            } else if (coverageCell) {
+                coverageCell.innerHTML = '—';
+            }
+            var levelCell = allCells[9];
+            if (levelCell && json.inventory_level) {
+                var badges = { ok: '<span class="badge badge-success">Óptimo</span>', atencion: '<span class="badge badge-warning">Atencion</span>', critico: '<span class="badge badge-danger">Crítico</span>' };
+                levelCell.innerHTML = badges[json.inventory_level] || '';
+            }
+        }
+
+        function useAverage(btn, value) {
+            var row = btn.closest('tr');
+            var td = row.querySelector('td[data-field="weekly_consumption"]');
+            if (!td) return;
+            var url = row.dataset.updateUrl;
+            var formData = new FormData();
+            formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+            formData.append('_method', 'PUT');
+            formData.append('weekly_consumption', Math.round(value));
+            fetch(url, {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(json) {
+                if (json.errors) {
+                    Swal.fire('Error', Object.values(json.errors).flat().join('\n'), 'error');
+                } else {
+                    td.querySelector('.fw-600').textContent = Math.round(value).toLocaleString('es-CL');
+                    btn.remove();
+                    var realDiv = td.querySelector('.text-muted');
+                    if (realDiv) realDiv.remove();
+                    updateInputRowCells(row, json);
+                    Swal.fire({ icon: 'success', title: 'Consumo actualizado', timer: 1000, showConfirmButton: false });
+                }
+            })
+            .catch(function() {
+                Swal.fire('Error', 'No se pudo actualizar.', 'error');
+            });
+        }
+
+        window.onInlineEditSuccess = function(row, json) {
+            updateInputRowCells(row, json);
+            var cells = Array.from(row.querySelectorAll('td'));
+            if (json.unit_cost != null) {
+                cells[5].innerHTML = '$' + Math.round(json.unit_cost).toLocaleString('es-CL');
+            }
+            if (json.weekly_consumption != null) {
+                cells[6].innerHTML = '<div class="fw-600">' + Math.round(json.weekly_consumption).toLocaleString('es-CL') + '</div>';
+            }
+        };
+
         function openAdjustModal(id, name, currentStock, unit) {
             var modal = document.getElementById('detailModal');
             var body = document.getElementById('detailModalBody');

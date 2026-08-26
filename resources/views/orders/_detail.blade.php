@@ -58,3 +58,44 @@
         </div>
     </div>
     @endif
+
+    @if($order->shipments->count())
+    <div class="card mt-4">
+        <div class="card__header">
+            <h2 class="card__title">Historial de despachos ({{ $order->shipments->count() }})</h2>
+        </div>
+        <div class="card__body">
+            @php $runningTotal = 0; @endphp
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Producto</th>
+                        <th class="text-right">Cajas</th>
+                        <th class="text-right">Precio/caja</th>
+                        <th class="text-right">Subtotal</th>
+                        <th class="text-right">Acumulado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($order->shipments->sortBy('shipped_on') as $shipment)
+                        @foreach($shipment->lines as $sl)
+                            @php
+                                $runningTotal += (float) $sl->boxes;
+                                $subtotal = $sl->boxes * $sl->price_box;
+                            @endphp
+                            <tr>
+                                <td>{{ $shipment->shipped_on->format('d/m/Y') }}</td>
+                                <td>{{ $sl->orderLine->product?->name ?? '—' }}</td>
+                                <td class="text-right">{{ (int) $sl->boxes }}</td>
+                                <td class="text-right">${{ number_format($sl->price_box, 0, ',', '.') }}</td>
+                                <td class="text-right">${{ number_format($subtotal, 0, ',', '.') }}</td>
+                                <td class="text-right font-bold">{{ (int) $runningTotal }}</td>
+                            </tr>
+                        @endforeach
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    </div>
+    @endif

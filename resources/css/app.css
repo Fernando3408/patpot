@@ -532,7 +532,7 @@ textarea.form-control {
 }
 
 .data-table th {
-  padding: 0.7rem 0.85rem;
+  padding: 0.85rem 0.85rem;
   font-weight: 600;
   font-size: 0.75rem;
   text-transform: uppercase;
@@ -542,7 +542,7 @@ textarea.form-control {
 }
 
 .data-table td {
-  padding: 0.65rem 0.85rem;
+  padding: 0.85rem 0.85rem;
   vertical-align: middle;
   border-bottom: 1px solid var(--border-light);
   color: var(--text);
@@ -729,6 +729,7 @@ textarea.form-control {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .page-header-actions {
@@ -944,7 +945,7 @@ textarea.form-control {
 /* --- Bloque 3: Operacion y Analisis --- */
 .dash-bottom-grid {
   display: grid;
-  grid-template-columns: 1fr 1.2fr;
+  grid-template-columns: 1fr;
   gap: 0.5rem;
   align-items: stretch;
 }
@@ -1273,7 +1274,7 @@ textarea.form-control {
    ========================================================================== */
 .actions-cell {
   display: flex;
-  gap: 0.35rem;
+  gap: 0.5rem;
   justify-content: flex-end;
   align-items: center;
 }
@@ -2031,4 +2032,132 @@ td[data-field]:not([data-readonly="true"]):hover {
    ========================================================================== */
 .modal-container--wide {
   max-width: 800px;
+}
+
+/* ==========================================================================
+   3D BAR CHART
+   ========================================================================== */
+.chart3d-container {
+  width: 100%;
+}
+
+.chart3d-grid {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  min-height: 200px;
+  padding: 1rem 1rem 0;
+  position: relative;
+}
+
+.chart3d-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.chart3d-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 160px;
+  padding-bottom: 2px;
+}
+
+.chart3d-bar-stack {
+  position: relative;
+  width: 28px;
+}
+
+.chart3d-bar {
+  width: 28px;
+  border-radius: 2px 2px 0 0;
+  position: relative;
+  z-index: 2;
+  transition: opacity 0.2s;
+}
+
+.chart3d-bar:hover {
+  opacity: 0.85;
+}
+
+.chart3d-bar--green {
+  background: linear-gradient(180deg, #34d399 0%, #16a34a 60%, #15803d 100%);
+  box-shadow: inset -2px 0 0 rgba(0,0,0,0.1), 1px 1px 3px rgba(0,0,0,0.12);
+}
+
+.chart3d-bar--gray {
+  background: linear-gradient(180deg, #cbd5e1 0%, #94a3b8 60%, #64748b 100%);
+  box-shadow: inset -2px 0 0 rgba(0,0,0,0.1), 1px 1px 3px rgba(0,0,0,0.12);
+}
+
+.chart3d-bar-face {
+  position: absolute;
+  width: 10px;
+  top: 0;
+  right: -10px;
+  z-index: 1;
+  border-radius: 0 2px 0 0;
+  transform: skewY(-25deg);
+  transform-origin: top left;
+}
+
+.chart3d-bar-face--green {
+  background: linear-gradient(180deg, #059669 0%, #166534 100%);
+}
+
+.chart3d-bar-face--gray {
+  background: linear-gradient(180deg, #64748b 0%, #334155 100%);
+}
+
+.chart3d-label {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 0.6rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  padding: 0 0.25rem;
+}
+
+.chart3d-axis {
+  height: 1px;
+  background: var(--border-light);
+  margin: 0 1rem;
+}
+
+.chart3d-legend {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 0.75rem;
+  padding-bottom: 0.5rem;
+}
+
+.chart3d-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.chart3d-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.chart3d-dot--green {
+  background: linear-gradient(135deg, #34d399, #16a34a);
+}
+
+.chart3d-dot--gray {
+  background: linear-gradient(135deg, #cbd5e1, #94a3b8);
 }

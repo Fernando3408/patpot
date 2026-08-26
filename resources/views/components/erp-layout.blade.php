@@ -267,7 +267,8 @@
             cells.forEach(function(td) {
                 if (td.querySelector('.actions-cell')) return;
                 if (!td.dataset.field) return;
-                var val = td.dataset.value !== undefined ? td.dataset.value : td.textContent.trim();
+                if (td.dataset.readonly === 'true') return;
+                var val = td.dataset.value !== undefined ? td.dataset.value : td.textContent.trim().split('\n')[0].trim();
                 td.dataset.originalValue = val;
                 if (td.dataset.type === 'select' && td.dataset.options) {
                     var opts = JSON.parse(td.dataset.options);
@@ -316,6 +317,9 @@
             });
             var actionsTd = row.querySelector('.actions-cell');
             if (actionsTd) {
+                if (!actionsTd.dataset.actionsHtml) {
+                    actionsTd.dataset.actionsHtml = actionsTd.innerHTML;
+                }
                 actionsTd.innerHTML = '<button type="button" class="btn btn-primary btn-sm" onclick="confirmInlineEdit(this)">Confirmar</button> <button type="button" class="btn btn-outline-warning btn-sm" onclick="cancelInlineEdit()">Cancelar</button>';
             }
         }
@@ -357,6 +361,11 @@
                                     val = val.replace(/[^0-9.\-]/g, '');
                                 }
                                 var origClean = (td.dataset.originalValue || '').replace(/\s*cajas\s*/i, '').replace(/^\$/, '').trim();
+                                if (td.dataset.cleanup === 'int') {
+                                    origClean = origClean.replace(/[^0-9\-]/g, '');
+                                } else if (td.dataset.cleanup === 'currency' || td.dataset.cleanup === 'decimal') {
+                                    origClean = origClean.replace(/[^0-9.\-]/g, '');
+                                }
                                 if (val === origClean) return;
                             }
                             formData.append(td.dataset.field, val);
@@ -373,8 +382,43 @@
                             var msgs = Object.values(json.errors).flat().join('\n');
                             Swal.fire('Error', msgs, 'error');
                         } else {
-                            Swal.fire('Guardado', 'Los cambios fueron guardados.', 'success');
-                            setTimeout(function() { location.reload(); }, 800);
+                            cells.forEach(function(td) {
+                                if (!td.dataset.field || td.dataset.readonly === 'true') return;
+                                if (td.dataset.calculated === 'true') return;
+                                var el = td.querySelector('input, select');
+                                if (el && td.dataset.field) {
+                                    var newVal = el.value;
+                                    if (td.dataset.type === 'select') {
+                                        var sel = td.querySelector('select');
+                                        var optText = sel.options[sel.selectedIndex].text;
+                                        td.innerHTML = '<span class="badge badge-' + (newVal === '1' || newVal === 'active' ? 'success' : 'secondary') + '">' + optText + '</span>';
+                                    } else if (td.dataset.type === 'date') {
+                                        var parts = newVal.split('-');
+                                        td.innerHTML = parts.length === 3 ? parts[2] + '/' + parts[1] + '/' + parts[0] : newVal;
+                                    } else if (td.dataset.cleanup === 'int') {
+                                        var clean = newVal.replace(/[^0-9\-]/g, '');
+                                        var num = parseInt(clean, 10);
+                                        td.innerHTML = isNaN(num) ? clean : num.toLocaleString('es-CL');
+                                    } else if (td.dataset.cleanup === 'currency') {
+                                        var cleanCur = newVal.replace(/[^0-9.\-]/g, '');
+                                        var numCur = parseFloat(cleanCur);
+                                        td.innerHTML = isNaN(numCur) ? cleanCur : '$' + numCur.toLocaleString('es-CL');
+                                    } else {
+                                        td.textContent = newVal;
+                                    }
+                                }
+                            });
+                            if (typeof window.onInlineEditSuccess === 'function') {
+                                window.onInlineEditSuccess(row, json);
+                            }
+                            var actionsTd = row.querySelector('.actions-cell');
+                            if (actionsTd && actionsTd.dataset.actionsHtml) {
+                                actionsTd.innerHTML = actionsTd.dataset.actionsHtml;
+                            }
+                            row.classList.remove('editing');
+                            currentEditingRow = null;
+                            originalRowHtml = null;
+                            Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Guardado', showConfirmButton: false, timer: 3000 });
                         }
                     })
                     .catch(function() {

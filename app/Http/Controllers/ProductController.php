@@ -69,6 +69,8 @@ class ProductController extends Controller
             $rules = [
                 'name' => 'sometimes|required|string|max:255',
                 'sku' => ['sometimes', 'required', 'string', 'max:255', Rule::unique(Product::class)->ignore($product)],
+                'stock_boxes' => 'sometimes|integer|min:0',
+                'min_stock_boxes' => 'sometimes|integer|min:0',
                 'sale_price_box' => 'sometimes|nullable|numeric|min:0',
                 'status' => 'sometimes|required|in:active,inactive',
             ];
@@ -87,10 +89,19 @@ class ProductController extends Controller
             $validated = $request->validate($rules);
 
             $product->update($validated);
+            $product->load('recipes.input');
             AuditService::log('ACTUALIZACIÓN DE PRODUCTO', "Actualizó producto: {$product->name}", $product);
 
             if ($request->ajax()) {
-                return response()->json(['success' => true]);
+                $margin = $product->sale_price_box - $product->cost_per_box;
+                return response()->json([
+                    'success' => true,
+                    'sale_price_box' => $product->sale_price_box,
+                    'cost_per_box' => $product->cost_per_box,
+                    'margin' => $margin,
+                    'margin_pct' => $product->sale_price_box > 0 ? round($margin / $product->sale_price_box * 100, 1) : 0,
+                    'production_capacity' => $product->production_capacity,
+                ]);
             }
             return redirect('/productos');
         } catch (\Illuminate\Validation\ValidationException $e) {

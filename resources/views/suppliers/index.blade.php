@@ -29,7 +29,7 @@
                                     <br><span class="text-xs text-muted">{{ $supplier->email }}</span>
                                 @endif
                             </td>
-                            <td data-field="lead_time_days" data-value="{{ $supplier->lead_time_days }}" class="text-xs text-center">{{ $supplier->lead_time_days }} días</td>
+                            <td data-field="lead_time_days" data-value="{{ (int) $supplier->lead_time_days }}" class="text-xs text-center">{{ $supplier->lead_time_days }} días</td>
                             <td data-field="status" data-type="select" data-options='[{"value":"1","label":"Activo"},{"value":"0","label":"Inactivo"}]'>
                                 <span class="badge @if($supplier->status) badge-success @else badge-danger @endif">
                                     {{ $supplier->status ? 'Activo' : 'Inactivo' }}

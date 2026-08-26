@@ -27,4 +27,9 @@ class Purchase extends Model
     {
         return $this->hasMany(PurchaseLine::class);
     }
+
+    public function receptions(): HasMany
+    {
+        return $this->hasMany(Reception::class);
+    }
 }

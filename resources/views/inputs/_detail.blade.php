@@ -12,8 +12,14 @@
             <div><strong>Stock seguridad:</strong> {{ number_format($input->safety_stock, 0, ',', '.') }}</div>
             <div><strong>Tránsito:</strong> {{ number_format($input->transit ?? 0, 0, ',', '.') }}</div>
             <div><strong>Costo unitario:</strong> ${{ number_format($input->unit_cost, 0, ',', '.') }}</div>
-            <div><strong>Consumo semanal:</strong> {{ number_format($input->weekly_consumption, 0, ',', '.') }}</div>
+            <div><strong>Consumo semanal:</strong> {{ number_format($input->weekly_consumption, 0, ',', '.') }}
+                @php $auto = $input->auto_weekly_consumption; @endphp
+                @if($auto > 0)
+                    <span class="text-muted text-xs">(Real: {{ number_format($auto, 0, ',', '.') }})</span>
+                @endif
+            </div>
             <div><strong>Lead time:</strong> {{ $input->lead_time_days }} días</div>
+            <div><strong>Stock proyectado:</strong> {{ number_format($input->projected_stock, 0, ',', '.') }}</div>
             <div><strong>Punto reposición:</strong> {{ number_format($input->reorder_point, 0, ',', '.') }}</div>
             <div><strong>Semanas objetivo:</strong> {{ $input->target_weeks ?? '—' }}</div>
             <div><strong>Compra mínima:</strong> {{ number_format($input->min_purchase ?? 0, 0, ',', '.') }}</div>

@@ -10,19 +10,28 @@ use App\Models\Product;
 use App\Models\Production;
 use App\Models\Purchase;
 use App\Models\PurchaseLine;
+use App\Models\Reception;
+use App\Models\ReceptionLine;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class InventoryService
 {
-    public function receivePurchase(Purchase $purchase, array $quantities): void
+    public function receivePurchase(Purchase $purchase, array $quantities, string $receivedOn): void
     {
-        DB::transaction(function () use ($purchase, $quantities): void {
+        DB::transaction(function () use ($purchase, $quantities, $receivedOn): void {
             $lockedPurchase = Purchase::query()->lockForUpdate()->findOrFail($purchase->id);
             $lines = PurchaseLine::query()
                 ->whereBelongsTo($lockedPurchase)
                 ->lockForUpdate()
                 ->get();
+
+            $reception = $lockedPurchase->receptions()->create([
+                'received_on' => $receivedOn,
+                'total' => 0,
+                'user_id' => auth()->id(),
+            ]);
+            $total = 0.0;
 
             foreach ($lines as $line) {
                 $quantity = (float) ($quantities[$line->id] ?? 0);
@@ -36,10 +45,16 @@ class InventoryService
                 $input = Input::query()->lockForUpdate()->findOrFail($line->input_id);
                 $input->increment('stock', $quantity);
                 $input->decrement('transit', min($quantity, (float) $input->transit));
-                $input->update(['unit_cost' => $line->unit_cost]);
                 $line->increment('received_quantity', $quantity);
+                $reception->lines()->create([
+                    'purchase_line_id' => $line->id,
+                    'quantity' => $quantity,
+                    'unit_cost' => $line->unit_cost,
+                ]);
+                $total += $quantity * (float) $line->unit_cost;
                 InventoryMovement::query()->create(['input_id' => $input->id, 'kind' => 'Recepción de compra', 'quantity' => $quantity, 'reference' => $lockedPurchase->number, 'user_id' => auth()->id()]);
             }
+            $reception->update(['total' => $total]);
             $lockedPurchase->refresh()->load('lines');
             $lockedPurchase->update(['status' => $lockedPurchase->lines->every(fn (PurchaseLine $line): bool => (float) $line->received_quantity >= (float) $line->ordered_quantity) ? 'received' : 'partial']);
             AuditService::log('RECEPCIÓN DE COMPRA', 'Recepción de compra', $lockedPurchase);
@@ -193,7 +208,7 @@ class InventoryService
                 $product->decrement('stock_boxes', $quantity);
                 $line->increment('dispatched_boxes', $quantity);
                 $shipment->lines()->create(['order_line_id' => $line->id, 'boxes' => $quantity, 'price_box' => $line->price_box]);
-                $total += $quantity * (float) $line->price_box * (1 - ((float) ($line->discount_pct ?? $lockedOrder->customer->discount ?? 0)) / 100);
+                $total += $quantity * (float) $line->price_box * (1 - ((float) ($line->discount_pct !== null ? $line->discount_pct : ($lockedOrder->customer->discount ?? 0))) / 100);
                 InventoryMovement::query()->create(['product_id' => $product->id, 'kind' => 'Despacho de pedido', 'quantity' => -$quantity, 'reference' => $lockedOrder->number, 'user_id' => auth()->id()]);
             }
             if ($shipment->lines()->doesntExist()) {

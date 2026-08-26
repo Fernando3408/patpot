@@ -52,19 +52,18 @@
                             </td>
                             <td data-field="status" data-type="select" data-options='[{"value":"planned","label":"Planificada"},{"value":"in_progress","label":"En proceso"},{"value":"closed","label":"Cerrada"}]'>
                                 @php
-                                    $statusClass = match($production->status) {
-                                        'closed' => 'text-success',
-                                        'in_progress' => 'text-warning',
-                                        default => 'text-info',
+                                    $statusBadge = match($production->status) {
+                                        'closed' => 'badge-success',
+                                        'in_progress' => 'badge-warning',
+                                        default => 'badge-info',
                                     };
-                                @endphp
-                                <span class="font-bold {{ $statusClass }}">
-                                    {{ match($production->status) {
+                                    $statusLabel = match($production->status) {
                                         'closed' => 'Cerrada',
                                         'in_progress' => 'En proceso',
                                         default => 'Planificada',
-                                    } }}
-                                </span>
+                                    };
+                                @endphp
+                                <span class="badge {{ $statusBadge }}">{{ $statusLabel }}</span>
                             </td>
                             <td class="text-right">
                                 <div class="actions-cell">
@@ -98,7 +97,6 @@
                                             </div>
                                         </details>
                                     @else
-                                        <span class="text-success font-bold">✓ Cerrada</span>
                                     @endif
                                 </div>
                             </td>

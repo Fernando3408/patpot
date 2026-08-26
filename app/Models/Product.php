@@ -82,12 +82,6 @@ class Product extends Model
 
     public function delete(): bool
     {
-        $this->productions()->delete();
-        $this->prices()->delete();
-        $this->retail()->delete();
-        $this->recipes()->delete();
-        $this->orderLines()->delete();
-
         return parent::delete();
     }
 }
