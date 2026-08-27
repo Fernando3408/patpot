@@ -55,14 +55,34 @@ class OrderController extends Controller
         } unset($line);
         $order = Order::create(collect($data)->except('lines')->all() + ['status' => 'pending']);
         $order->lines()->createMany($data['lines']);
+
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $file) {
+                $storedName = uniqid('att_', true) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('attachments', $storedName, 'local');
+                $order->attachments()->create([
+                    'original_name' => $file->getClientOriginalName(),
+                    'stored_name' => $storedName,
+                    'path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'user_id' => auth()->id(),
+                ]);
+            }
+        }
+
         AuditService::log('CREACIÓN DE PEDIDO', "Creó pedido: {$order->number}", $order);
+
+        if ($request->ajax()) {
+            return response()->json(['ok' => true]);
+        }
 
         return redirect('/pedidos');
     }
 
     public function show(Order $order): View
     {
-        $order->load('customer', 'store', 'lines.product', 'shipments.lines.orderLine.product');
+        $order->load('customer', 'store', 'lines.product', 'shipments.lines.orderLine.product', 'attachments');
         return view('orders._detail', compact('order'));
     }
 
@@ -113,6 +133,7 @@ class OrderController extends Controller
 
     public function edit(Order $pedido): View
     {
+        $pedido->load('attachments');
         return view('orders.edit', ['order' => $pedido, 'customers' => Customer::where('status', true)->orderBy('business_name')->get(), 'stores' => Store::where('status', true)->orderBy('name')->get()]);
     }
 

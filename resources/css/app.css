@@ -2161,3 +2161,49 @@ td[data-field]:not([data-readonly="true"]):hover {
 .chart3d-dot--gray {
   background: linear-gradient(135deg, #cbd5e1, #94a3b8);
 }
+
+/* --- Attachments --- */
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 6px;
+  background: var(--surface);
+  transition: box-shadow 0.15s;
+}
+
+.attachment-item:hover {
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+.attachment-name {
+  flex: 1;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-name:hover {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.attachment-size {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.attachment-empty {
+  padding: 12px;
+  text-align: center;
+  font-size: 0.8rem;
+}

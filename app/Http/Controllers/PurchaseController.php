@@ -53,14 +53,34 @@ class PurchaseController extends Controller
             $purchase->lines()->create($line);
             Input::query()->findOrFail($line['input_id'])->increment('transit', $line['ordered_quantity']);
         }
+
+        if ($request->hasFile('files')) {
+            foreach ($request->file('files') as $file) {
+                $storedName = uniqid('att_', true) . '.' . $file->getClientOriginalExtension();
+                $path = $file->storeAs('attachments', $storedName, 'local');
+                $purchase->attachments()->create([
+                    'original_name' => $file->getClientOriginalName(),
+                    'stored_name' => $storedName,
+                    'path' => $path,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'user_id' => auth()->id(),
+                ]);
+            }
+        }
+
         AuditService::log('CREACIÓN DE COMPRA', "Creó compra: {$purchase->number}", $purchase);
+
+        if ($request->ajax()) {
+            return response()->json(['ok' => true]);
+        }
 
         return redirect('/compras');
     }
 
     public function show(Purchase $purchase)
     {
-        $purchase->load('supplier', 'lines.input', 'receptions.lines.purchaseLine.input');
+        $purchase->load('supplier', 'lines.input', 'receptions.lines.purchaseLine.input', 'attachments');
         return view('purchases._detail', compact('purchase'));
     }
 
@@ -120,7 +140,7 @@ class PurchaseController extends Controller
 
     public function edit(Purchase $compra): View
     {
-        $compra->load('lines.input');
+        $compra->load('lines.input', 'attachments');
         $inputs = Input::where('status', true)->orderBy('name')->get();
         $canEditLines = $compra->lines->every(fn ($line) => (float) $line->received_quantity === 0);
 

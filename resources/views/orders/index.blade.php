@@ -186,6 +186,7 @@
                                         </div>
                                         @endif
                                     </template>
+                                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openAttachmentModal('App\\Models\\Order', {{ $order->id }}, 'Adjuntos: {{ $order->number }}')" title="Adjuntos"><i data-lucide="paperclip" class="icon-sm"></i></button>
                                     @if(!$order->lines->contains(fn($line) => $line->dispatched_boxes > 0))
                                     <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
                                     @endif

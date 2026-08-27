@@ -64,5 +64,5 @@
             </div>
         </form>
     </div>
-@if(!request()->ajax())
+
 </x-erp-layout>

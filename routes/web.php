@@ -1,13 +1,14 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthenticatedSessionController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InputController;
 use App\Http\Controllers\InventoryMovementController;
-use App\Http\Controllers\LoginLogController;
+
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductController;
@@ -206,6 +207,13 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('/auditoria', [AuditLogController::class, 'index'])->name('audit.index');
 
+    /* Adjuntos */
+
+    Route::get('/adjuntos/lista', [AttachmentController::class, 'list'])->name('attachments.list');
+    Route::post('/adjuntos', [AttachmentController::class, 'store'])->name('attachments.store');
+    Route::get('/adjuntos/{attachment}/descargar', [AttachmentController::class, 'download'])->name('attachments.download');
+    Route::delete('/adjuntos/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
+
     Route::middleware('canManage')->prefix('admin')->name('admin.')->group(function () {
         /* Papelera */
         Route::get('/papelera', [TrashController::class, 'index'])->name('trash.index');
@@ -226,8 +234,6 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/usuarios/crear', [RegisteredUserController::class, 'create'])->name('users.create');
         Route::post('/usuarios', [RegisteredUserController::class, 'store'])->name('users.store');
 
-        /* Bitácora de accesos */
-        Route::get('/bitacora-login', [LoginLogController::class, 'index'])->name('login-logs.index');
     });
 
 });

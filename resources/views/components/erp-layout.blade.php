@@ -107,7 +107,7 @@
                     <div class="sidebar-divider"></div>
                     <a href="{{ route('movements.index') }}" class="sidebar-link {{ request()->routeIs('movements.*') ? 'active' : '' }}">Movimientos</a>
                     <a href="{{ route('audit.index') }}" class="sidebar-link {{ request()->routeIs('audit.*') ? 'active' : '' }}">Auditoría</a>
-                    <a href="{{ route('admin.login-logs.index') }}" class="sidebar-link {{ request()->routeIs('admin.login-logs.*') ? 'active' : '' }}"><i data-lucide="clock" class="sidebar-link-icon icon-brand"></i> Bitácora de accesos</a>
+
                     <a href="{{ route('admin.index') }}" class="sidebar-link {{ request()->routeIs('admin.*') ? 'active' : '' }}">Administración</a>
                     @endif
                 </div>
@@ -168,6 +168,17 @@
             <div class="modal-body" id="detailModalBody">
                 <div class="modal-loading">Cargando...</div>
             </div>
+        </div>
+    </div>
+
+    {{-- Attachment Modal --}}
+    <div id="attachmentModal" class="modal-overlay" style="display:none;">
+        <div class="modal-container">
+            <div class="modal-header">
+                <h3 id="attachmentModalTitle">Adjuntos</h3>
+                <button class="modal-close" onclick="closeAttachmentModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="attachmentModalBody"></div>
         </div>
     </div>
 
@@ -530,6 +541,157 @@
                 }
             }
         });
+    </script>
+    <script>
+        window._attSelectedFiles = [];
+        window._attPreview = null;
+        window._attActions = null;
+        window._attModelClass = '';
+        window._attModelId = 0;
+
+        function renderAttPreview() {
+            window._attPreview.innerHTML = '';
+            window._attActions.style.display = window._attSelectedFiles.length > 0 ? 'block' : 'none';
+            window._attSelectedFiles.forEach(function(f, i) {
+                var item = document.createElement('div');
+                item.className = 'attachment-item';
+                var size = f.size < 1024 ? f.size + ' B' : f.size < 1048576 ? (f.size / 1024).toFixed(1) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB';
+                item.innerHTML = '<span class="attachment-name">' + f.name + '</span><span class="attachment-size">' + size + '</span><button type="button" class="btn btn-danger btn-sm" onclick="removeAttFile(' + i + ')">&times;</button>';
+                window._attPreview.appendChild(item);
+            });
+        }
+
+        function removeAttFile(i) {
+            window._attSelectedFiles.splice(i, 1);
+            renderAttPreview();
+        }
+
+        function openAttachmentModal(modelClass, modelId, title) {
+            var modal = document.getElementById('attachmentModal');
+            var modalTitle = document.getElementById('attachmentModalTitle');
+            var body = document.getElementById('attachmentModalBody');
+            modalTitle.textContent = title || 'Adjuntos';
+            body.innerHTML = '<div class="modal-loading">Cargando...</div>';
+            modal.style.display = 'flex';
+            window._attSelectedFiles = [];
+            window._attModelClass = modelClass;
+            window._attModelId = modelId;
+
+            var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('/adjuntos/lista?model_class=' + encodeURIComponent(modelClass) + '&model_id=' + modelId, {
+                method: 'GET',
+                headers: { 'X-CSRF-TOKEN': token, 'Accept': 'application/json' }
+            })
+                .then(function(r) { return r.json(); })
+                .then(function(data) { renderAttModalBody(data.attachments || []); })
+                .catch(function() { renderAttModalBody([]); });
+        }
+
+        function renderAttModalBody(attachments) {
+            var mc = window._attModelClass;
+            var mid = window._attModelId;
+            var html = '<div id="att-list">';
+            if (attachments.length > 0) {
+                attachments.forEach(function(att) {
+                    html += '<div class="attachment-item" id="att-' + att.id + '">';
+                    html += '<a href="/adjuntos/' + att.id + '/descargar" class="attachment-name">' + att.original_name + '</a>';
+                    html += '<span class="attachment-size">' + att.formatted_size + '</span>';
+                    html += '<button type="button" class="btn btn-danger btn-sm" onclick="deleteAttachment(' + att.id + ')" title="Eliminar">&times;</button>';
+                    html += '</div>';
+                });
+            } else {
+                html += '<div class="attachment-empty">No hay archivos adjuntos.</div>';
+            }
+            html += '</div>';
+            html += '<hr style="margin:12px 0;border-color:var(--border);">';
+            html += '<form id="att-upload-form" enctype="multipart/form-data" onsubmit="return false;">';
+            html += '<input type="hidden" name="_token" value="' + document.querySelector('meta[name="csrf-token"]').getAttribute('content') + '">';
+            html += '<input type="hidden" name="model_class" value="' + mc + '">';
+            html += '<input type="hidden" name="model_id" value="' + mid + '">';
+            html += '<input type="file" name="files[]" id="att-modal-input" multiple style="display:none;" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.csv">';
+            html += '<button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById(\'att-modal-input\').click();">+ Agregar archivo</button>';
+            html += '<div id="att-modal-preview" style="margin-top:8px;"></div>';
+            html += '<div class="mt-3" id="att-modal-actions" style="display:none;text-align:right;">';
+            html += '<button type="button" class="btn btn-primary btn-sm" onclick="uploadAttachments()">Subir archivos</button>';
+            html += '</div>';
+            html += '</form>';
+            document.getElementById('attachmentModalBody').innerHTML = html;
+
+            window._attPreview = document.getElementById('att-modal-preview');
+            window._attActions = document.getElementById('att-modal-actions');
+
+            document.getElementById('att-modal-input').addEventListener('change', function(e) {
+                Array.from(e.target.files).forEach(function(f) {
+                    if (f.size > 10 * 1024 * 1024) {
+                        Swal.fire('Archivo muy grande', f.name + ' supera los 10 MB.', 'warning');
+                        return;
+                    }
+                    window._attSelectedFiles.push(f);
+                });
+                renderAttPreview();
+            });
+        }
+
+        function closeAttachmentModal() {
+            document.getElementById('attachmentModal').style.display = 'none';
+        }
+
+        function deleteAttachment(id) {
+            Swal.fire({
+                title: 'Eliminar archivo',
+                text: '¿Seguro que deseas eliminar este archivo?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#df6403',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then(function(result) {
+                if (result.isConfirmed) {
+                    var form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/adjuntos/' + id;
+                    form.innerHTML = '<input type="hidden" name="_token" value="' + document.querySelector('meta[name="csrf-token"]').getAttribute('content') + '"><input type="hidden" name="_method" value="DELETE">';
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+
+        function uploadAttachments() {
+            if (!window._attSelectedFiles.length) return;
+            var form = document.getElementById('att-upload-form');
+            var formData = new FormData(form);
+            var btn = document.querySelector('#att-modal-actions .btn-primary');
+            btn.disabled = true;
+            btn.textContent = 'Subiendo...';
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/adjuntos', true);
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.setRequestHeader('Accept', 'application/json');
+            xhr.onload = function() {
+                btn.disabled = false;
+                btn.textContent = 'Subir archivos';
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    if (data.ok) {
+                        window._attSelectedFiles = [];
+                        openAttachmentModal(window._attModelClass, window._attModelId, document.getElementById('attachmentModalTitle').textContent);
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Archivos subidos', timer: 2000, showConfirmButton: false });
+                    } else {
+                        Swal.fire('Error', data.message || 'No se pudieron subir los archivos.', 'error');
+                    }
+                } catch(e) {
+                    Swal.fire('Error', 'Respuesta inesperada del servidor.', 'error');
+                }
+            };
+            xhr.onerror = function() {
+                btn.disabled = false;
+                btn.textContent = 'Subir archivos';
+                Swal.fire('Error', 'Error de conexión.', 'error');
+            };
+            xhr.send(formData);
+        }
     </script>
 </body>
 </html>
