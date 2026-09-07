@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -9,13 +11,17 @@ return new class extends Migration
     {
         DB::table('purchases')->where('status', 'ordered')->update(['status' => 'pending']);
 
-        DB::statement("ALTER TABLE purchases ALTER COLUMN status SET DEFAULT 'pending'");
+        Schema::table('purchases', function (Blueprint $table): void {
+            $table->string('status')->default('pending')->change();
+        });
     }
 
     public function down(): void
     {
         DB::table('purchases')->where('status', 'pending')->update(['status' => 'ordered']);
 
-        DB::statement("ALTER TABLE purchases ALTER COLUMN status SET DEFAULT 'ordered'");
+        Schema::table('purchases', function (Blueprint $table): void {
+            $table->string('status')->default('ordered')->change();
+        });
     }
 };

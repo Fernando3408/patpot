@@ -4,9 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Models\Input;
 use App\Models\InventoryMovement;
+use App\Models\Product;
+use App\Models\Retail;
 use App\Models\Supplier;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class InputController extends Controller
 {
@@ -41,20 +45,21 @@ class InputController extends Controller
             'code' => 'required|string|max:255|unique:inputs,code',
             'name' => 'required|string|max:255',
             'category' => 'nullable|string|max:255',
+            'type' => 'required|in:material,service',
             'unit' => 'required|string|max:50',
 
-            'stock' => 'required|numeric|min:0',
-            'safety_stock' => 'required|numeric|min:0',
+            'stock' => 'required_if:type,material|nullable|numeric|min:0',
+            'safety_stock' => 'required_if:type,material|nullable|numeric|min:0',
 
-            'weekly_consumption' => 'required|numeric|min:0',
-            'lead_time_days' => 'required|integer|min:0',
-            'target_weeks' => 'required|numeric|min:0',
+            'weekly_consumption' => 'nullable|numeric|min:0',
+            'lead_time_days' => 'nullable|integer|min:0',
+            'target_weeks' => 'nullable|numeric|min:0',
 
-            'min_purchase' => 'required|numeric|min:0',
-            'purchase_multiple' => 'required|numeric|min:0.01',
+            'min_purchase' => 'nullable|numeric|min:0',
+            'purchase_multiple' => 'nullable|numeric|min:0.01',
             'unit_cost' => 'required|numeric|min:0',
 
-            'transit' => 'required|numeric|min:0',
+            'transit' => 'nullable|numeric|min:0',
 
             'supplier_id' => 'nullable|exists:suppliers,id',
 
@@ -77,6 +82,7 @@ class InputController extends Controller
     public function show(Input $input)
     {
         $input->load('supplier', 'recipes.product.productions');
+
         return view('inputs._detail', compact('input'));
     }
 
@@ -86,36 +92,38 @@ class InputController extends Controller
             if ($request->ajax()) {
                 $rules = [
                     'name' => 'sometimes|required|string|max:255',
-                    'code' => ['sometimes', 'required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('inputs', 'code')->ignore($input->id)],
-                    'stock' => 'sometimes|required|numeric|min:0',
-                    'safety_stock' => 'sometimes|required|numeric|min:0',
-                    'weekly_consumption' => 'sometimes|numeric|min:0',
+                    'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('inputs', 'code')->ignore($input->id)],
+                    'stock' => 'sometimes|nullable|numeric|min:0',
+                    'safety_stock' => 'sometimes|nullable|numeric|min:0',
+                    'weekly_consumption' => 'sometimes|nullable|numeric|min:0',
                     'unit' => 'sometimes|required|string|max:50',
                     'status' => 'sometimes|required|boolean',
-                    'lead_time_days' => 'sometimes|required|integer|min:0',
-                    'target_weeks' => 'sometimes|required|integer|min:0',
-                    'min_purchase' => 'sometimes|required|numeric|min:0',
-                    'purchase_multiple' => 'sometimes|required|integer|min:1',
+                    'lead_time_days' => 'sometimes|nullable|integer|min:0',
+                    'target_weeks' => 'sometimes|nullable|numeric|min:0',
+                    'min_purchase' => 'sometimes|nullable|numeric|min:0',
+                    'purchase_multiple' => 'sometimes|nullable|numeric|min:0.01',
                     'unit_cost' => 'sometimes|nullable|numeric|min:0',
-                    'transit' => 'sometimes|required|numeric|min:0',
+                    'transit' => 'sometimes|nullable|numeric|min:0',
                     'supplier_id' => 'sometimes|nullable|exists:suppliers,id',
                     'category' => 'sometimes|nullable|string|max:255',
+                    'type' => 'sometimes|required|in:material,service',
                 ];
             } else {
                 $rules = [
                     'code' => 'required|string|max:255|unique:inputs,code,'.$input->id,
                     'name' => 'required|string|max:255',
                     'category' => 'nullable|string|max:255',
+                    'type' => 'required|in:material,service',
                     'unit' => 'required|string|max:50',
-                    'stock' => 'required|numeric|min:0',
-                    'safety_stock' => 'required|numeric|min:0',
-                    'weekly_consumption' => 'required|numeric|min:0',
-                    'lead_time_days' => 'required|integer|min:0',
-                    'target_weeks' => 'required|numeric|min:0',
-                    'min_purchase' => 'required|numeric|min:0',
-                    'purchase_multiple' => 'required|numeric|min:0.01',
+                    'stock' => 'required_if:type,material|nullable|numeric|min:0',
+                    'safety_stock' => 'required_if:type,material|nullable|numeric|min:0',
+                    'weekly_consumption' => 'nullable|numeric|min:0',
+                    'lead_time_days' => 'nullable|integer|min:0',
+                    'target_weeks' => 'nullable|numeric|min:0',
+                    'min_purchase' => 'nullable|numeric|min:0',
+                    'purchase_multiple' => 'nullable|numeric|min:0.01',
                     'unit_cost' => 'required|numeric|min:0',
-                    'transit' => 'required|numeric|min:0',
+                    'transit' => 'nullable|numeric|min:0',
                     'supplier_id' => 'nullable|exists:suppliers,id',
                     'status' => 'required|boolean',
                 ];
@@ -128,8 +136,10 @@ class InputController extends Controller
             if ($request->ajax()) {
                 $input->refresh();
                 $input->load('recipes.product.productions');
+
                 return response()->json([
                     'success' => true,
+                    'type' => $input->type,
                     'coverage_days' => $input->coverage_days,
                     'reorder_point' => $input->reorder_point,
                     'projected_stock' => $input->projected_stock,
@@ -138,8 +148,9 @@ class InputController extends Controller
                     'unit_cost' => $input->unit_cost,
                 ]);
             }
+
             return redirect('/insumos');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }
@@ -209,9 +220,9 @@ class InputController extends Controller
 
     public function export(Request $request, string $entity)
     {
-        $filename = "PatPot_{$entity}_" . now()->format('Y-m-d') . '.csv';
+        $filename = "PatPot_{$entity}_".now()->format('Y-m-d').'.csv';
 
-        $callback = function () use ($entity, $filename) {
+        $callback = function () use ($entity) {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
 
@@ -250,7 +261,7 @@ class InputController extends Controller
     private function exportProducts($handle): void
     {
         fputcsv($handle, ['SKU', 'Nombre', 'Stock (cajas)', 'Precio/caja', 'Costo/caja', 'Estado'], ';');
-        foreach (\App\Models\Product::orderBy('name')->get() as $p) {
+        foreach (Product::orderBy('name')->get() as $p) {
             fputcsv($handle, [
                 $p->sku, $p->name, $p->stock_boxes, $p->sale_price_box, $p->cost_per_box, $p->status,
             ], ';');
@@ -260,7 +271,7 @@ class InputController extends Controller
     private function exportRetail($handle): void
     {
         fputcsv($handle, ['Sala', 'Código', 'Ciudad', 'Producto', 'SKU', 'Stock', 'Tránsito', 'Venta semanal', 'Quiebre', 'Reposición'], ';');
-        foreach (\App\Models\Retail::with('store.customer', 'product')->orderBy('store_id')->get() as $r) {
+        foreach (Retail::with('store.customer', 'product')->orderBy('store_id')->get() as $r) {
             fputcsv($handle, [
                 $r->store?->name ?? '', $r->store?->code ?? '', $r->store?->city ?? '',
                 $r->product?->name ?? '', $r->product?->sku ?? '',

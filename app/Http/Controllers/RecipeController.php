@@ -15,13 +15,13 @@ class RecipeController extends Controller
     public function index(Request $request)
     {
         $query = Recipe::with(['product.recipes.input', 'input'])->orderBy('product_id');
-        
+
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('product', fn($q) => $q->where('name', 'like', "%{$search}%"))
-                ->orWhereHas('input', fn($q) => $q->where('name', 'like', "%{$search}%"));
+            $query->whereHas('product', fn ($q) => $q->where('name', 'like', "%{$search}%"))
+                ->orWhereHas('input', fn ($q) => $q->where('name', 'like', "%{$search}%"));
         }
-        
+
         $recipes = $query->get();
 
         return view('recipes.index', compact('recipes'));
@@ -53,8 +53,10 @@ class RecipeController extends Controller
                 $existing->restore();
                 $existing->update(['qty_per_box' => $validated['qty_per_box']]);
                 AuditService::log('RESTAURACIÓN DE RECETA', "Restauró y actualizó receta de producto ID: {$validated['product_id']}", $existing);
+
                 return redirect('/recetas');
             }
+
             return back()
                 ->withErrors([
                     'input_id' => 'Este insumo ya está registrado en la receta de este producto.',
@@ -87,6 +89,7 @@ class RecipeController extends Controller
     public function show(Product $product)
     {
         $product->load('recipes.input');
+
         return view('recipes._detail', compact('product'));
     }
 

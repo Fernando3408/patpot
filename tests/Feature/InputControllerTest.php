@@ -111,6 +111,7 @@ class InputControllerTest extends TestCase
             'code' => 'INS-PAPA',
             'name' => 'Papa seleccionada',
             'category' => 'Materia prima',
+            'type' => 'material',
             'unit' => 'kg',
             'stock' => 100,
             'safety_stock' => 20,

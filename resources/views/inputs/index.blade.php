@@ -12,6 +12,7 @@
                     <tr>
                         <th>Código</th>
                         <th>Nombre</th>
+                        <th>Tipo</th>
                         <th class="text-right">Stock</th>
                         <th class="text-right">Seguridad</th>
                         <th>Unidad</th>
@@ -25,7 +26,7 @@
                 </thead>
                 <tbody>
                     @foreach($inputs as $input)
-                        <tr data-update-url="{{ route('inputs.update', $input) }}">
+                        <tr data-update-url="{{ route('inputs.update', $input) }}" data-type="{{ $input->type }}">
                             <td data-field="code" class="font-bold text-xs">{{ $input->code }}</td>
                             <td data-field="name" data-value="{{ $input->name }}">
                                 <strong>{{ $input->name }}</strong>
@@ -33,47 +34,68 @@
                                     <br><span class="text-xs text-muted">{{ $input->category }}</span>
                                 @endif
                             </td>
-                            <td data-field="stock" data-cleanup="int" class="text-right font-bold">{{ number_format($input->stock, 0, ',', '.') }}</td>
-                            <td data-field="safety_stock" data-cleanup="int" class="text-right text-xs">{{ number_format($input->safety_stock, 0, ',', '.') }}</td>
-                            <td data-field="unit" class="text-xs font-bold">{{ $input->unit }}</td>
-                            <td data-field="unit_cost" data-cleanup="int" class="text-right text-xs font-bold">${{ number_format($input->unit_cost, 0, ',', '.') }}</td>
-                            <td data-field="weekly_consumption" data-cleanup="int" data-value="{{ (int) $input->weekly_consumption }}" data-calculated="true" class="text-center text-xs">
-                                <div class="fw-600">{{ number_format($input->weekly_consumption, 0, ',', '.') }}</div>
-                                @php $auto = $input->auto_weekly_consumption; @endphp
-                                @if($auto > 0 && $auto != $input->weekly_consumption)
-                                    <div class="text-muted" style="font-size:0.7rem;">Real: {{ number_format($auto, 0, ',', '.') }}</div>
-                                    <button type="button" class="btn btn-outline-primary btn-sm" style="font-size:0.65rem;padding:0.1rem 0.3rem;margin-top:2px;" onclick="useAverage(this, {{ $auto }})">Usar promedio</button>
+                            <td data-calculated="true">
+                                @if($input->type === 'service')
+                                    <span class="badge badge-info">Servicio</span>
+                                @else
+                                    <span class="badge badge-secondary">Material</span>
                                 @endif
                             </td>
-                            <td data-calculated="true" class="text-right text-xs">{{ number_format($input->reorder_point, 0, ',', '.') }}</td>
+                            <td data-field="stock" data-cleanup="int" class="text-right font-bold">{{ $input->type === 'material' ? number_format((int) $input->stock, 0, ',', '.') : '—' }}</td>
+                            <td data-field="safety_stock" data-cleanup="int" class="text-right text-xs">{{ $input->type === 'material' ? number_format((int) $input->safety_stock, 0, ',', '.') : '—' }}</td>
+                            <td data-field="unit" class="text-xs font-bold">{{ $input->unit }}</td>
+                            <td data-field="unit_cost" data-cleanup="currency" class="text-right text-xs font-bold">${{ number_format($input->unit_cost, 0, ',', '.') }}</td>
+                            <td data-field="weekly_consumption" data-cleanup="int" data-value="{{ (int) $input->weekly_consumption }}" data-calculated="true" class="text-center text-xs">
+                                @if($input->type === 'material')
+                                    <div class="fw-600">{{ number_format($input->weekly_consumption, 0, ',', '.') }}</div>
+                                    @php $auto = $input->auto_weekly_consumption; @endphp
+                                    @if($auto > 0 && $auto != $input->weekly_consumption)
+                                        <div class="text-muted" style="font-size:0.7rem;">Real: {{ number_format($auto, 0, ',', '.') }}</div>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" style="font-size:0.65rem;padding:0.1rem 0.3rem;margin-top:2px;" onclick="useAverage(this, {{ $auto }})">Usar promedio</button>
+                                    @endif
+                                @else
+                                    —
+                                @endif
+                            </td>
+                            <td data-calculated="true" class="text-right text-xs">{{ $input->type === 'material' ? number_format($input->reorder_point, 0, ',', '.') : '—' }}</td>
                             <td data-calculated="true" data-readonly="true" class="text-xs text-center">
-                                @if($input->coverage_days !== null)
-                                    <div class="fw-600 mb-1">{{ $input->coverage_days }} días</div>
-                                    @php
-                                        $maxDays = 90;
-                                        $pct = min(($input->coverage_days / $maxDays) * 100, 100);
-                                        $color = $input->coverage_days <= 7 ? '#dc2626' : ($input->coverage_days <= 21 ? '#f59e0b' : '#16a34a');
-                                    @endphp
-                                    <div class="coverage-bar-bg">
-                                        <div class="coverage-bar-fill" style="width:{{ $pct }}%;background:{{ $color }};"></div>
-                                    </div>
+                                @if($input->type === 'material')
+                                    @if($input->coverage_days !== null)
+                                        <div class="fw-600 mb-1">{{ $input->coverage_days }} días</div>
+                                        @php
+                                            $maxDays = 90;
+                                            $pct = min(($input->coverage_days / $maxDays) * 100, 100);
+                                            $color = $input->coverage_days <= 7 ? '#dc2626' : ($input->coverage_days <= 21 ? '#f59e0b' : '#16a34a');
+                                        @endphp
+                                        <div class="coverage-bar-bg">
+                                            <div class="coverage-bar-fill" style="width:{{ $pct }}%;background:{{ $color }};"></div>
+                                        </div>
+                                    @else
+                                        —
+                                    @endif
                                 @else
                                     —
                                 @endif
                             </td>
                             <td data-calculated="true" data-readonly="true">
-                                @php $level = $input->inventory_level; @endphp
-                                @if($level === 'ok')
-                                    <span class="badge badge-success">Óptimo</span>
-                                @elseif($level === 'atencion')
-                                    <span class="badge badge-warning">Atencion</span>
+                                @if($input->type === 'material')
+                                    @php $level = $input->inventory_level; @endphp
+                                    @if($level === 'ok')
+                                        <span class="badge badge-success">Óptimo</span>
+                                    @elseif($level === 'atencion')
+                                        <span class="badge badge-warning">Atencion</span>
+                                    @else
+                                        <span class="badge badge-danger">Crítico</span>
+                                    @endif
                                 @else
-                                    <span class="badge badge-danger">Crítico</span>
+                                    <span class="badge badge-secondary">N/A</span>
                                 @endif
                             </td>
                             <td class="text-right">
                                 <div class="actions-cell">
-                                    <button type="button" class="btn btn-outline-warning btn-sm" onclick="openAdjustModal({{ $input->id }}, '{{ addslashes($input->name) }}', {{ $input->stock }}, '{{ $input->unit }}')">Ajustar</button>
+                                    @if($input->type === 'material')
+                                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="openAdjustModal({{ $input->id }}, '{{ addslashes($input->name) }}', {{ $input->stock }}, '{{ $input->unit }}')">Ajustar</button>
+                                    @endif
                                     <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
                                     <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('inputs.show', $input) }}" data-title="Detalle: {{ $input->name }}">Ver detalle</button>
                                     @if(auth()->user()->canManage())
@@ -103,9 +125,9 @@
         function updateInputRowCells(row, json) {
             var cells = row.querySelectorAll('td');
             var allCells = Array.from(cells);
-            var reorderCell = allCells[7];
+            var reorderCell = allCells[8];
             if (reorderCell) reorderCell.textContent = json.reorder_point != null ? Math.round(json.reorder_point).toLocaleString('es-CL') : '—';
-            var coverageCell = allCells[8];
+            var coverageCell = allCells[9];
             if (coverageCell && json.coverage_days != null) {
                 var maxDays = 90;
                 var pct = Math.min((json.coverage_days / maxDays) * 100, 100);
@@ -114,7 +136,7 @@
             } else if (coverageCell) {
                 coverageCell.innerHTML = '—';
             }
-            var levelCell = allCells[9];
+            var levelCell = allCells[10];
             if (levelCell && json.inventory_level) {
                 var badges = { ok: '<span class="badge badge-success">Óptimo</span>', atencion: '<span class="badge badge-warning">Atencion</span>', critico: '<span class="badge badge-danger">Crítico</span>' };
                 levelCell.innerHTML = badges[json.inventory_level] || '';
@@ -157,10 +179,10 @@
             updateInputRowCells(row, json);
             var cells = Array.from(row.querySelectorAll('td'));
             if (json.unit_cost != null) {
-                cells[5].innerHTML = '$' + Math.round(json.unit_cost).toLocaleString('es-CL');
+                cells[6].innerHTML = '$' + Math.round(json.unit_cost).toLocaleString('es-CL');
             }
             if (json.weekly_consumption != null) {
-                cells[6].innerHTML = '<div class="fw-600">' + Math.round(json.weekly_consumption).toLocaleString('es-CL') + '</div>';
+                cells[7].innerHTML = '<div class="fw-600">' + Math.round(json.weekly_consumption).toLocaleString('es-CL') + '</div>';
             }
         };
 
@@ -174,7 +196,7 @@
             html += '<input type="hidden" name="_token" value="' + document.querySelector('meta[name="csrf-token"]').content + '">';
             html += '<div class="form-grid">';
             html += '<div class="form-group"><label class="form-label">Tipo de ajuste</label><select name="type" class="form-control"><option value="add">Sumar</option><option value="subtract">Restar</option><option value="set">Fijar stock real</option></select></div>';
-            html += '<div class="form-group"><label class="form-label">Cantidad</label><input type="number" step="0.01" min="0" name="qty" class="form-control" required></div>';
+            html += '<div class="form-group"><label class="form-label">Cantidad</label><input type="number" step="0.001" min="0" name="qty" class="form-control" required></div>';
             html += '<div class="form-group col-span-full"><label class="form-label">Motivo *</label><input type="text" name="reason" class="form-control" required placeholder="Ej: Conteo fisico, merma, correccion..."></div>';
             html += '</div>';
             html += '<div class="form-actions mt-4"><button type="button" class="btn btn-outline-warning" onclick="closeDetailModal()">Cancelar</button> <button type="submit" class="btn btn-primary">Confirmar ajuste</button></div>';

@@ -61,11 +61,6 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="discount">Descuento (%) *:</label>
-                        <input id="discount" type="number" step="0.01" min="0" max="100" name="discount" class="form-input" value="{{ old('discount', 0) }}" required>
-                    </div>
-
-                    <div class="form-group">
                         <label class="form-label" for="status">Estado *:</label>
                         <select id="status" name="status" class="form-input" required>
                             <option value="1" {{ old('status', '1') == '1' ? 'selected' : '' }}>Activo</option>

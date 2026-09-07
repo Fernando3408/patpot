@@ -1,5 +1,5 @@
 @if(!request()->ajax())
-<x-erp-layout title="Editar compra" subtitle="{{ $canEditLines ? 'Modifica las cantidades de los items que aun no se han recepcionado.' : 'Las recepciones ya iniciaron, no puedes editar las cantidades.' }}">
+<x-erp-layout title="Editar compra" subtitle="Puedes editar líneas sin recepción. Las líneas ya recibidas quedan bloqueadas para conservar la historia.">
     <div class="form-card">
         <form method="POST" action="{{ route('compras.update', $purchase) }}">
             @csrf
@@ -35,34 +35,74 @@
 
             @if($purchase->lines->isNotEmpty())
                 <div class="mb-4">
-                    <h3 class="section-subtitle">Items — cantidad pedida</h3>
+                    <h3 class="section-subtitle">Items de compra</h3>
                     <div class="table-container">
                         <table class="data-table">
                             <thead>
                                 <tr>
                                     <th>Insumo</th>
                                     <th class="th-cantidad text-right">Cantidad</th>
+                                    <th class="text-right">Costo unitario</th>
+                                    <th class="text-right">Recibido</th>
+                                    <th class="text-right"></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($purchase->lines as $line)
+                                @foreach($purchase->lines as $index => $line)
+                                    @php $isReceived = (float) $line->received_quantity > 0; @endphp
                                     <tr>
-                                        <td class="font-bold">{{ $line->input->name ?? '—' }} <span class="text-xs text-muted">x{{ number_format($line->unit_cost, 0, ',', '.') }}</span></td>
-                                        <td class="text-right">
-                                            @if($canEditLines)
-                                                <input type="number" name="lines[{{ $line->id }}][ordered_quantity]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ $line->ordered_quantity }}" min="1" required>
+                                        <td>
+                                            <input type="hidden" name="lines[{{ $index }}][id]" value="{{ $line->id }}">
+                                            @if($isReceived)
+                                                <input type="hidden" name="lines[{{ $index }}][input_id]" value="{{ $line->input_id }}">
+                                                <strong>{{ $line->input->name ?? '—' }}</strong>
+                                                <br><span class="text-xs text-muted">Bloqueada por recepción</span>
                                             @else
-                                                <span class="font-bold">{{ $line->ordered_quantity }}</span>
+                                                <select name="lines[{{ $index }}][input_id]" class="form-control" required>
+                                                    @foreach($inputs as $input)
+                                                        <option value="{{ $input->id }}" @selected(old("lines.$index.input_id", $line->input_id) == $input->id)>{{ $input->name }} · {{ $input->unit }}</option>
+                                                    @endforeach
+                                                </select>
                                             @endif
                                         </td>
+                                        <td class="text-right">
+                                            <input type="number" step="1" min="1" name="lines[{{ $index }}][ordered_quantity]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.ordered_quantity", (int) $line->ordered_quantity) }}" @readonly($isReceived) required>
+                                        </td>
+                                        <td class="text-right">
+                                            <input type="number" step="1" min="0" name="lines[{{ $index }}][unit_cost]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.unit_cost", (int) $line->unit_cost) }}" @readonly($isReceived) required>
+                                        </td>
+                                        <td class="text-right font-bold">{{ $line->input?->formattedQuantity($line->received_quantity) ?? number_format($line->received_quantity, 0, ',', '.') }}</td>
+                                        <td class="text-right">
+                                            @if(! $isReceived)
+                                                <label class="text-xs text-muted"><input type="checkbox" name="lines[{{ $index }}][remove]" value="1"> Quitar</label>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                @foreach(range($purchase->lines->count(), $purchase->lines->count() + 2) as $index)
+                                    <tr>
+                                        <td>
+                                            <select name="lines[{{ $index }}][input_id]" class="form-control">
+                                                <option value="">Sin línea</option>
+                                                @foreach($inputs as $input)
+                                                    <option value="{{ $input->id }}" @selected(old("lines.$index.input_id") == $input->id)>{{ $input->name }} · {{ $input->unit }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td class="text-right">
+                                            <input type="number" step="1" min="1" name="lines[{{ $index }}][ordered_quantity]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.ordered_quantity") }}">
+                                        </td>
+                                        <td class="text-right">
+                                            <input type="number" step="1" min="0" name="lines[{{ $index }}][unit_cost]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.unit_cost") }}">
+                                        </td>
+                                        <td class="text-right text-muted">—</td>
+                                        <td></td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
                     </div>
-                    @if(!$canEditLines)
-                        <p class="text-xs text-muted mt-2">No puedes editar cantidades porque ya se recepcionaron items.</p>
-                    @endif
+                    <p class="text-xs text-muted mt-2">Las líneas con recepción registrada no se pueden modificar ni eliminar.</p>
                 </div>
             @endif
 

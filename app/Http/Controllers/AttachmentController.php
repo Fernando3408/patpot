@@ -14,11 +14,12 @@ class AttachmentController extends Controller
         $modelClass = $request->input('model_class');
         $modelId = $request->input('model_id');
         $model = $modelClass::findOrFail($modelId);
-        $attachments = $model->attachments->map(fn($a) => [
+        $attachments = $model->attachments->map(fn ($a) => [
             'id' => $a->id,
             'original_name' => $a->original_name,
             'formatted_size' => $a->formatted_size,
         ]);
+
         return response()->json(['attachments' => $attachments]);
     }
 
@@ -32,7 +33,7 @@ class AttachmentController extends Controller
         ]);
 
         $modelClass = $request->model_class;
-        if (!class_exists($modelClass)) {
+        if (! class_exists($modelClass)) {
             return response()->json(['ok' => false, 'error' => 'Tipo de entidad inválido.'], 422);
         }
 
@@ -41,7 +42,7 @@ class AttachmentController extends Controller
 
         foreach ($request->file('files') as $file) {
             $originalName = $file->getClientOriginalName();
-            $storedName = uniqid('att_', true) . '.' . $file->getClientOriginalExtension();
+            $storedName = uniqid('att_', true).'.'.$file->getClientOriginalExtension();
             $path = $file->storeAs('attachments', $storedName, 'local');
 
             $attachment = $model->attachments()->create([

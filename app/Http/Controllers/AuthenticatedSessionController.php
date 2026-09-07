@@ -25,7 +25,7 @@ class AuthenticatedSessionController extends Controller
 
         $user = User::where('email', $credentials['email'])->first();
 
-        if ($user && !$user->status) {
+        if ($user && ! $user->status) {
             return back()
                 ->withErrors(['email' => 'Tu usuario ha sido deshabilitado. Contacta al administrador.'])
                 ->onlyInput('email');
@@ -40,6 +40,7 @@ class AuthenticatedSessionController extends Controller
                 'success' => false,
                 'type' => 'login',
             ]);
+
             return back()
                 ->withErrors(['email' => 'Las credenciales proporcionadas no son válidas.'])
                 ->onlyInput('email');

@@ -61,8 +61,9 @@
                             </td>
                             <td class="text-right">
                                 @php
-                                    $orderTotal = $order->lines->sum(fn($line) => $line->boxes * $line->price_box * (1 - ($line->discount_pct ?? 0) / 100));
-                                    $orderCost = $order->lines->sum(fn($line) => $line->boxes * ($line->product?->cost_per_box ?? 0));
+                                    $orderTotal = $order->lines->sum(fn($line) => $line->boxes * $line->price_box);
+                                    $historicalCost = $order->shipments->sum(fn($shipment) => $shipment->lines->sum(fn($line) => $line->boxes * ((float) $line->cost_box + (float) $line->variable_cost_box)));
+                                    $orderCost = $historicalCost > 0 ? $historicalCost : $order->lines->sum(fn($line) => $line->boxes * ($line->product?->cost_per_box ?? 0));
                                     $orderMargin = $orderTotal - $orderCost;
                                 @endphp
                                 <strong>${{ number_format($orderTotal, 0, ',', '.') }}</strong>
@@ -100,95 +101,10 @@
                             </td>
                             <td class="text-right">
                                 <div class="actions-cell">
-                                    <button type="button" class="btn btn-outline-info btn-sm" onclick="showInlineDetail(this)" data-title="Detalle: {{ $order->number }}">Ver detalle</button>
-                                    <template>
-                                        <div class="card">
-                                            <div class="card__header"><h2 class="card__title">Pedido</h2></div>
-                                            <div class="card__body">
-                                                <div class="form-grid">
-                                                    <div><strong>Número:</strong> {{ $order->number }}</div>
-                                                    <div><strong>Cliente:</strong> {{ $order->customer?->trade_name ?: $order->customer?->business_name ?? '—' }}</div>
-                                                    <div><strong>Sala:</strong> {{ $order->store?->name ?? '—' }}</div>
-                                                    <div><strong>Fecha de orden:</strong> {{ $order->ordered_on?->format('d/m/Y') ?? '—' }}</div>
-                                                    <div><strong>Fecha de entrega:</strong> {{ $order->delivery_on?->format('d/m/Y') ?? '—' }}</div>
-                                                    <div><strong>Estado:</strong> <span class="badge {{ $order->status === 'completed' ? 'badge-success' : ($order->status === 'partial' ? 'badge-info' : 'badge-warning') }}">{{ $order->status === 'completed' ? 'Completado' : ($order->status === 'partial' ? 'Parcial' : 'Pendiente') }}</span></div>
-                                                    <div><strong>Notas:</strong> {{ $order->notes ?? '—' }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        @if($order->lines->count())
-                                        <div class="card mt-4">
-                                            <div class="card__header"><h2 class="card__title">Líneas de pedido ({{ $order->lines->count() }} productos)</h2></div>
-                                            <div class="card__body">
-                                                <table class="data-table">
-                                                    <thead><tr><th>Producto</th><th class="text-right">Cajas</th><th class="text-right">Precio/caja</th><th class="text-right">Descuento</th><th class="text-right">Subtotal</th><th class="text-right">Despachado</th><th class="text-center th-progreso">Progreso</th></tr></thead>
-                                                    <tbody>
-                                                        @php $grandTotal = 0; @endphp
-                                                        @foreach($order->lines as $line)
-                                                            @php
-                                                                $boxes = (float) $line->boxes;
-                                                                $dispatched = (float) $line->dispatched_boxes;
-                                                                $pct = $boxes > 0 ? round(($dispatched / $boxes) * 100) : 0;
-                                                                $barClass = $pct >= 100 ? 'progress-bar-success' : ($pct > 0 ? 'progress-bar-warning' : 'progress-bar-info');
-                                                                $lineSubtotal = $line->boxes * $line->price_box * (1 - ($line->discount_pct ?? 0) / 100);
-                                                                $grandTotal += $lineSubtotal;
-                                                            @endphp
-                                                            <tr>
-                                                                <td>{{ $line->product?->name ?? '—' }}</td>
-                                                                <td class="text-right">{{ number_format($line->boxes, 0, ',', '.') }}</td>
-                                                                <td class="text-right">${{ number_format($line->price_box, 0, ',', '.') }}</td>
-                                                                <td class="text-right">{{ $line->discount_pct ?? 0 }}%</td>
-                                                                <td class="text-right">${{ number_format($lineSubtotal, 0, ',', '.') }}</td>
-                                                                <td class="text-right">{{ number_format($line->dispatched_boxes, 0, ',', '.') }}</td>
-                                                                <td class="text-center">
-                                                                    <div class="progress-bar-container"><div class="progress-bar {{ $barClass }}" style="width: {{ $pct }}%;"></div></div>
-                                                                    <span class="text-xs text-muted">{{ number_format($dispatched, 0, ',', '.') }} / {{ number_format($boxes, 0, ',', '.') }}</span>
-                                                                </td>
-                                                            </tr>
-                                                        @endforeach
-                                                        <tr class="row-total">
-                                                            <td colspan="4" class="text-right">Total:</td>
-                                                            <td class="text-right">${{ number_format($grandTotal, 0, ',', '.') }}</td>
-                                                            <td colspan="2"></td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                        @endif
-                                        @if($order->shipments->count())
-                                        <div class="card mt-4">
-                                            <div class="card__header"><h2 class="card__title">Historial de despachos ({{ $order->shipments->count() }})</h2></div>
-                                            <div class="card__body">
-                                                @php $runningTotal = 0; @endphp
-                                                <table class="data-table">
-                                                    <thead><tr><th>Fecha</th><th>Producto</th><th class="text-right">Cajas</th><th class="text-right">Precio/caja</th><th class="text-right">Subtotal</th><th class="text-right">Acumulado</th></tr></thead>
-                                                    <tbody>
-                                                        @foreach($order->shipments->sortBy('shipped_on') as $shipment)
-                                                            @foreach($shipment->lines as $sl)
-                                                                @php
-                                                                    $runningTotal += (float) $sl->boxes;
-                                                                    $subtotal = $sl->boxes * $sl->price_box;
-                                                                @endphp
-                                                                <tr>
-                                                                    <td>{{ $shipment->shipped_on->format('d/m/Y') }}</td>
-                                                                    <td>{{ $sl->orderLine->product?->name ?? '—' }}</td>
-                                                                    <td class="text-right">{{ (int) $sl->boxes }}</td>
-                                                                    <td class="text-right">${{ number_format($sl->price_box, 0, ',', '.') }}</td>
-                                                                    <td class="text-right">${{ number_format($subtotal, 0, ',', '.') }}</td>
-                                                                    <td class="text-right font-bold">{{ (int) $runningTotal }}</td>
-                                                                </tr>
-                                                            @endforeach
-                                                        @endforeach
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                        @endif
-                                    </template>
+                                    <button type="button" class="btn btn-outline-info btn-sm" onclick="openDetailModal('{{ route('orders.show', $order) }}', 'Detalle: {{ $order->number }}')">Ver detalle</button>
                                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openAttachmentModal('App\\Models\\Order', {{ $order->id }}, 'Adjuntos: {{ $order->number }}')" title="Adjuntos"><i data-lucide="paperclip" class="icon-sm"></i></button>
                                     @if(!$order->lines->contains(fn($line) => $line->dispatched_boxes > 0))
-                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
+                                        <a href="{{ route('pedidos.edit', $order) }}" class="btn btn-outline-success btn-sm btn-edit-order">Editar</a>
                                     @endif
                                     @if(auth()->user()->canManage() && !$order->lines->contains(fn($line) => $line->dispatched_boxes > 0) && !in_array($order->status, ['completed', 'cancelled']))
                                         <form method="POST" action="{{ route('pedidos.destroy', $order) }}" class="inline-form" style="display:inline;">
@@ -241,6 +157,11 @@
 
             html += '</tbody></table>';
             html += '<div class="form-group mt-4"><label class="form-label">Fecha de despacho</label><input type="date" name="shipped_on" class="form-control input-date" value="' + new Date().toISOString().slice(0, 10) + '"></div>';
+            html += '<div class="form-grid mt-4">';
+            html += '<div class="form-group"><label class="form-label">Flete ($)</label><input type="number" step="1" min="0" name="freight_cost" class="form-control" value="0"></div>';
+            html += '<div class="form-group"><label class="form-label">Gestión ($)</label><input type="number" step="1" min="0" name="management_cost" class="form-control" value="0"></div>';
+            html += '<div class="form-group"><label class="form-label">Otros costos ($)</label><input type="number" step="1" min="0" name="other_cost" class="form-control" value="0"></div>';
+            html += '</div>';
             html += '<div class="form-actions mt-4"><button type="button" class="btn btn-outline-warning" onclick="closeDetailModal()">Cancelar</button> <button type="button" class="btn btn-primary" onclick="submitDispatchForm(this, \'' + url + '\')">Confirmar despacho</button></div>';
             html += '</form>';
 
@@ -253,8 +174,7 @@
             return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
         }
 
-        function updateOrderRow(json) {
-            var orderId = document.getElementById('detailModal').dataset.orderId;
+        function updateOrderRow(json, orderId) {
             if (!orderId) return;
             var row = document.querySelector('tr[data-order-id="' + orderId + '"]');
             if (!row) return;
@@ -265,37 +185,17 @@
             statusTd.innerHTML = '<span class="badge ' + badgeClass + '">' + json.statusLabel + '</span>';
             var barClass = json.pct >= 100 ? 'progress-bar-success' : (json.pct > 0 ? 'progress-bar-warning' : 'progress-bar-info');
             progressTd.innerHTML = '<div class="progress-bar-container"><div class="progress-bar ' + barClass + '" style="width: ' + json.pct + '%;"></div></div><span class="text-xs text-muted">' + json.totalDispatched.toLocaleString('es-CL') + ' / ' + json.totalBoxes.toLocaleString('es-CL') + '</span>';
-            if (json.status === 'completed') {
-                var actionsTd = allTds[allTds.length - 1];
-                var dispatchBtn = actionsTd.querySelector('.btn-primary');
-                if (dispatchBtn) dispatchBtn.remove();
-                var editBtn = actionsTd.querySelector('.btn-edit-inline');
+            var actionsTd = allTds[allTds.length - 1];
+            if (json.totalDispatched > 0) {
+                var editBtn = actionsTd.querySelector('.btn-edit-order');
                 if (editBtn) editBtn.remove();
                 var deleteForm = actionsTd.querySelector('.inline-form');
                 if (deleteForm) deleteForm.remove();
             }
-        }
-
-        function updateDispatchedInModal(form) {
-            var inputs = form.querySelectorAll('input[name^="quantities["]');
-            var modalBody = document.getElementById('detailModalBody');
-            var modalRows = modalBody.querySelectorAll('table tbody tr');
-            inputs.forEach(function(inp) {
-                var match = inp.name.match(/quantities\[(\d+)\]/);
-                if (!match) return;
-                var lineId = match[1];
-                var dispatchedNow = parseInt(inp.value) || 0;
-                if (dispatchedNow <= 0) return;
-                for (var j = 0; j < modalRows.length; j++) {
-                    var mInputs = modalRows[j].querySelectorAll('input[name="quantities[' + lineId + ']"]');
-                    if (mInputs.length > 0) {
-                        var dispatchedCell = modalRows[j].querySelectorAll('td')[3];
-                        var current = parseInt(dispatchedCell.textContent.replace(/\./g, '').replace(/,/g, '')) || 0;
-                        dispatchedCell.textContent = (current + dispatchedNow).toLocaleString('es-CL');
-                        break;
-                    }
-                }
-            });
+            if (json.status === 'completed') {
+                var dispatchBtn = actionsTd.querySelector('.btn-primary');
+                if (dispatchBtn) dispatchBtn.remove();
+            }
         }
 
         function rebuildOrderHistory(json, orderId) {
@@ -312,9 +212,14 @@
             var card = document.createElement('div');
             card.className = 'card mt-4';
             var html = '<div class="card__header"><h2 class="card__title">Historial de despachos (' + json.historyCount + ')</h2></div>';
-            html += '<div class="card__body"><table class="data-table"><thead><tr><th>Fecha</th><th>Producto</th><th class="text-right">Cajas</th><th class="text-right">Precio/caja</th><th class="text-right">Subtotal</th><th class="text-right">Acumulado</th></tr></thead><tbody>';
+            html += '<div class="card__body"><table class="data-table"><thead><tr><th>Fecha</th><th>Producto</th><th class="text-right">Cajas</th><th class="text-right">Precio/caja</th><th class="text-right">Subtotal</th><th class="text-right">Costo/caja</th><th class="text-right">Acumulado</th></tr></thead><tbody>';
+            var shownShipmentCosts = {};
             json.history.forEach(function(h) {
-                html += '<tr><td>' + h.date + '</td><td>' + h.product + '</td><td class="text-right">' + h.boxes.toLocaleString('es-CL') + '</td><td class="text-right">' + h.price_box + '</td><td class="text-right">' + h.subtotal + '</td><td class="text-right font-bold">' + h.accumulated.toLocaleString('es-CL') + '</td></tr>';
+                if (!shownShipmentCosts[h.shipment_id]) {
+                    html += '<tr class="row-total"><td colspan="7"><strong>Costos del despacho:</strong> Flete ' + h.freight_cost + ' · Gestión ' + h.management_cost + ' · Otros ' + h.other_cost + ' · Total variable ' + h.variable_total + '</td></tr>';
+                    shownShipmentCosts[h.shipment_id] = true;
+                }
+                html += '<tr><td>' + h.date + '</td><td>' + h.product + '</td><td class="text-right">' + h.boxes.toLocaleString('es-CL') + '</td><td class="text-right">' + h.price_box + '</td><td class="text-right">' + h.subtotal + '</td><td class="text-right">' + h.cost_box + '</td><td class="text-right font-bold">' + h.accumulated.toLocaleString('es-CL') + '</td></tr>';
             });
             html += '</tbody></table></div>';
             card.innerHTML = html;
@@ -340,26 +245,10 @@
                     btn.disabled = false;
                     btn.textContent = 'Confirmar despacho';
                 } else {
-                    Swal.fire({ icon: 'success', title: 'Despacho registrado', timer: 1200, showConfirmButton: false });
-                    updateOrderRow(json);
-                    updateDispatchedInModal(form);
+                    closeDetailModal();
+                    updateOrderRow(json, orderId);
                     rebuildOrderHistory(json, orderId);
-                    form.querySelectorAll('input').forEach(function(inp) { inp.disabled = true; });
-                    btn.textContent = '✓ Despachado';
-                    btn.className = 'btn btn-success';
-                    var cancelBtn = form.querySelector('.btn-outline-warning');
-                    if (cancelBtn) {
-                        cancelBtn.textContent = 'Ver historial';
-                        cancelBtn.className = 'btn btn-outline-info';
-                        cancelBtn.onclick = function() {
-                            closeDetailModal();
-                            var row = document.querySelector('tr[data-order-id="' + orderId + '"]');
-                            if (row) {
-                                var detailBtn = row.querySelector('.btn-outline-info');
-                                if (detailBtn) detailBtn.click();
-                            }
-                        };
-                    }
+                    Swal.fire({ icon: 'success', title: 'Despacho registrado', timer: 1500, showConfirmButton: false });
                 }
             })
             .catch(function() {

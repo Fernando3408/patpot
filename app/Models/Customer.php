@@ -21,13 +21,11 @@ class Customer extends Model
         'contact',
         'email',
         'payment_terms',
-        'discount',
         'status',
         'deleted_by',
     ];
 
     protected $casts = [
-        'discount' => 'decimal:2',
         'status' => 'boolean',
     ];
 

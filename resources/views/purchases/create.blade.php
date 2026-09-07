@@ -58,10 +58,10 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <input type="number" step="0.0001" min="0" name="lines[{{ $index }}][ordered_quantity]" class="form-control" value="{{ old("lines.$index.ordered_quantity") }}" placeholder="0">
+                                    <input type="number" step="1" min="1" name="lines[{{ $index }}][ordered_quantity]" class="form-control" value="{{ old("lines.$index.ordered_quantity") }}" placeholder="0">
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" min="0" name="lines[{{ $index }}][unit_cost]" class="form-control" value="{{ old("lines.$index.unit_cost") }}" placeholder="$ 0">
+                                    <input type="number" step="1" min="0" name="lines[{{ $index }}][unit_cost]" class="form-control" value="{{ old("lines.$index.unit_cost") }}" placeholder="$ 0">
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-danger btn-sm btn-remove-line" title="Eliminar línea">&times;</button>
@@ -127,10 +127,10 @@
                         </select>
                     </td>
                     <td>
-                        <input type="number" step="0.0001" min="0" name="lines[${lineIndex}][ordered_quantity]" class="form-control" value="" placeholder="0">
+                        <input type="number" step="1" min="1" name="lines[${lineIndex}][ordered_quantity]" class="form-control" value="" placeholder="0">
                     </td>
                     <td>
-                        <input type="number" step="0.01" min="0" name="lines[${lineIndex}][unit_cost]" class="form-control" value="" placeholder="$ 0">
+                        <input type="number" step="1" min="0" name="lines[${lineIndex}][unit_cost]" class="form-control" value="" placeholder="$ 0">
                     </td>
                     <td class="text-center">
                         <button type="button" class="btn btn-danger btn-sm btn-remove-line" title="Eliminar línea">&times;</button>
@@ -193,9 +193,19 @@
                     headers: { 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest' },
                     body: formData
                 })
-                .then(function(r) { return r.json(); })
-                .then(function(data) { window.location.href = '/compras'; })
-                .catch(function() { form.submit(); });
+                .then(function(r) {
+                    if (!r.ok) { return r.json().then(function(d) { throw d; }); }
+                    return r.json();
+                })
+                .then(function() { window.location.href = '/compras'; })
+                .catch(function(err) {
+                    if (err && err.errors) {
+                        var msgs = Object.values(err.errors).flat().join('\n');
+                        Swal.fire({ icon: 'error', title: 'Error de validación', text: msgs });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo crear la compra.' });
+                    }
+                });
             });
         });
     </script>

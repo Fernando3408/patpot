@@ -39,7 +39,6 @@
                         <th>Producto</th>
                         <th class="text-right">Cajas</th>
                         <th class="text-right">Precio/caja</th>
-                        <th class="text-right">Descuento</th>
                         <th class="text-right">Despachado</th>
                     </tr>
                 </thead>
@@ -49,7 +48,6 @@
                             <td>{{ $line->product?->name ?? '—' }}</td>
                             <td class="text-right">{{ number_format($line->boxes, 0, ',', '.') }}</td>
                             <td class="text-right">${{ number_format($line->price_box, 0, ',', '.') }}</td>
-                            <td class="text-right">{{ $line->discount_pct ?? 0 }}%</td>
                             <td class="text-right">{{ number_format($line->dispatched_boxes, 0, ',', '.') }}</td>
                         </tr>
                     @endforeach
@@ -74,15 +72,29 @@
                         <th class="text-right">Cajas</th>
                         <th class="text-right">Precio/caja</th>
                         <th class="text-right">Subtotal</th>
+                        <th class="text-right">Costo/caja</th>
                         <th class="text-right">Acumulado</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach($order->shipments->sortBy('shipped_on') as $shipment)
+                        @php
+                            $variableCostTotal = (float) $shipment->freight_cost + (float) $shipment->management_cost + (float) $shipment->other_cost;
+                        @endphp
+                        <tr class="row-total">
+                            <td colspan="7">
+                                <strong>Costos del despacho:</strong>
+                                Flete ${{ number_format($shipment->freight_cost, 0, ',', '.') }} ·
+                                Gestión ${{ number_format($shipment->management_cost, 0, ',', '.') }} ·
+                                Otros ${{ number_format($shipment->other_cost, 0, ',', '.') }} ·
+                                Total variable ${{ number_format($variableCostTotal, 0, ',', '.') }}
+                            </td>
+                        </tr>
                         @foreach($shipment->lines as $sl)
                             @php
                                 $runningTotal += (float) $sl->boxes;
                                 $subtotal = $sl->boxes * $sl->price_box;
+                                $costBox = (float) $sl->cost_box + (float) $sl->variable_cost_box;
                             @endphp
                             <tr>
                                 <td>{{ $shipment->shipped_on->format('d/m/Y') }}</td>
@@ -90,6 +102,7 @@
                                 <td class="text-right">{{ (int) $sl->boxes }}</td>
                                 <td class="text-right">${{ number_format($sl->price_box, 0, ',', '.') }}</td>
                                 <td class="text-right">${{ number_format($subtotal, 0, ',', '.') }}</td>
+                                <td class="text-right">${{ number_format($costBox, 0, ',', '.') }}</td>
                                 <td class="text-right font-bold">{{ (int) $runningTotal }}</td>
                             </tr>
                         @endforeach

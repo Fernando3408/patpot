@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Store;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class StoreController extends Controller
 {
@@ -73,6 +74,7 @@ class StoreController extends Controller
     public function show(Store $store)
     {
         $store->load('customer');
+
         return view('stores._detail', compact('store'));
     }
 
@@ -110,6 +112,7 @@ class StoreController extends Controller
                 if ($request->ajax()) {
                     return response()->json(['errors' => ['code' => ['Ese código de sala ya existe para este cliente.']]], 422);
                 }
+
                 return back()
                     ->withErrors([
                         'code' => 'Ese código de sala ya existe para este cliente.',
@@ -123,8 +126,9 @@ class StoreController extends Controller
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
+
             return redirect('/salas');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }

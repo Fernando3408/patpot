@@ -66,7 +66,7 @@ class AdminController extends Controller
             return back()->withErrors(['error' => 'No puedes desactivar tu propio usuario.']);
         }
 
-        $user->update(['status' => !$user->status]);
+        $user->update(['status' => ! $user->status]);
         $estado = $user->status ? 'activado' : 'desactivado';
         AuditService::log('CAMBIO DE ESTADO USUARIO', "Usuario {$user->name} {$estado}", $user);
 

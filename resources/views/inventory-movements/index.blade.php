@@ -49,7 +49,7 @@
                                 @endif
                             </td>
                             <td class="text-right font-bold {{ $m->quantity >= 0 ? 'text-positive' : 'text-negative' }}">
-                                {{ $m->quantity >= 0 ? '+' : '' }}{{ number_format($m->quantity, 2, ',', '.') }}
+                                {{ $m->quantity >= 0 ? '+' : '' }}{{ number_format($m->quantity, 0, ',', '.') }}
                             </td>
                             <td class="text-xs">{{ $m->reference ?? '—' }}</td>
                             <td class="text-xs">{{ $m->user?->name ?? '—' }}</td>

@@ -118,7 +118,6 @@ class InventoryServiceTest extends TestCase
         return [
             'code' => $code,
             'business_name' => "Cliente {$code}",
-            'discount' => 0,
             'status' => true,
         ];
     }

@@ -15,6 +15,7 @@ class Input extends Model
         'code',
         'name',
         'category',
+        'type',
         'unit',
         'stock',
         'safety_stock',
@@ -120,6 +121,16 @@ class Input extends Model
         }), 2);
     }
 
+    public function isService(): bool
+    {
+        return $this->type === 'service';
+    }
+
+    public function isMaterial(): bool
+    {
+        return $this->type === 'material';
+    }
+
     public function getInventoryLevelAttribute(): string
     {
         $stock = (float) $this->stock;
@@ -198,9 +209,13 @@ class Input extends Model
 
     private function usesWholeQuantities(): bool
     {
-        $unit = mb_strtolower($this->unit);
+        $unit = trim(mb_strtolower($this->unit));
 
-        return ! str_contains($unit, 'kg') && ! str_contains($unit, 'litro');
+        if ($unit === 'kg' || $unit === 'litro') {
+            return false;
+        }
+
+        return true;
     }
 
     public function deleter(): BelongsTo

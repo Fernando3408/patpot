@@ -167,45 +167,87 @@ class TrashController extends Controller
                     $recipe->restore();
                 });
         } elseif ($class === Product::class) {
-            $item->recipes()->withTrashed()->each(function ($r) { $r->update(['deleted_by' => null]); $r->restore(); });
-            $item->productions()->withTrashed()->each(function ($p) { $p->update(['deleted_by' => null]); $p->restore(); });
-            $item->prices()->withTrashed()->each(function ($p) { $p->update(['deleted_by' => null]); $p->restore(); });
-            $item->retail()->withTrashed()->each(function ($r) { $r->update(['deleted_by' => null]); $r->restore(); });
-            $item->orderLines()->withTrashed()->each(function ($l) { $l->update(['deleted_by' => null]); $l->restore(); });
+            $item->recipes()->withTrashed()->each(function ($r) {
+                $r->update(['deleted_by' => null]);
+                $r->restore();
+            });
+            $item->productions()->withTrashed()->each(function ($p) {
+                $p->update(['deleted_by' => null]);
+                $p->restore();
+            });
+            $item->prices()->withTrashed()->each(function ($p) {
+                $p->update(['deleted_by' => null]);
+                $p->restore();
+            });
+            $item->retail()->withTrashed()->each(function ($r) {
+                $r->update(['deleted_by' => null]);
+                $r->restore();
+            });
+            $item->orderLines()->withTrashed()->each(function ($l) {
+                $l->update(['deleted_by' => null]);
+                $l->restore();
+            });
         } elseif ($class === Customer::class) {
             $item->stores()->withTrashed()->each(function ($store) {
                 $store->update(['deleted_by' => null]);
                 $store->restore();
-                $store->retail()->withTrashed()->each(function ($r) { $r->update(['deleted_by' => null]); $r->restore(); });
+                $store->retail()->withTrashed()->each(function ($r) {
+                    $r->update(['deleted_by' => null]);
+                    $r->restore();
+                });
             });
             $item->orders()->withTrashed()->each(function ($order) {
                 $order->update(['deleted_by' => null]);
                 $order->restore();
-                $order->lines()->withTrashed()->each(function ($l) { $l->update(['deleted_by' => null]); $l->restore(); });
+                $order->lines()->withTrashed()->each(function ($l) {
+                    $l->update(['deleted_by' => null]);
+                    $l->restore();
+                });
                 $order->shipments()->withTrashed()->each(function ($shipment) {
                     $shipment->update(['deleted_by' => null]);
                     $shipment->restore();
-                    $shipment->lines()->withTrashed()->each(function ($l) { $l->update(['deleted_by' => null]); $l->restore(); });
+                    $shipment->lines()->withTrashed()->each(function ($l) {
+                        $l->update(['deleted_by' => null]);
+                        $l->restore();
+                    });
                 });
             });
-            $item->prices()->withTrashed()->each(function ($p) { $p->update(['deleted_by' => null]); $p->restore(); });
+            $item->prices()->withTrashed()->each(function ($p) {
+                $p->update(['deleted_by' => null]);
+                $p->restore();
+            });
         } elseif ($class === Supplier::class) {
             $item->inputs()->withTrashed()->each(function ($input) {
                 $input->update(['deleted_by' => null]);
                 $input->restore();
-                $input->recipes()->withTrashed()->each(function ($r) { $r->update(['deleted_by' => null]); $r->restore(); });
+                $input->recipes()->withTrashed()->each(function ($r) {
+                    $r->update(['deleted_by' => null]);
+                    $r->restore();
+                });
             });
-            $item->purchases()->withTrashed()->each(function ($p) { $p->update(['deleted_by' => null]); $p->restore(); });
+            $item->purchases()->withTrashed()->each(function ($p) {
+                $p->update(['deleted_by' => null]);
+                $p->restore();
+            });
         } elseif ($class === Store::class) {
-            $item->retail()->withTrashed()->each(function ($r) { $r->update(['deleted_by' => null]); $r->restore(); });
+            $item->retail()->withTrashed()->each(function ($r) {
+                $r->update(['deleted_by' => null]);
+                $r->restore();
+            });
             $item->orders()->withTrashed()->each(function ($order) {
                 $order->update(['deleted_by' => null]);
                 $order->restore();
-                $order->lines()->withTrashed()->each(function ($l) { $l->update(['deleted_by' => null]); $l->restore(); });
+                $order->lines()->withTrashed()->each(function ($l) {
+                    $l->update(['deleted_by' => null]);
+                    $l->restore();
+                });
                 $order->shipments()->withTrashed()->each(function ($shipment) {
                     $shipment->update(['deleted_by' => null]);
                     $shipment->restore();
-                    $shipment->lines()->withTrashed()->each(function ($l) { $l->update(['deleted_by' => null]); $l->restore(); });
+                    $shipment->lines()->withTrashed()->each(function ($l) {
+                        $l->update(['deleted_by' => null]);
+                        $l->restore();
+                    });
                 });
             });
         }

@@ -6,6 +6,7 @@ use App\Models\Product;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class ProductController extends Controller
 {
@@ -42,6 +43,7 @@ class ProductController extends Controller
             'stock_boxes' => 'required|integer|min:0',
             'min_stock_boxes' => 'required|integer|min:0',
             'sale_price_box' => 'required|numeric|min:0',
+            'production_cost' => 'nullable|numeric|min:0',
             'status' => 'required|in:active,inactive',
         ]);
 
@@ -59,6 +61,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load('recipes.input');
+
         return view('products._detail', compact('product'));
     }
 
@@ -66,14 +69,15 @@ class ProductController extends Controller
     {
         try {
             if ($request->ajax()) {
-            $rules = [
-                'name' => 'sometimes|required|string|max:255',
-                'sku' => ['sometimes', 'required', 'string', 'max:255', Rule::unique(Product::class)->ignore($product)],
-                'stock_boxes' => 'sometimes|integer|min:0',
-                'min_stock_boxes' => 'sometimes|integer|min:0',
-                'sale_price_box' => 'sometimes|nullable|numeric|min:0',
-                'status' => 'sometimes|required|in:active,inactive',
-            ];
+                $rules = [
+                    'name' => 'sometimes|required|string|max:255',
+                    'sku' => ['sometimes', 'required', 'string', 'max:255', Rule::unique(Product::class)->ignore($product)],
+                    'stock_boxes' => 'sometimes|integer|min:0',
+                    'min_stock_boxes' => 'sometimes|integer|min:0',
+                    'sale_price_box' => 'sometimes|nullable|numeric|min:0',
+                    'production_cost' => 'sometimes|nullable|numeric|min:0',
+                    'status' => 'sometimes|required|in:active,inactive',
+                ];
             } else {
                 $rules = [
                     'name' => 'required|string|max:255',
@@ -83,6 +87,7 @@ class ProductController extends Controller
                     'stock_boxes' => 'required|integer|min:0',
                     'min_stock_boxes' => 'required|integer|min:0',
                     'sale_price_box' => 'required|numeric|min:0',
+                    'production_cost' => 'nullable|numeric|min:0',
                     'status' => 'required|in:active,inactive',
                 ];
             }
@@ -94,17 +99,20 @@ class ProductController extends Controller
 
             if ($request->ajax()) {
                 $margin = $product->sale_price_box - $product->cost_per_box;
+
                 return response()->json([
                     'success' => true,
                     'sale_price_box' => $product->sale_price_box,
                     'cost_per_box' => $product->cost_per_box,
+                    'production_cost' => $product->production_cost,
                     'margin' => $margin,
                     'margin_pct' => $product->sale_price_box > 0 ? round($margin / $product->sale_price_box * 100, 1) : 0,
                     'production_capacity' => $product->production_capacity,
                 ]);
             }
+
             return redirect('/productos');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }

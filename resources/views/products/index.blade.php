@@ -14,7 +14,7 @@
                         <th>SKU</th>
                         <th class="text-right">Stock</th>
                         <th class="text-right">Precio</th>
-                        <th class="text-right">Costo</th>
+                        <th class="text-right">Costo piso</th>
                         <th class="text-right">Margen</th>
                         <th class="text-right">Capacidad</th>
                         <th>Estado</th>
@@ -28,7 +28,13 @@
                             <td data-field="sku" class="text-xs">{{ $product->sku }}</td>
                             <td data-field="stock_boxes" data-cleanup="int" class="text-right font-bold">{{ number_format($product->stock_boxes, 0, ',', '.') }} cajas</td>
                             <td data-field="sale_price_box" class="text-right font-bold">${{ number_format($product->sale_price_box, 0, ',', '.') }}</td>
-                            <td data-field="cost_per_box" data-readonly="true" class="text-right font-bold">${{ number_format($product->cost_per_box, 0, ',', '.') }}</td>
+                            <td data-field="production_cost" class="text-right font-bold">
+                                @if($product->production_cost !== null)
+                                    ${{ number_format($product->production_cost, 0, ',', '.') }}
+                                @else
+                                    <span class="text-muted" title="Calculado por receta">${{ number_format($product->cost_per_box, 0, ',', '.') }}*</span>
+                                @endif
+                            </td>
                             @php
                                 $margin = $product->sale_price_box - $product->cost_per_box;
                                 $marginPct = $product->sale_price_box > 0 ? round($margin / $product->sale_price_box * 100, 1) : 0;
@@ -81,12 +87,17 @@
     <script>
         window.onInlineEditSuccess = function(row, json) {
             var cells = Array.from(row.querySelectorAll('td'));
-            if (json.cost_per_box != null) {
-                cells[4].innerHTML = '$' + Math.round(json.cost_per_box).toLocaleString('es-CL');
+            if (json.production_cost != null) {
+                cells[4].innerHTML = '$' + Math.round(json.production_cost).toLocaleString('es-CL');
+            } else if (json.cost_per_box != null) {
+                cells[4].innerHTML = '<span class="text-muted" title="Calculado por receta">$' + Math.round(json.cost_per_box).toLocaleString('es-CL') + '*</span>';
             }
-            if (json.margin != null) {
-                var cls = json.margin >= 0 ? 'text-positive' : 'text-negative';
-                cells[5].innerHTML = '<span class="' + cls + ' fw-600">$' + Math.round(json.margin).toLocaleString('es-CL') + '</span><span class="text-xs text-muted">' + json.margin_pct + '%</span>';
+            if (json.cost_per_box != null) {
+                var effectiveCost = json.production_cost != null ? json.production_cost : json.cost_per_box;
+                if (json.margin != null) {
+                    var cls = json.margin >= 0 ? 'text-positive' : 'text-negative';
+                    cells[5].innerHTML = '<span class="' + cls + ' fw-600">$' + Math.round(json.margin).toLocaleString('es-CL') + '</span><span class="text-xs text-muted">' + json.margin_pct + '%</span>';
+                }
             }
             if (json.production_capacity != null) {
                 cells[6].innerHTML = '<strong>' + Math.round(json.production_capacity).toLocaleString('es-CL') + '</strong> <span class="text-xs text-muted">cajas</span>';

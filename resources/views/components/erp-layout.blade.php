@@ -188,9 +188,12 @@
         if (session('success')) {
             $flashType = 'success';
             $flashMessage = session('success');
-        } elseif ($errors->any()) {
+        } elseif (is_object($errors) && method_exists($errors, 'any') && $errors->any()) {
             $flashType = 'error';
             $flashMessage = implode('<br>', $errors->all());
+        } elseif (is_array($errors) && !empty($errors)) {
+            $flashType = 'error';
+            $flashMessage = implode('<br>', $errors);
         }
     @endphp
     <div id="flash-data" style="display:none" data-type="{{ $flashType }}" data-message="{!! $flashMessage !!}"></div>
@@ -246,13 +249,14 @@
         }
 
         function openDetailModal(url, title) {
+            cancelInlineEdit();
             var modal = document.getElementById('detailModal');
             var body = document.getElementById('detailModalBody');
             document.getElementById('detailModalTitle').textContent = title;
             body.innerHTML = '<div class="modal-loading">Cargando...</div>';
             modal.style.display = 'flex';
             document.body.style.overflow = 'hidden';
-            fetch(url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now(), { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin', cache: 'no-store' })
+            fetch(url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' })
             .then(function(r) { return r.text(); })
             .then(function(html) {
                 body.innerHTML = html.trim();
@@ -410,6 +414,10 @@
                                         var clean = newVal.replace(/[^0-9\-]/g, '');
                                         var num = parseInt(clean, 10);
                                         td.innerHTML = isNaN(num) ? clean : num.toLocaleString('es-CL');
+                                    } else if (td.dataset.cleanup === 'decimal') {
+                                        var cleanDec = newVal.replace(/[^0-9.\-]/g, '');
+                                        var numDec = parseFloat(cleanDec.replace(',', '.'));
+                                        td.innerHTML = isNaN(numDec) ? cleanDec : numDec.toLocaleString('es-CL', { minimumFractionDigits: 0, maximumFractionDigits: 3 });
                                     } else if (td.dataset.cleanup === 'currency') {
                                         var cleanCur = newVal.replace(/[^0-9.\-]/g, '');
                                         var numCur = parseFloat(cleanCur);
@@ -515,31 +523,8 @@
                 });
             });
 
-            var headerFilters = document.querySelector('.page-header-filters');
-            var headerActions = document.querySelector('.page-header-actions');
-            if (headerFilters || headerActions) {
-                var filter = document.querySelector('.dataTables_filter');
-                if (filter) {
-                    var searchInput = filter.querySelector('label') || filter;
-
-                    var container = document.createElement('div');
-                    container.className = 'dataTables-filter-row';
-
-                    var leftSide = document.createElement('div');
-                    leftSide.className = 'dataTables-filter-left';
-                    if (headerFilters) leftSide.appendChild(headerFilters);
-
-                    var rightSide = document.createElement('div');
-                    rightSide.className = 'dataTables-filter-right';
-                    rightSide.appendChild(searchInput);
-                    if (headerActions) rightSide.appendChild(headerActions);
-
-                    container.appendChild(leftSide);
-                    container.appendChild(rightSide);
-                    filter.innerHTML = '';
-                    filter.appendChild(container);
-                }
-            }
+            var dtFilter = document.querySelector('.dataTables_filter');
+            if (dtFilter) dtFilter.style.display = 'none';
         });
     </script>
     <script>

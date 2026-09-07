@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Supplier;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class SupplierController extends Controller
 {
@@ -58,6 +59,7 @@ class SupplierController extends Controller
     public function show(Supplier $supplier)
     {
         $supplier->load('inputs');
+
         return view('suppliers._detail', compact('supplier'));
     }
 
@@ -95,8 +97,9 @@ class SupplierController extends Controller
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
+
             return redirect('/proveedores');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }

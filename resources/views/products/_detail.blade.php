@@ -11,6 +11,7 @@
             <div><strong>Stock cajas:</strong> {{ number_format($product->stock_boxes, 0, ',', '.') }}</div>
             <div><strong>Stock mínimo:</strong> {{ number_format($product->min_stock_boxes, 0, ',', '.') }}</div>
             <div><strong>Precio venta/caja:</strong> ${{ number_format($product->sale_price_box, 0, ',', '.') }}</div>
+            <div><strong>Costo piso/caja:</strong> {{ $product->production_cost !== null ? '$' . number_format($product->production_cost, 0, ',', '.') : 'Calculado por receta' }}</div>
             <div><strong>Costo/caja:</strong> ${{ number_format($product->cost_per_box, 0, ',', '.') }}</div>
             <div><strong>Capacidad producción:</strong> {{ $product->production_capacity ? number_format($product->production_capacity, 0, ',', '.') . ' cajas' : '—' }}</div>
             <div>
@@ -41,7 +42,7 @@
                 @foreach($product->recipes as $recipe)
                     <tr>
                         <td>{{ $recipe->input?->name ?? '—' }}</td>
-                        <td class="text-right">{{ $recipe->qty_per_box == floor($recipe->qty_per_box) ? number_format($recipe->qty_per_box, 0, ',', '.') : number_format($recipe->qty_per_box, 2, ',', '.') }}</td>
+                        <td class="text-right">{{ rtrim(rtrim(rtrim(number_format($recipe->qty_per_box, 3, ',', '.'), '0'), '.'), ',') }}</td>
                         <td class="text-right">${{ number_format($recipe->qty_per_box * (float) ($recipe->input?->unit_cost ?? 0), 0, ',', '.') }}</td>
                     </tr>
                 @endforeach

@@ -5,16 +5,15 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthenticatedSessionController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InputController;
 use App\Http\Controllers\InventoryMovementController;
-
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\PurchaseController;
-use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RegisteredUserController;
 use App\Http\Controllers\ResetPasswordController;

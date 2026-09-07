@@ -7,6 +7,7 @@ use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -38,7 +39,9 @@ class CustomerController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $customer = Customer::query()->create($request->validate($this->rules()));
+        $validated = $request->validate($this->rules());
+
+        $customer = Customer::query()->create($validated);
         AuditService::log('CREACIÓN DE CLIENTE', "Creó cliente: {$customer->business_name}", $customer);
 
         return redirect()->route('customers.index');
@@ -52,6 +55,7 @@ class CustomerController extends Controller
     public function show(Customer $customer): View
     {
         $customer->load('stores', 'prices');
+
         return view('customers._detail', compact('customer'));
     }
 
@@ -65,8 +69,9 @@ class CustomerController extends Controller
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
+
             return redirect()->route('customers.index');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }
@@ -95,6 +100,7 @@ class CustomerController extends Controller
     private function rules(?Customer $customer = null, bool $isAjax = false): array
     {
         $req = $isAjax ? 'sometimes' : 'required';
+
         return [
             'code' => [$req, 'string', 'max:100', Rule::unique(Customer::class)->ignore($customer)],
             'business_name' => [$req, 'string', 'max:255'],
@@ -105,8 +111,7 @@ class CustomerController extends Controller
             'contact' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'payment_terms' => ['nullable', 'string', 'max:100'],
-            'discount' => [$req, 'numeric', 'min:0', 'max:100'],
-            'status' => ['required', 'boolean'],
+            'status' => [$req, 'boolean'],
         ];
     }
 }

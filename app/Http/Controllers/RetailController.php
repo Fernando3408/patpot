@@ -8,18 +8,19 @@ use App\Models\Store;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\ValidationException;
 
 class RetailController extends Controller
 {
     public function index(Request $request)
     {
         $query = Retail::with(['store.customer', 'product']);
-        
+
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('store', fn($q) => $q->where('code', 'like', "%{$search}%")
-                ->orWhereHas('customer', fn($q2) => $q2->where('business_name', 'like', "%{$search}%")))
-                ->orWhereHas('product', fn($q) => $q->where('name', 'like', "%{$search}%"));
+            $query->whereHas('store', fn ($q) => $q->where('code', 'like', "%{$search}%")
+                ->orWhereHas('customer', fn ($q2) => $q2->where('business_name', 'like', "%{$search}%")))
+                ->orWhereHas('product', fn ($q) => $q->where('name', 'like', "%{$search}%"));
         }
 
         $records = $query->get();
@@ -99,6 +100,7 @@ class RetailController extends Controller
     public function show(Retail $retail)
     {
         $retail->load('store.customer', 'product');
+
         return view('retail._detail', compact('retail'));
     }
 
@@ -142,6 +144,7 @@ class RetailController extends Controller
                 if ($request->ajax()) {
                     return response()->json(['errors' => ['product_id' => ['Ya existe un registro retail para esta sala y este producto.']]], 422);
                 }
+
                 return back()
                     ->withErrors([
                         'product_id' => 'Ya existe un registro retail para esta sala y este producto.',
@@ -161,8 +164,9 @@ class RetailController extends Controller
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
+
             return redirect('/retail');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }

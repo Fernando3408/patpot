@@ -10,11 +10,11 @@ class OrderLine extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['order_id', 'product_id', 'boxes', 'price_box', 'discount_pct', 'dispatched_boxes'];
+    protected $fillable = ['order_id', 'product_id', 'boxes', 'price_box', 'dispatched_boxes'];
 
     protected function casts(): array
     {
-        return ['boxes' => 'integer', 'price_box' => 'decimal:2', 'discount_pct' => 'decimal:2', 'dispatched_boxes' => 'integer'];
+        return ['boxes' => 'integer', 'price_box' => 'decimal:2', 'dispatched_boxes' => 'integer'];
     }
 
     public function order(): BelongsTo

@@ -51,7 +51,7 @@
                                     <td>{{ $recipe->input->category ?? '—' }}</td>
                                     <td class="text-center text-xs">{{ $recipe->input->unit }}</td>
                                     <td class="text-right">${{ number_format((float) $recipe->input->unit_cost, 0, ',', '.') }}</td>
-                                    <td class="text-right font-bold">{{ $recipe->qty_per_box == floor($recipe->qty_per_box) ? number_format($recipe->qty_per_box, 0, ',', '.') : number_format($recipe->qty_per_box, 2, ',', '.') }}</td>
+                                    <td class="text-right font-bold">{{ rtrim(rtrim(rtrim(number_format($recipe->qty_per_box, 3, ',', '.'), '0'), '.'), ',') }}</td>
                                     <td class="text-right font-bold">${{ number_format($lineCost, 0, ',', '.') }}</td>
                                 </tr>
                             @endforeach
@@ -121,7 +121,7 @@
                             <td class="text-xs">{{ $recipe->input->category ?? '—' }}</td>
                             <td class="text-center text-xs">{{ $recipe->input->unit }}</td>
                             <td class="text-right">${{ number_format((float) $recipe->input->unit_cost, 0, ',', '.') }}</td>
-                            <td class="text-right font-bold">{{ $recipe->qty_per_box == floor($recipe->qty_per_box) ? number_format($recipe->qty_per_box, 0, ',', '.') : number_format($recipe->qty_per_box, 2, ',', '.') }}</td>
+                            <td class="text-right font-bold">{{ rtrim(rtrim(rtrim(number_format($recipe->qty_per_box, 3, ',', '.'), '0'), '.'), ',') }}</td>
                             <td class="text-right font-bold">${{ number_format($lineCost, 0, ',', '.') }}</td>
                         </tr>
                     @endforeach

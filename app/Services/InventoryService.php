@@ -6,12 +6,11 @@ use App\Models\Input;
 use App\Models\InventoryMovement;
 use App\Models\Order;
 use App\Models\OrderLine;
+use App\Models\Price;
 use App\Models\Product;
 use App\Models\Production;
 use App\Models\Purchase;
 use App\Models\PurchaseLine;
-use App\Models\Reception;
-use App\Models\ReceptionLine;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -45,6 +44,7 @@ class InventoryService
                 $input = Input::query()->lockForUpdate()->findOrFail($line->input_id);
                 $input->increment('stock', $quantity);
                 $input->decrement('transit', min($quantity, (float) $input->transit));
+                $input->update(['unit_cost' => $line->unit_cost]);
                 $line->increment('received_quantity', $quantity);
                 $reception->lines()->create([
                     'purchase_line_id' => $line->id,
@@ -75,11 +75,17 @@ class InventoryService
                 ->keyBy('id');
             $submittedLines = collect($lines)->keyBy(fn (array $line): string => (string) ($line['id'] ?? 'new-'.uniqid()));
 
+            collect($lines)
+                ->filter(fn (array $line): bool => filled($line['id'] ?? null) && ! $existingLines->has((int) $line['id']))
+                ->whenNotEmpty(function (): void {
+                    throw ValidationException::withMessages(['lines' => 'Una de las líneas de compra no pertenece a esta orden.']);
+                });
+
             foreach ($existingLines as $existingLine) {
                 $submittedLine = $submittedLines->get((string) $existingLine->id);
 
                 if ((float) $existingLine->received_quantity > 0) {
-                    if ($submittedLine === null || (int) $submittedLine['input_id'] !== $existingLine->input_id || (float) $submittedLine['ordered_quantity'] !== (float) $existingLine->ordered_quantity || (float) $submittedLine['unit_cost'] !== (float) $existingLine->unit_cost) {
+                    if ($submittedLine === null || (int) $submittedLine['input_id'] !== (int) $existingLine->input_id || round((float) ($submittedLine['ordered_quantity'] ?? 0)) !== round((float) $existingLine->ordered_quantity) || round((float) ($submittedLine['unit_cost'] ?? 0)) !== round((float) $existingLine->unit_cost)) {
                         throw ValidationException::withMessages(['lines' => 'No puedes modificar ni eliminar una línea que ya tiene recepciones.']);
                     }
 
@@ -101,6 +107,10 @@ class InventoryService
 
                 $input = Input::query()->lockForUpdate()->findOrFail($line['input_id']);
                 if ($existingLine === null) {
+                    if ($lockedPurchase->status === 'received') {
+                        throw ValidationException::withMessages(['lines' => 'No puedes agregar líneas a una compra ya recibida.']);
+                    }
+
                     $lockedPurchase->lines()->create($line);
                     $input->increment('transit', $line['ordered_quantity']);
 
@@ -118,7 +128,7 @@ class InventoryService
     }
 
     /**
-     * @param  array<int, array{id?: int|string|null, product_id: int|string, boxes: int|string, price_box: int|float|string, discount_pct?: int|float|string|null}>  $lines
+     * @param  array<int, array{id?: int|string|null, product_id: int|string, boxes: int|string, price_box: int|float|string}>  $lines
      */
     public function updateOrderLines(Order $order, array $lines): void
     {
@@ -131,14 +141,24 @@ class InventoryService
                 ->keyBy('id');
             $submittedLineIds = collect($lines)->pluck('id')->filter()->map(fn ($id): int => (int) $id);
 
+            collect($lines)
+                ->filter(fn (array $line): bool => filled($line['id'] ?? null) && ! $existingLines->has((int) $line['id']))
+                ->whenNotEmpty(function (): void {
+                    throw ValidationException::withMessages(['lines' => 'Una de las líneas de pedido no pertenece a esta orden.']);
+                });
+
             foreach ($existingLines as $existingLine) {
                 if ((int) $existingLine->dispatched_boxes === 0) {
                     continue;
                 }
 
                 $submittedLine = collect($lines)->first(fn (array $line): bool => (int) ($line['id'] ?? 0) === $existingLine->id);
-                if ($submittedLine === null || (int) $submittedLine['product_id'] !== $existingLine->product_id || (int) $submittedLine['boxes'] !== $existingLine->boxes || (float) $submittedLine['price_box'] !== (float) $existingLine->price_box || (float) ($submittedLine['discount_pct'] ?? 0) !== (float) ($existingLine->discount_pct ?? 0)) {
-                    throw ValidationException::withMessages(['lines' => 'No puedes modificar ni eliminar una línea que ya tiene despachos.']);
+                if ($submittedLine === null || (int) $submittedLine['product_id'] !== $existingLine->product_id || (float) $submittedLine['price_box'] !== (float) $existingLine->price_box) {
+                    throw ValidationException::withMessages(['lines' => 'No puedes cambiar producto ni precio en una línea que ya tiene despachos.']);
+                }
+
+                if ((int) $submittedLine['boxes'] < (int) $existingLine->dispatched_boxes) {
+                    throw ValidationException::withMessages(['lines' => 'No puedes bajar las cajas por debajo de lo ya despachado.']);
                 }
             }
 
@@ -147,12 +167,23 @@ class InventoryService
             foreach ($lines as $line) {
                 $existingLine = filled($line['id'] ?? null) ? $existingLines->get((int) $line['id']) : null;
                 if ($existingLine === null) {
+                    if ($lockedOrder->status === 'completed') {
+                        throw ValidationException::withMessages(['lines' => 'No puedes agregar líneas a un pedido completado.']);
+                    }
+
+                    if (blank($line['price_box'] ?? null)) {
+                        $line['price_box'] = $this->resolveOrderLinePrice($lockedOrder, $line);
+                    }
                     $lockedOrder->lines()->create($line);
                 } elseif ((int) $existingLine->dispatched_boxes === 0) {
                     $existingLine->update($line);
+                } else {
+                    $existingLine->update(['boxes' => $line['boxes']]);
                 }
             }
 
+            $lockedOrder->refresh()->load('lines');
+            $lockedOrder->update(['status' => $lockedOrder->lines->every(fn (OrderLine $line): bool => (int) $line->dispatched_boxes >= (int) $line->boxes) ? 'completed' : ($lockedOrder->lines->sum('dispatched_boxes') > 0 ? 'partial' : 'pending')]);
             AuditService::log('EDITAR LÍNEAS DE PEDIDO', $lockedOrder->number);
         }, attempts: 5);
     }
@@ -167,6 +198,9 @@ class InventoryService
             }
             foreach ($lockedProduction->product->recipes as $recipe) {
                 $input = Input::query()->lockForUpdate()->findOrFail($recipe->input_id);
+                if ($input->isService()) {
+                    continue;
+                }
                 $needed = $boxes * (float) $recipe->qty_per_box;
                 if ((float) $input->stock < $needed) {
                     throw ValidationException::withMessages(['production' => "Stock insuficiente de {$input->name}."]);
@@ -182,19 +216,34 @@ class InventoryService
         });
     }
 
-    public function dispatchOrder(Order $order, array $quantities, string $shippedOn): void
+    /**
+     * @param  array<string, int|float|string|null>  $costs
+     */
+    public function dispatchOrder(Order $order, array $quantities, string $shippedOn, array $costs = []): void
     {
-        DB::transaction(function () use ($order, $quantities, $shippedOn): void {
+        DB::transaction(function () use ($order, $quantities, $shippedOn, $costs): void {
             $lockedOrder = Order::query()->with('customer')->lockForUpdate()->findOrFail($order->id);
             $lines = OrderLine::query()
                 ->whereBelongsTo($lockedOrder)
-                ->with('product')
+                ->with('product.recipes.input')
                 ->lockForUpdate()
                 ->get();
-            $shipment = $lockedOrder->shipments()->create(['shipped_on' => $shippedOn, 'total' => 0]);
+            $totalBoxesToDispatch = $lines->sum(fn (OrderLine $line): int => max(0, (int) ($quantities[$line->id] ?? 0)));
+            $freightCost = (float) ($costs['freight_cost'] ?? 0);
+            $managementCost = (float) ($costs['management_cost'] ?? 0);
+            $otherCost = (float) ($costs['other_cost'] ?? 0);
+            $variableCostPerBox = $totalBoxesToDispatch > 0 ? round(($freightCost + $managementCost + $otherCost) / $totalBoxesToDispatch, 2) : 0;
+
+            $shipment = $lockedOrder->shipments()->create([
+                'shipped_on' => $shippedOn,
+                'total' => 0,
+                'freight_cost' => $freightCost,
+                'management_cost' => $managementCost,
+                'other_cost' => $otherCost,
+            ]);
             $total = 0.0;
             foreach ($lines as $line) {
-                $quantity = (float) ($quantities[$line->id] ?? 0);
+                $quantity = (int) ($quantities[$line->id] ?? 0);
                 if ($quantity <= 0) {
                     continue;
                 }
@@ -207,9 +256,17 @@ class InventoryService
                 }
                 $product->decrement('stock_boxes', $quantity);
                 $line->increment('dispatched_boxes', $quantity);
-                $shipment->lines()->create(['order_line_id' => $line->id, 'boxes' => $quantity, 'price_box' => $line->price_box]);
-                $total += $quantity * (float) $line->price_box * (1 - ((float) ($line->discount_pct !== null ? $line->discount_pct : ($lockedOrder->customer->discount ?? 0))) / 100);
+                $shipment->lines()->create([
+                    'order_line_id' => $line->id,
+                    'boxes' => $quantity,
+                    'price_box' => $line->price_box,
+                    'cost_box' => $line->product?->cost_per_box ?? 0,
+                    'variable_cost_box' => $variableCostPerBox,
+                ]);
+                $total += $quantity * (float) $line->price_box;
                 InventoryMovement::query()->create(['product_id' => $product->id, 'kind' => 'Despacho de pedido', 'quantity' => -$quantity, 'reference' => $lockedOrder->number, 'user_id' => auth()->id()]);
+
+                $this->deductPackaging($product, $quantity, $lockedOrder->number);
             }
             if ($shipment->lines()->doesntExist()) {
                 $shipment->delete();
@@ -220,5 +277,46 @@ class InventoryService
             $lockedOrder->update(['status' => $lockedOrder->lines->every(fn (OrderLine $line): bool => (float) $line->dispatched_boxes >= (float) $line->boxes) ? 'completed' : 'partial']);
             AuditService::log('DESPACHO DE PEDIDO', $lockedOrder->number);
         });
+    }
+
+    private function resolveOrderLinePrice(Order $order, array $line): float
+    {
+        $price = Price::query()
+            ->where('customer_id', $order->customer_id)
+            ->where('product_id', $line['product_id'])
+            ->first();
+
+        return (float) ($price?->effective_price ?? Product::query()->findOrFail($line['product_id'])->sale_price_box);
+    }
+
+    private function deductPackaging(Product $product, int $boxes, string $reference): void
+    {
+        $packagingCategories = ['envases', 'packaging', 'empaque'];
+        $product->load('recipes.input');
+
+        foreach ($product->recipes as $recipe) {
+            $input = $recipe->input;
+            if (! $input || ! $input->isMaterial()) {
+                continue;
+            }
+            if ($input->category === null || ! in_array(mb_strtolower($input->category), $packagingCategories)) {
+                continue;
+            }
+            $needed = $boxes * (float) $recipe->qty_per_box;
+            if ($needed <= 0) {
+                continue;
+            }
+            if ((float) $input->stock < $needed) {
+                continue;
+            }
+            $input->decrement('stock', $needed);
+            InventoryMovement::query()->create([
+                'input_id' => $input->id,
+                'kind' => 'Despacho de pedido',
+                'quantity' => -$needed,
+                'reference' => $reference,
+                'user_id' => auth()->id(),
+            ]);
+        }
     }
 }

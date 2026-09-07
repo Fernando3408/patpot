@@ -7,13 +7,17 @@ use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Services\AuditService;
 use App\Services\InventoryService;
+use App\Traits\ValidatesWithLineFormatting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PurchaseController extends Controller
 {
+    use ValidatesWithLineFormatting;
+
     public function __construct(private InventoryService $inventoryService) {}
 
     public function index(Request $request): View
@@ -40,11 +44,11 @@ class PurchaseController extends Controller
         return view('purchases.create', ['suppliers' => Supplier::where('status', true)->orderBy('name')->get(), 'inputs' => Input::where('status', true)->orderBy('name')->get()]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $request->merge(['lines' => array_values(array_filter($request->input('lines', []), fn (array $line): bool => filled($line['input_id'] ?? null)))]);
-        $data = $request->validate(
-            ['number' => ['required', 'string', 'max:255', 'unique:purchases,number'], 'supplier_id' => ['required', 'exists:suppliers,id'], 'ordered_on' => ['required', 'date'], 'expected_on' => ['nullable', 'date'], 'notes' => ['nullable', 'string'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.input_id' => ['required', 'distinct', 'exists:inputs,id'], 'lines.*.ordered_quantity' => ['required', 'numeric', 'gt:0'], 'lines.*.unit_cost' => ['required', 'numeric', 'min:0']],
+        $data = $this->validateLines($request->all(),
+            ['number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('purchases', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'supplier_id' => ['required', 'exists:suppliers,id'], 'ordered_on' => ['required', 'date'], 'expected_on' => ['nullable', 'date'], 'notes' => ['nullable', 'string'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.input_id' => ['required', 'distinct', 'exists:inputs,id'], 'lines.*.ordered_quantity' => ['required', 'numeric', 'gt:0'], 'lines.*.unit_cost' => ['required', 'numeric', 'min:0']],
             ['number.unique' => 'El número de compra ya existe.']
         );
         $this->ensureWholeUnitLines($data['lines']);
@@ -56,7 +60,7 @@ class PurchaseController extends Controller
 
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $file) {
-                $storedName = uniqid('att_', true) . '.' . $file->getClientOriginalExtension();
+                $storedName = uniqid('att_', true).'.'.$file->getClientOriginalExtension();
                 $path = $file->storeAs('attachments', $storedName, 'local');
                 $purchase->attachments()->create([
                     'original_name' => $file->getClientOriginalName(),
@@ -78,9 +82,11 @@ class PurchaseController extends Controller
         return redirect('/compras');
     }
 
-    public function show(Purchase $purchase)
+    public function show(string $compra): View
     {
+        $purchase = Purchase::findOrFail($compra);
         $purchase->load('supplier', 'lines.input', 'receptions.lines.purchaseLine.input', 'attachments');
+
         return view('purchases._detail', compact('purchase'));
     }
 
@@ -101,29 +107,30 @@ class PurchaseController extends Controller
 
         if ($request->ajax()) {
             $compra->refresh()->load('lines', 'receptions.lines.purchaseLine.input');
-            $totalOrdered = $compra->lines->sum(fn($l) => (float) $l->ordered_quantity);
-            $totalReceived = $compra->lines->sum(fn($l) => (float) $l->received_quantity);
+            $totalOrdered = $compra->lines->sum(fn ($l) => (float) $l->ordered_quantity);
+            $totalReceived = $compra->lines->sum(fn ($l) => (float) $l->received_quantity);
             $pct = $totalOrdered > 0 ? round(($totalReceived / $totalOrdered) * 100) : 0;
-            $statusLabel = match($compra->status) {
+            $statusLabel = match ($compra->status) {
                 'received' => 'Recibida',
                 'partial' => 'Parcial',
                 default => 'En tránsito',
             };
             $history = [];
             $runningTotal = 0;
-            foreach ($compra->receptions->sortBy(fn($r) => $r->received_on ? $r->received_on->format('Y-m-d') : '') as $reception) {
+            foreach ($compra->receptions->sortBy(fn ($r) => $r->received_on ? $r->received_on->format('Y-m-d') : '') as $reception) {
                 foreach ($reception->lines as $rl) {
                     $runningTotal += (float) $rl->quantity;
                     $history[] = [
                         'date' => $reception->received_on ? $reception->received_on->format('d/m/Y') : '—',
                         'input' => $rl->purchaseLine->input?->name ?? '—',
                         'quantity' => number_format($rl->quantity, 0, ',', '.'),
-                        'unit_cost' => '$' . number_format($rl->unit_cost, 0, ',', '.'),
-                        'subtotal' => '$' . number_format($rl->quantity * $rl->unit_cost, 0, ',', '.'),
+                        'unit_cost' => '$'.number_format($rl->unit_cost, 0, ',', '.'),
+                        'subtotal' => '$'.number_format($rl->quantity * $rl->unit_cost, 0, ',', '.'),
                         'accumulated' => number_format($runningTotal, 0, ',', '.'),
                     ];
                 }
             }
+
             return response()->json([
                 'success' => true,
                 'status' => $compra->status,
@@ -135,6 +142,7 @@ class PurchaseController extends Controller
                 'historyCount' => $compra->receptions->count(),
             ]);
         }
+
         return redirect('/compras')->with('success', 'Recepción registrada correctamente.');
     }
 
@@ -157,7 +165,7 @@ class PurchaseController extends Controller
         try {
             if ($request->ajax()) {
                 $rules = [
-                    'number' => ['sometimes', 'required', 'string', 'max:255', 'unique:purchases,number,'.$compra->id],
+                    'number' => ['sometimes', 'required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('purchases', 'number')->ignore($compra->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
                     'supplier_id' => ['sometimes', 'required', 'exists:suppliers,id'],
                     'ordered_on' => ['sometimes', 'required', 'date'],
                     'expected_on' => ['sometimes', 'nullable', 'date'],
@@ -166,7 +174,7 @@ class PurchaseController extends Controller
                 ];
             } else {
                 $rules = [
-                    'number' => ['required', 'string', 'max:255', 'unique:purchases,number,'.$compra->id],
+                    'number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('purchases', 'number')->ignore($compra->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
                     'supplier_id' => ['required', 'exists:suppliers,id'],
                     'ordered_on' => ['required', 'date'],
                     'expected_on' => ['nullable', 'date'],
@@ -175,29 +183,36 @@ class PurchaseController extends Controller
                     'lines.*.ordered_quantity' => ['required_with:lines', 'integer', 'min:1'],
                 ];
             }
-            $data = $request->validate($rules, ['number.unique' => 'El número de compra ya existe.']);
-            $compra->update($data);
-
-            if ($request->ajax() && isset($data['ordered_quantity']) && $compra->lines->count() === 1) {
-                $compra->lines()->first()->update(['ordered_quantity' => $data['ordered_quantity']]);
+            $request->merge(['lines' => array_values(array_filter($request->input('lines', []), fn (array $line): bool => filled($line['input_id'] ?? null) && blank($line['remove'] ?? null)))]);
+            if (! $request->ajax()) {
+                $rules = array_merge($rules, [
+                    'lines' => ['required', 'array', 'min:1'],
+                    'lines.*.id' => ['nullable', 'integer'],
+                    'lines.*.input_id' => ['required', 'distinct', 'exists:inputs,id'],
+                    'lines.*.ordered_quantity' => ['required', 'numeric', 'gt:0'],
+                    'lines.*.unit_cost' => ['required', 'numeric', 'min:0'],
+                ]);
             }
 
-            if ($request->has('lines') && $compra->lines->every(fn ($line) => (float) $line->received_quantity === 0)) {
-                $lines = $request->input('lines', []);
-                foreach ($lines as $lineId => $lineData) {
-                    $compra->lines()->where('id', $lineId)->update([
-                        'ordered_quantity' => $lineData['ordered_quantity'],
-                    ]);
+            $data = $this->validateLines($request->all(), $rules, ['number.unique' => 'El número de compra ya existe.']);
+            if (isset($data['lines'])) {
+                $this->ensureWholeUnitLines($data['lines']);
+            }
+
+            DB::transaction(function () use ($compra, $data): void {
+                $compra->update(collect($data)->except('lines')->all());
+                if (isset($data['lines'])) {
+                    $this->inventoryService->updatePurchaseLines($compra, $data['lines']);
                 }
-            }
-
-            AuditService::log('ACTUALIZACIÓN DE COMPRA', "Actualizó compra: {$compra->number}", $compra);
+                AuditService::log('ACTUALIZACIÓN DE COMPRA', "Actualizó compra: {$compra->number}", $compra);
+            }, attempts: 5);
 
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
+
             return redirect('/compras')->with('success', 'Compra actualizada correctamente.');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }

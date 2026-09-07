@@ -28,6 +28,22 @@ class AlertService
                 ]);
             });
 
+        // Insumos al 50% de stock de seguridad
+        Input::where('type', 'material')
+            ->where('safety_stock', '>', 0)
+            ->get()
+            ->filter(fn (Input $i) => (float) $i->stock > 0 && (float) $i->stock <= (float) $i->safety_stock * 0.5 && $i->inventory_level !== 'critico')
+            ->each(function (Input $i) use ($alerts) {
+                $pct = $i->safety_stock > 0 ? round((float) $i->stock / (float) $i->safety_stock * 100) : 0;
+                $alerts->push([
+                    'level' => 'warning',
+                    'module' => 'Insumos',
+                    'title' => "{$i->name} al {$pct}% del stock de seguridad",
+                    'detail' => "Stock {$i->formattedStock()} {$i->unit}; seguridad {$i->formattedSafetyStock()} {$i->unit}.",
+                    'action_url' => '/insumos',
+                ]);
+            });
+
         // Compras atrasadas
         Purchase::where('status', '!=', 'received')
             ->where('expected_on', '<', now()->toDateString())
@@ -70,7 +86,7 @@ class AlertService
                     'level' => 'critical',
                     'module' => 'Retail',
                     'title' => "{$r->store?->name} · {$r->product?->name}",
-                    'detail' => "Stock " . (int) $r->stock_units . " unidades; tránsito " . (int) $r->transit_units . "; venta semanal " . (int) $r->weekly_sales . ".",
+                    'detail' => 'Stock '.(int) $r->stock_units.' unidades; tránsito '.(int) $r->transit_units.'; venta semanal '.(int) $r->weekly_sales.'.',
                     'action_url' => '/retail',
                 ]);
             });
