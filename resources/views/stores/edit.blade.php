@@ -68,5 +68,5 @@
         </div>
     </div>
 
-@endif
 </x-erp-layout>
+@endif

@@ -79,17 +79,21 @@ class CustomerController extends Controller
         }
     }
 
-    public function destroy(Customer $customer): RedirectResponse
+    public function destroy(Request $request, Customer $customer): RedirectResponse
     {
-        if ($customer->stores()->exists() || $customer->prices()->exists()) {
+        if ($customer->stores()->exists() || $customer->prices()->exists() || $customer->orders()->exists()) {
             return back()->withErrors([
-                'delete' => 'No puedes eliminar este cliente porque tiene salas o precios asociados.',
+                'delete' => 'No puedes eliminar este cliente porque tiene salas, precios o pedidos asociados.',
             ]);
         }
 
         $customer->update(['deleted_by' => auth()->id()]);
         $customer->delete();
         AuditService::log('ELIMINACIÓN DE CLIENTE', "Eliminó cliente: {$customer->business_name}", $customer);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()->route('customers.index');
     }

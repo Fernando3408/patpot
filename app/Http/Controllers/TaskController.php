@@ -99,16 +99,24 @@ class TaskController extends Controller
         }
     }
 
-    public function destroy(Task $task): RedirectResponse
+    public function destroy(Request $request, Task $task): RedirectResponse
     {
         $task->delete();
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/tareas')->with('success', 'Tarea eliminada correctamente.');
     }
 
-    public function complete(Task $task): RedirectResponse
+    public function complete(Request $request, Task $task)
     {
         $task->update(['status' => 'completed', 'completed_on' => now()->toDateString()]);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'status' => $task->status]);
+        }
 
         return redirect('/tareas')->with('success', 'Tarea marcada como completada.');
     }

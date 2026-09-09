@@ -317,7 +317,7 @@
                     if (td.dataset.cleanup === 'int') {
                         cleanVal = val.replace(/[^0-9\-]/g, '');
                     } else if (td.dataset.cleanup === 'currency') {
-                        cleanVal = val.replace(/[^0-9.\-]/g, '');
+                        cleanVal = val.replace(/[^0-9.\-]/g, '').replace(/\./g, '');
                     } else {
                         cleanVal = val.replace(/\s*cajas\s*/i, '').replace(/^\$/, '').trim();
                     }
@@ -371,14 +371,16 @@
                                 if (td.dataset.cleanup === 'int') {
                                     val = val.replace(/[^0-9\-]/g, '');
                                 } else if (td.dataset.cleanup === 'currency') {
-                                    val = val.replace(/[^0-9.\-]/g, '');
+                                    val = val.replace(/[^0-9.\-]/g, '').replace(/\./g, '');
                                 } else if (td.dataset.cleanup === 'decimal') {
                                     val = val.replace(/[^0-9.\-]/g, '');
                                 }
                                 var origClean = (td.dataset.originalValue || '').replace(/\s*cajas\s*/i, '').replace(/^\$/, '').trim();
                                 if (td.dataset.cleanup === 'int') {
                                     origClean = origClean.replace(/[^0-9\-]/g, '');
-                                } else if (td.dataset.cleanup === 'currency' || td.dataset.cleanup === 'decimal') {
+                                } else if (td.dataset.cleanup === 'currency') {
+                                    origClean = origClean.replace(/[^0-9.\-]/g, '').replace(/\./g, '');
+                                } else if (td.dataset.cleanup === 'decimal') {
                                     origClean = origClean.replace(/[^0-9.\-]/g, '');
                                 }
                                 if (val === origClean) return;
@@ -490,6 +492,47 @@
                 qm.style.display = isVisible ? 'none' : 'block';
             });
         }
+
+        document.addEventListener('submit', function(e) {
+            var form = e.target;
+            if (!form.classList.contains('inline-form') && form.querySelector('input[name="_method"][value="DELETE"]')) {
+                e.preventDefault();
+                Swal.fire({
+                    title: '¿Eliminar?',
+                    text: 'Esta acción no se puede deshacer.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#df6403',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar'
+                }).then(function(result) {
+                    if (result.isConfirmed) {
+                        var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                        fetch(form.action, {
+                            method: 'POST',
+                            headers: { 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                            body: new URLSearchParams(new FormData(form))
+                        })
+                        .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+                        .then(function(res) {
+                            if (res.ok && res.data.success) {
+                                var tr = form.closest('tr');
+                                if (tr) {
+                                    tr.style.transition = 'opacity 0.3s';
+                                    tr.style.opacity = '0';
+                                    setTimeout(function() { tr.remove(); }, 300);
+                                }
+                                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Eliminado', showConfirmButton: false, timer: 2000 });
+                            } else {
+                                Swal.fire('Error', res.data.message || 'No se pudo eliminar.', 'error');
+                            }
+                        })
+                        .catch(function() { Swal.fire('Error', 'No se pudo eliminar.', 'error'); });
+                    }
+                });
+            }
+        });
     </script>
     <script>lucide.createIcons();</script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

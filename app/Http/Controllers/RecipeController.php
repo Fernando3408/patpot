@@ -151,10 +151,14 @@ class RecipeController extends Controller
         return redirect('/recetas');
     }
 
-    public function destroy(Recipe $recipe)
+    public function destroy(Request $request, Recipe $recipe)
     {
         $recipe->delete();
         AuditService::log('ELIMINACIÓN DE RECETA', 'Eliminó insumo de receta', $recipe);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/recetas');
     }

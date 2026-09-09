@@ -220,7 +220,7 @@ class PurchaseController extends Controller
         }
     }
 
-    public function destroy(Purchase $compra): RedirectResponse
+    public function destroy(Request $request, Purchase $compra): RedirectResponse
     {
         if ((float) $compra->lines->sum('received_quantity') > 0) {
             return back()->withErrors(['delete' => 'No puedes eliminar una compra que ya tiene recepciones registradas.']);
@@ -233,6 +233,10 @@ class PurchaseController extends Controller
         $compra->lines()->delete();
         $compra->delete();
         AuditService::log('ELIMINACIÓN DE COMPRA', "Eliminó compra: {$compra->number}", $compra);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/compras')->with('success', 'Compra eliminada correctamente.');
     }
@@ -252,6 +256,10 @@ class PurchaseController extends Controller
     {
         $unit = mb_strtolower($input->unit);
 
-        return str_contains($unit, 'kg') || str_contains($unit, 'caja');
+        if (str_contains($unit, 'kg') || str_contains($unit, 'litro')) {
+            return false;
+        }
+
+        return true;
     }
 }

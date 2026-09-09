@@ -220,7 +220,13 @@
                         Swal.fire('Error', msgs, 'error');
                     } else {
                         Swal.fire('Ajustado', 'Stock actualizado a ' + Math.round(json.stock).toLocaleString('es-CL') + ' ' + unit, 'success');
-                        setTimeout(function() { location.reload(); }, 800);
+                        closeDetailModal();
+                        var row = document.querySelector('tr[data-input-id="' + id + '"]');
+                        if (row) {
+                            var stockTd = row.children[3];
+                            if (stockTd) stockTd.textContent = Math.round(json.stock).toLocaleString('es-CL');
+                            updateInputRowCells(row, json);
+                        }
                     }
                 }).catch(function() {
                     Swal.fire('Error', 'No se pudo ajustar.', 'error');

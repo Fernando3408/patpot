@@ -48,6 +48,10 @@ class TrashController extends Controller
         AuditService::log('RESTAURACIÓN', 'Restauró registro: '.($item->name ?? $item->business_name ?? $item->number ?? 'Registro'), $item);
         $this->cascadeRestore($item);
 
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+
         return back()->with('success', 'Registro restaurado.');
     }
 
@@ -57,6 +61,10 @@ class TrashController extends Controller
         $item = $model::withTrashed()->findOrFail($request->id);
         AuditService::log('ELIMINACIÓN PERMANENTE', 'Eliminó permanentemente: '.($item->name ?? $item->business_name ?? $item->number ?? 'Registro'), $item);
         $this->cascadeForceDelete($item);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return back()->with('success', 'Registro eliminado permanentemente.');
     }

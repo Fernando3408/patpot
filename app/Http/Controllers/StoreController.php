@@ -136,11 +136,15 @@ class StoreController extends Controller
         }
     }
 
-    public function destroy(Store $store)
+    public function destroy(Request $request, Store $store)
     {
         $store->update(['deleted_by' => auth()->id()]);
         $store->delete();
         AuditService::log('ELIMINACIÓN DE SALA', "Eliminó sala: {$store->name}", $store);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/salas');
     }

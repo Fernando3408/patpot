@@ -9,6 +9,7 @@ use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InputController;
 use App\Http\Controllers\InventoryMovementController;
+use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductController;
@@ -228,6 +229,8 @@ Route::middleware('auth')->group(function (): void {
         Route::put('/usuarios/{user}', [AdminController::class, 'update'])->name('users.update');
         Route::delete('/usuarios/{user}', [AdminController::class, 'destroy'])->name('users.destroy');
         Route::post('/usuarios/{user}/toggle-status', [AdminController::class, 'toggleStatus'])->name('users.toggle-status');
+
+        Route::get('/login-logs', [LoginLogController::class, 'index'])->name('login-logs.index');
 
         /* Crear usuario */
         Route::get('/usuarios/crear', [RegisteredUserController::class, 'create'])->name('users.create');

@@ -48,6 +48,13 @@ class Retail extends Model
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
+    public function getNameAttribute(): string
+    {
+        $store = $this->store?->code ?? '—';
+        $product = $this->product?->name ?? '—';
+        return "{$store} — {$product}";
+    }
+
     // 1. QUIEBRE: Stock <= 0 y Tránsito <= 0
     public function getIsBreakAttribute(): bool
     {

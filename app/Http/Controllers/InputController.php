@@ -158,7 +158,7 @@ class InputController extends Controller
         }
     }
 
-    public function destroy(Input $input)
+    public function destroy(Request $request, Input $input)
     {
         if ($input->recipes()->exists()) {
             return back()->withErrors([
@@ -181,6 +181,10 @@ class InputController extends Controller
         $input->update(['deleted_by' => auth()->id()]);
         $input->delete();
         AuditService::log('ELIMINACIÓN DE INSUMO', "Eliminó insumo: {$input->name}", $input);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/insumos');
     }

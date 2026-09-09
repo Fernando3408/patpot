@@ -55,10 +55,20 @@ class ProductionController extends Controller
         return view('productions._detail', ['production' => $produccion]);
     }
 
-    public function close(Request $request, Production $produccion): RedirectResponse
+    public function close(Request $request, Production $produccion)
     {
         $data = $request->validate(['actual_boxes' => ['required', 'integer', 'gt:0'], 'completed_on' => ['required', 'date']]);
         $this->inventoryService->closeProduction($produccion, (float) $data['actual_boxes'], $data['completed_on']);
+
+        if ($request->ajax()) {
+            $produccion->refresh();
+            return response()->json([
+                'success' => true,
+                'status' => $produccion->status,
+                'actual_boxes' => $produccion->actual_boxes,
+                'completed_on' => $produccion->completed_on,
+            ]);
+        }
 
         return redirect('/produccion')->with('success', 'Producción cerrada correctamente.');
     }
@@ -115,7 +125,7 @@ class ProductionController extends Controller
         }
     }
 
-    public function destroy(Production $produccion): RedirectResponse
+    public function destroy(Request $request, Production $produccion): RedirectResponse
     {
         if ($produccion->status === 'closed') {
             return back()->withErrors(['delete' => 'No puedes eliminar una producción que ya fue cerrada.']);
@@ -123,6 +133,10 @@ class ProductionController extends Controller
 
         $produccion->delete();
         AuditService::log('ELIMINACIÓN DE PRODUCCIÓN', "Eliminó producción: {$produccion->number}", $produccion);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/produccion')->with('success', 'Producción eliminada correctamente.');
     }

@@ -4,7 +4,7 @@
             <form method="GET" action="{{ route('precios.index') }}" class="search-form">
                 <select name="customer_id" class="form-control">
                     <option value="">Todos los clientes</option>
-                    @foreach(\App\Models\Customer::where('status', true)->orderBy('business_name')->get() as $c)
+                    @foreach($customers as $c)
                         <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->business_name }}</option>
                     @endforeach
                 </select>

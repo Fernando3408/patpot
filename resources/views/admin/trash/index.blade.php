@@ -86,5 +86,30 @@
             document.querySelectorAll('.trash-check:checked').forEach(function(cb) { selected.push(cb.value); });
             document.getElementById('selectedItems').value = JSON.stringify(selected);
         }
+
+        document.querySelectorAll('form[action*="restaurar"], form[action*="restore"]').forEach(function(form) {
+            if (form.querySelector('input[name="_method"][value="DELETE"]')) return;
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(json) {
+                    if (json.success) {
+                        var tr = form.closest('tr');
+                        if (tr) {
+                            tr.style.transition = 'opacity 0.3s';
+                            tr.style.opacity = '0';
+                            setTimeout(function() { tr.remove(); }, 300);
+                        }
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Restaurado', showConfirmButton: false, timer: 2000 });
+                    }
+                })
+                .catch(function() { Swal.fire('Error', 'No se pudo restaurar.', 'error'); });
+            });
+        });
     </script>
 </x-erp-layout>

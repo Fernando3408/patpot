@@ -60,7 +60,6 @@
             <div class="data-table-empty mb-4">
                 <p>Necesitas al menos un producto activo y un insumo activo para crear una receta.</p>
             </div>
-            <div class="form-actions">
         @endif
 
     </div>

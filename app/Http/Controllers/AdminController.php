@@ -38,6 +38,7 @@ class AdminController extends Controller
         $user->update($validated);
 
         if ($request->filled('password')) {
+            $request->validate(['password' => 'required|string|min:8']);
             $user->update(['password' => Hash::make($request->password)]);
         }
 
@@ -60,15 +61,22 @@ class AdminController extends Controller
         return redirect()->route('admin.index')->with('success', 'Usuario eliminado.');
     }
 
-    public function toggleStatus(User $user)
+    public function toggleStatus(Request $request, User $user)
     {
         if ($user->id === auth()->id()) {
+            if ($request->ajax()) {
+                return response()->json(['errors' => ['error' => ['No puedes desactivar tu propio usuario.']]], 422);
+            }
             return back()->withErrors(['error' => 'No puedes desactivar tu propio usuario.']);
         }
 
         $user->update(['status' => ! $user->status]);
         $estado = $user->status ? 'activado' : 'desactivado';
         AuditService::log('CAMBIO DE ESTADO USUARIO', "Usuario {$user->name} {$estado}", $user);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'status' => $user->status]);
+        }
 
         return redirect()->route('admin.index')->with('success', "Usuario {$estado}.");
     }

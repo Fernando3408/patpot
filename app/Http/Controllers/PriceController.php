@@ -20,8 +20,9 @@ class PriceController extends Controller
         }
 
         $prices = $query->orderBy('customer_id')->get();
+        $customers = Customer::where('status', true)->orderBy('business_name')->get();
 
-        return view('prices.index', compact('prices'));
+        return view('prices.index', compact('prices', 'customers'));
     }
 
     public function create()
@@ -106,10 +107,14 @@ class PriceController extends Controller
         }
     }
 
-    public function destroy(Price $price)
+    public function destroy(Request $request, Price $price)
     {
         $price->delete();
         AuditService::log('ELIMINACIÓN DE PRECIO', 'Eliminó precio', $price);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/precios');
     }

@@ -107,18 +107,22 @@ class SupplierController extends Controller
         }
     }
 
-    public function destroy(Supplier $supplier)
+    public function destroy(Request $request, Supplier $supplier)
     {
         // Protección: si tiene insumos asociados, no lo dejamos borrar de golpe
-        if ($supplier->inputs()->exists()) {
+        if ($supplier->inputs()->exists() || $supplier->purchases()->exists()) {
             return back()->withErrors([
-                'delete' => 'No puedes eliminar este proveedor porque tiene insumos asociados.',
+                'delete' => 'No puedes eliminar este proveedor porque tiene insumos o compras asociados.',
             ]);
         }
 
         $supplier->update(['deleted_by' => auth()->id()]);
         $supplier->delete();
         AuditService::log('ELIMINACIÓN DE PROVEEDOR', "Eliminó proveedor: {$supplier->name}", $supplier);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/proveedores');
     }

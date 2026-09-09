@@ -27,8 +27,8 @@
                             <td data-field="name" class="font-bold">{{ $product->name }}</td>
                             <td data-field="sku" class="text-xs">{{ $product->sku }}</td>
                             <td data-field="stock_boxes" data-cleanup="int" class="text-right font-bold">{{ number_format($product->stock_boxes, 0, ',', '.') }} cajas</td>
-                            <td data-field="sale_price_box" class="text-right font-bold">${{ number_format($product->sale_price_box, 0, ',', '.') }}</td>
-                            <td data-field="production_cost" class="text-right font-bold">
+                            <td data-field="sale_price_box" data-cleanup="currency" class="text-right font-bold">${{ number_format($product->sale_price_box, 0, ',', '.') }}</td>
+                            <td data-field="production_cost" data-cleanup="currency" class="text-right font-bold">
                                 @if($product->production_cost !== null)
                                     ${{ number_format($product->production_cost, 0, ',', '.') }}
                                 @else

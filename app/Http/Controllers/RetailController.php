@@ -56,7 +56,7 @@ class RetailController extends Controller
     {
         $validated = $request->validate([
             'store_id' => 'required|exists:stores,id',
-            'product_id' => 'required|exists:products,id',
+            'product_id' => ['required', 'exists:products,id', \Illuminate\Validation\Rule::unique('retail')->where(fn ($q) => $q->where('store_id', $request->input('store_id'))->whereNull('deleted_at'))],
             'cataloged' => 'required|boolean',
             'stock_units' => 'required|integer|min:0',
             'transit_units' => 'required|integer|min:0',
@@ -65,17 +65,10 @@ class RetailController extends Controller
             'reorder_point' => 'required|integer|min:0',
         ]);
 
-        $exists = Retail::where('store_id', $validated['store_id'])
+        Retail::withTrashed()
+            ->where('store_id', $validated['store_id'])
             ->where('product_id', $validated['product_id'])
-            ->exists();
-
-        if ($exists) {
-            return back()
-                ->withErrors([
-                    'product_id' => 'Ya existe un registro retail para esta sala y este producto.',
-                ])
-                ->withInput();
-        }
+            ->forceDelete();
 
         $validated['stock_units'] = (int) $validated['stock_units'];
         $validated['transit_units'] = (int) $validated['transit_units'];
@@ -110,7 +103,7 @@ class RetailController extends Controller
             if ($request->ajax()) {
                 $rules = [
                     'store_id' => 'sometimes|required|exists:stores,id',
-                    'product_id' => 'sometimes|required|exists:products,id',
+                    'product_id' => ['sometimes', 'required', 'exists:products,id', \Illuminate\Validation\Rule::unique('retail')->where(fn ($q) => $q->where('store_id', $request->input('store_id') ?? $retail->store_id)->whereNull('deleted_at'))->ignore($retail->id)],
                     'cataloged' => 'sometimes|required|boolean',
                     'stock_units' => 'sometimes|required|integer|min:0',
                     'transit_units' => 'sometimes|required|integer|min:0',
@@ -121,7 +114,7 @@ class RetailController extends Controller
             } else {
                 $rules = [
                     'store_id' => 'required|exists:stores,id',
-                    'product_id' => 'required|exists:products,id',
+                    'product_id' => ['required', 'exists:products,id', \Illuminate\Validation\Rule::unique('retail')->where(fn ($q) => $q->where('store_id', $request->input('store_id'))->whereNull('deleted_at'))->ignore($retail->id)],
                     'cataloged' => 'required|boolean',
                     'stock_units' => 'required|integer|min:0',
                     'transit_units' => 'required|integer|min:0',
@@ -131,26 +124,6 @@ class RetailController extends Controller
                 ];
             }
             $validated = $request->validate($rules);
-
-            $storeId = $validated['store_id'] ?? $retail->store_id;
-            $productId = $validated['product_id'] ?? $retail->product_id;
-
-            $exists = Retail::where('store_id', $storeId)
-                ->where('product_id', $productId)
-                ->where('id', '!=', $retail->id)
-                ->exists();
-
-            if ($exists) {
-                if ($request->ajax()) {
-                    return response()->json(['errors' => ['product_id' => ['Ya existe un registro retail para esta sala y este producto.']]], 422);
-                }
-
-                return back()
-                    ->withErrors([
-                        'product_id' => 'Ya existe un registro retail para esta sala y este producto.',
-                    ])
-                    ->withInput();
-            }
 
             foreach (['stock_units', 'transit_units', 'weekly_sales', 'min_stock', 'reorder_point'] as $field) {
                 if (isset($validated[$field])) {
@@ -162,7 +135,15 @@ class RetailController extends Controller
             AuditService::log('ACTUALIZACIÓN DE RETAIL', 'Actualizó registro retail', $retail);
 
             if ($request->ajax()) {
-                return response()->json(['success' => true]);
+                $retail->refresh();
+                return response()->json([
+                    'success' => true,
+                    'stock_units' => $retail->stock_units,
+                    'is_break' => $retail->is_break,
+                    'isInTransit' => $retail->isInTransit,
+                    'isWarning' => $retail->isWarning,
+                    'suggested_replenishment_boxes' => $retail->suggested_replenishment_boxes,
+                ]);
             }
 
             return redirect('/retail');
@@ -174,11 +155,15 @@ class RetailController extends Controller
         }
     }
 
-    public function destroy(Retail $retail)
+    public function destroy(Request $request, Retail $retail)
     {
         $retail->update(['deleted_by' => auth()->id()]);
         $retail->delete();
         AuditService::log('ELIMINACIÓN DE RETAIL', 'Eliminó registro retail', $retail);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/retail');
     }

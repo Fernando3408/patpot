@@ -94,7 +94,7 @@
                                         </form>
                                     @endif
                                     @if($purchase->status !== 'received')
-                                        <button type="button" class="btn btn-primary btn-sm" onclick='openReceiveModal({!! json_encode($purchase->lines->map(fn($line) => ["id" => $line->id, "name" => $line->input->name ?? "—", "ordered" => $line->ordered_quantity, "received" => $line->received_quantity])) !!}, "{{ route('purchases.receive', $purchase) }}")'>Recibir</button>
+                                        <button type="button" class="btn btn-primary btn-sm" onclick='openReceiveModal({!! json_encode($purchase->lines->map(fn($line) => ["id" => $line->id, "name" => $line->input->name ?? "—", "ordered" => $line->ordered_quantity, "received" => $line->received_quantity]), JSON_HEX_APOS | JSON_HEX_TAG) !!}, "{{ route('purchases.receive', $purchase) }}")'>Recibir</button>
                                     @endif
                                 </div>
                             </td>

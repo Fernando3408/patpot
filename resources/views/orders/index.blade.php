@@ -38,7 +38,7 @@
                 </thead>
                 <tbody>
                     @foreach($orders as $order)
-                        <tr data-order-id="{{ $order->id }}" data-update-url="{{ route('pedidos.update', $order) }}">
+                        <tr data-order-id="{{ $order->id }}">
                             <td>
                                 <strong>{{ $order->number }}</strong>
                                 <br>
@@ -114,7 +114,7 @@
                                         </form>
                                     @endif
                                     @if(!in_array($order->status, ['completed', 'cancelled']))
-                                        <button type="button" class="btn btn-primary btn-sm" onclick='openDispatchModal({!! json_encode($order->lines->map(fn($line) => ["id" => $line->id, "name" => $line->product->name ?? "—", "stock" => (int)$line->product->stock_boxes, "boxes" => $line->boxes, "dispatched" => $line->dispatched_boxes])) !!}, "{{ route('orders.dispatch', $order) }}")'>Despachar</button>
+                                        <button type="button" class="btn btn-primary btn-sm" onclick='openDispatchModal({!! json_encode($order->lines->map(fn($line) => ["id" => $line->id, "name" => $line->product->name ?? "—", "stock" => (int)$line->product->stock_boxes, "boxes" => $line->boxes, "dispatched" => $line->dispatched_boxes]), JSON_HEX_APOS | JSON_HEX_TAG) !!}, "{{ route('orders.dispatch', $order) }}")'>Despachar</button>
                                     @endif
                                 </div>
                             </td>

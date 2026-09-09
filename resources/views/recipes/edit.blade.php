@@ -115,7 +115,6 @@
             <div class="data-table-empty mb-4">
                 <p>No hay insumos activos disponibles. Crea un insumo antes de configurar una receta.</p>
             </div>
-            <div class="form-actions">
         @endif
 
     </div>

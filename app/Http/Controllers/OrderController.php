@@ -226,7 +226,7 @@ class OrderController extends Controller
         }
     }
 
-    public function destroy(Order $pedido): RedirectResponse
+    public function destroy(Request $request, Order $pedido): RedirectResponse
     {
         if ($pedido->shipments()->exists()) {
             return back()->withErrors(['delete' => 'No puedes eliminar un pedido que ya tiene despachos.']);
@@ -235,6 +235,10 @@ class OrderController extends Controller
         $pedido->lines()->delete();
         $pedido->delete();
         AuditService::log('ELIMINACIÓN DE PEDIDO', "Eliminó pedido: {$pedido->number}", $pedido);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/pedidos')->with('success', 'Pedido eliminado correctamente.');
     }

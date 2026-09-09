@@ -18,8 +18,7 @@ class ProductController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('category', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -120,7 +119,7 @@ class ProductController extends Controller
         }
     }
 
-    public function destroy(Product $product)
+    public function destroy(Request $request, Product $product)
     {
         if ($product->orderLines()->exists()) {
             return back()->withErrors([
@@ -155,6 +154,10 @@ class ProductController extends Controller
         $product->update(['deleted_by' => auth()->id()]);
         $product->delete();
         AuditService::log('ELIMINACIÓN DE PRODUCTO', "Eliminó producto: {$product->name}", $product);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/productos')->with('success', 'Producto eliminado correctamente.');
     }

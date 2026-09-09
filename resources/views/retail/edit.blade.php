@@ -114,5 +114,5 @@
             </button>
         </div>
     </form>
-@if(!request()->ajax())
 </x-erp-layout>
+@endif

@@ -110,6 +110,26 @@
         }
     @endphp
     <script>
+        var selectedFiles = [];
+
+        function renderPreview() {
+            var preview = document.getElementById('attachment-preview');
+            if (!preview) return;
+            preview.innerHTML = '';
+            selectedFiles.forEach(function(f, i) {
+                var item = document.createElement('div');
+                item.className = 'attachment-item';
+                var size = f.size < 1024 ? f.size + ' B' : f.size < 1048576 ? (f.size / 1024).toFixed(1) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB';
+                item.innerHTML = '<span class="attachment-name">' + f.name + '</span><span class="attachment-size">' + size + '</span><button type="button" class="btn btn-danger btn-sm" onclick="removeAttachment(' + i + ')">&times;</button>';
+                preview.appendChild(item);
+            });
+        }
+
+        function removeAttachment(i) {
+            selectedFiles.splice(i, 1);
+            renderPreview();
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const table = document.getElementById('lines-table');
             const tbody = table.querySelector('tbody');
@@ -150,8 +170,6 @@
             });
 
             var fileInput = document.getElementById('attachments-input');
-            var preview = document.getElementById('attachments-preview');
-            var selectedFiles = [];
 
             fileInput.addEventListener('change', function() {
                 var newFiles = Array.from(this.files);
@@ -164,22 +182,6 @@
                 });
                 renderPreview();
             });
-
-            function renderPreview() {
-                preview.innerHTML = '';
-                selectedFiles.forEach(function(f, i) {
-                    var item = document.createElement('div');
-                    item.className = 'attachment-item';
-                    var size = f.size < 1024 ? f.size + ' B' : f.size < 1048576 ? (f.size / 1024).toFixed(1) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB';
-                    item.innerHTML = '<span class="attachment-name">' + f.name + '</span><span class="attachment-size">' + size + '</span><button type="button" class="btn btn-danger btn-sm" onclick="removeAttachment(' + i + ')">&times;</button>';
-                    preview.appendChild(item);
-                });
-            }
-
-            function removeAttachment(i) {
-                selectedFiles.splice(i, 1);
-                renderPreview();
-            }
 
             var form = fileInput.closest('form');
             form.addEventListener('submit', function(e) {
