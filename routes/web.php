@@ -238,4 +238,10 @@ Route::middleware('auth')->group(function (): void {
 
     });
 
+    Route::get('/chat', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+    Route::post('/chat/send', [\App\Http\Controllers\ChatController::class, 'send'])->name('chat.send');
+
 });
+
+Route::post('/api/telegram/webhook', [\App\Http\Controllers\TelegramController::class, 'webhook']);
+Route::get('/api/telegram/set-webhook', [\App\Http\Controllers\TelegramController::class, 'setWebhook']);

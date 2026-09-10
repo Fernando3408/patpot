@@ -98,5 +98,7 @@ class DatabaseSeeder extends Seeder
                 $inventoryService->dispatchOrder($order, [$line->id => 10], today()->toDateString());
             }
         }
+
+        $this->call(ChatKnowledgeSeeder::class);
     }
 }

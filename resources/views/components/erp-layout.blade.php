@@ -103,6 +103,10 @@
                     @if(auth()->check() && auth()->user()->canManage())
                     <a href="{{ route('admin.trash.index') }}" class="sidebar-link {{ request()->routeIs('admin.trash.*') ? 'active' : '' }}">Papelera</a>
                     @endif
+                    <div class="sidebar-divider"></div>
+                    <a href="#" class="sidebar-link" onclick="document.getElementById('chatFab').click(); return false;">
+                        <i data-lucide="bot" class="sidebar-link-icon"></i> Asistente IA
+                    </a>
                     @if(auth()->check() && auth()->user()->isAdmin())
                     <div class="sidebar-divider"></div>
                     <a href="{{ route('movements.index') }}" class="sidebar-link {{ request()->routeIs('movements.*') ? 'active' : '' }}">Movimientos</a>
@@ -721,5 +725,190 @@
             xhr.send(formData);
         }
     </script>
+
+    {{-- Floating Chat Widget --}}
+    @auth
+    <style>
+        .chat-fab {
+            position: fixed; bottom: 20px; right: 20px; z-index: 9999;
+            width: 48px; height: 48px; border-radius: 50%;
+            background: #df6403; color: #fff; border: none; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s, background 0.2s;
+        }
+        .chat-fab:hover { background: #c55800; transform: scale(1.08); }
+        .chat-fab.open { background: #666; }
+        .chat-fab svg { width: 24px; height: 24px; }
+
+        .chat-popup {
+            display: none; position: fixed; bottom: 78px; right: 20px; z-index: 9999;
+            width: 360px; height: 480px; background: #1a1d29; border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4); flex-direction: column; overflow: hidden;
+            border: 1px solid #333;
+        }
+        .chat-popup.visible { display: flex; }
+
+        .chat-popup-header {
+            background: #2c2e39; padding: 12px 14px; display: flex; align-items: center;
+            justify-content: space-between; border-bottom: 1px solid #444;
+        }
+        .chat-popup-header .chat-header-title {
+            color: #fff; font-size: 14px; font-weight: 600;
+        }
+        .chat-popup-header .chat-header-sub {
+            color: #aaa; font-size: 11px;
+        }
+        .chat-popup-header .chat-close-btn {
+            background: none; border: none; color: #aaa; cursor: pointer;
+            padding: 4px; line-height: 1;
+        }
+        .chat-popup-header .chat-close-btn:hover { color: #fff; }
+
+        .chat-popup-messages {
+            flex: 1; overflow-y: auto; padding: 12px;
+            display: flex; flex-direction: column; gap: 8px;
+        }
+        .chat-popup-messages::-webkit-scrollbar { width: 5px; }
+        .chat-popup-messages::-webkit-scrollbar-track { background: transparent; }
+        .chat-popup-messages::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
+
+        .chat-popup-input {
+            padding: 10px; border-top: 1px solid #333; display: flex; gap: 8px;
+            background: #2c2e39;
+        }
+        .chat-popup-input input {
+            flex: 1; background: #1a1d29; border: 1px solid #444; border-radius: 20px;
+            padding: 8px 14px; color: #fff; font-size: 13px; outline: none;
+        }
+        .chat-popup-input input::placeholder { color: #777; }
+        .chat-popup-input input:focus { border-color: #df6403; }
+        .chat-popup-input button {
+            width: 34px; height: 34px; border-radius: 50%; border: none;
+            background: #df6403; color: #fff; cursor: pointer; display: flex;
+            align-items: center; justify-content: center; flex-shrink: 0;
+        }
+        .chat-popup-input button:hover { background: #c55800; }
+
+        .chat-msg-widget { display: flex; }
+        .chat-msg-widget.user { justify-content: flex-end; }
+        .chat-msg-widget.bot { justify-content: flex-start; }
+        .chat-bubble-widget {
+            max-width: 82%; padding: 8px 12px; border-radius: 12px;
+            font-size: 13px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word;
+        }
+        .user-bubble-widget { background: #df6403; color: #fff; border-bottom-right-radius: 4px; }
+        .bot-bubble-widget { background: #2c2e39; color: #e0e0e0; border-bottom-left-radius: 4px; border: 1px solid #444; }
+
+        .chat-typing-widget { display: flex; gap: 4px; padding: 8px 12px; }
+        .chat-typing-widget span {
+            width: 6px; height: 6px; background: #888; border-radius: 50%;
+            animation: chatBlink 1.4s infinite both;
+        }
+        .chat-typing-widget span:nth-child(2) { animation-delay: 0.2s; }
+        .chat-typing-widget span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes chatBlink { 0%,80%,100%{opacity:0.3} 40%{opacity:1} }
+    </style>
+
+    <button class="chat-fab" id="chatFab" title="Asistente IA">
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
+    </button>
+
+    <div class="chat-popup" id="chatPopup">
+        <div class="chat-popup-header">
+            <div>
+                <div class="chat-header-title">Asistente PatPot</div>
+                <div class="chat-header-sub">IA conectada al ERP</div>
+            </div>
+            <button class="chat-close-btn" id="chatCloseBtn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+            </button>
+        </div>
+        <div class="chat-popup-messages" id="chatPopupMessages">
+            <div class="chat-msg-widget bot">
+                <div class="chat-bubble-widget bot-bubble-widget">Hola! Soy el asistente de PatPot. Pregúntame sobre stock, pedidos o lo que necesites.</div>
+            </div>
+        </div>
+        <form class="chat-popup-input" id="chatPopupForm">
+            <input type="text" id="chatPopupInput" placeholder="Escribe tu pregunta..." autocomplete="off">
+            <button type="submit">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
+            </button>
+        </form>
+    </div>
+
+    <script>
+    (function() {
+        var fab = document.getElementById('chatFab');
+        var popup = document.getElementById('chatPopup');
+        var msgs = document.getElementById('chatPopupMessages');
+        var form = document.getElementById('chatPopupForm');
+        var input = document.getElementById('chatPopupInput');
+        var closeBtn = document.getElementById('chatCloseBtn');
+
+        fab.addEventListener('click', function() {
+            popup.classList.toggle('visible');
+            fab.classList.toggle('open');
+            if (popup.classList.contains('visible')) input.focus();
+        });
+        closeBtn.addEventListener('click', function() {
+            popup.classList.remove('visible');
+            fab.classList.remove('open');
+        });
+
+        function addWidgetMsg(text, type) {
+            var div = document.createElement('div');
+            div.className = 'chat-msg-widget ' + type;
+            var bubble = document.createElement('div');
+            bubble.className = 'chat-bubble-widget ' + (type === 'user' ? 'user-bubble-widget' : 'bot-bubble-widget');
+            bubble.textContent = text;
+            div.appendChild(bubble);
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function showWidgetTyping() {
+            var div = document.createElement('div');
+            div.className = 'chat-msg-widget bot';
+            div.id = 'chatWidgetTyping';
+            div.innerHTML = '<div class="chat-typing-widget"><span></span><span></span><span></span></div>';
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function removeWidgetTyping() {
+            var el = document.getElementById('chatWidgetTyping');
+            if (el) el.remove();
+        }
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var msg = input.value.trim();
+            if (!msg) return;
+            addWidgetMsg(msg, 'user');
+            input.value = '';
+            input.disabled = true;
+            showWidgetTyping();
+
+            var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch('/chat/send', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ message: msg })
+            })
+            .then(function(r) { return r.json(); })
+            .then(function(json) {
+                removeWidgetTyping();
+                addWidgetMsg(json.reply || 'No pude responder.', 'bot');
+            })
+            .catch(function() {
+                removeWidgetTyping();
+                addWidgetMsg('Error de conexión. Intenta de nuevo.', 'bot');
+            })
+            .finally(function() { input.disabled = false; input.focus(); });
+        });
+    })();
+    </script>
+    @endauth
 </body>
 </html>
