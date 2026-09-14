@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = Product::with('recipes.input');
 
@@ -27,12 +30,12 @@ class ProductController extends Controller
         return view('products.index', compact('products'));
     }
 
-    public function create()
+    public function create(): View
     {
         return view('products.create');
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -52,19 +55,19 @@ class ProductController extends Controller
         return redirect('/productos');
     }
 
-    public function edit(Product $product)
+    public function edit(Product $product): View
     {
         return view('products.edit', compact('product'));
     }
 
-    public function show(Product $product)
+    public function show(Product $product): View
     {
         $product->load('recipes.input');
 
         return view('products._detail', compact('product'));
     }
 
-    public function update(Request $request, Product $product)
+    public function update(Request $request, Product $product): JsonResponse|RedirectResponse
     {
         try {
             if ($request->ajax()) {
@@ -119,7 +122,7 @@ class ProductController extends Controller
         }
     }
 
-    public function destroy(Request $request, Product $product)
+    public function destroy(Request $request, Product $product): JsonResponse|RedirectResponse
     {
         if ($product->orderLines()->exists()) {
             return back()->withErrors([

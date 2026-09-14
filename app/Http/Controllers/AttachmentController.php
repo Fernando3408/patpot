@@ -3,16 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attachment;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AttachmentController extends Controller
 {
-    public function list(Request $request)
+    public function list(Request $request): JsonResponse
     {
         $modelClass = $request->input('model_class');
         $modelId = $request->input('model_id');
+
+        if (! $modelClass || ! class_exists($modelClass)) {
+            return response()->json(['error' => 'Modelo inválido'], 422);
+        }
+
         $model = $modelClass::findOrFail($modelId);
         $attachments = $model->attachments->map(fn ($a) => [
             'id' => $a->id,
@@ -23,7 +29,7 @@ class AttachmentController extends Controller
         return response()->json(['attachments' => $attachments]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request): JsonResponse
     {
         $request->validate([
             'files' => ['required', 'array', 'max:10'],
@@ -33,8 +39,22 @@ class AttachmentController extends Controller
         ]);
 
         $modelClass = $request->model_class;
-        if (! class_exists($modelClass)) {
-            return response()->json(['ok' => false, 'error' => 'Tipo de entidad inválido.'], 422);
+        $allowed = [
+            \App\Models\Product::class,
+            \App\Models\Input::class,
+            \App\Models\Order::class,
+            \App\Models\Purchase::class,
+            \App\Models\Production::class,
+            \App\Models\Supplier::class,
+            \App\Models\Customer::class,
+            \App\Models\Store::class,
+            \App\Models\Retail::class,
+            \App\Models\Price::class,
+            \App\Models\Task::class,
+        ];
+
+        if (! in_array($modelClass, $allowed)) {
+            return response()->json(['ok' => false, 'error' => 'Tipo de entidad no permitido.'], 422);
         }
 
         $model = $modelClass::findOrFail($request->model_id);
@@ -65,7 +85,7 @@ class AttachmentController extends Controller
         return Storage::disk('local')->download($attachment->path, $attachment->original_name);
     }
 
-    public function destroy(Attachment $attachment)
+    public function destroy(Attachment $attachment): JsonResponse|\Illuminate\Http\RedirectResponse
     {
         Storage::disk('local')->delete($attachment->path);
         $attachment->delete();

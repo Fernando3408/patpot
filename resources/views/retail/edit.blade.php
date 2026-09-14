@@ -109,6 +109,7 @@
 
         {{-- Botones de Control --}}
         <div class="form-actions d-flex justify-content-between align-items-center">
+            <a href="{{ route('retail.index') }}" class="btn btn-outline-warning">Cancelar</a>
             <button type="submit" class="btn btn-primary">
                 Guardar cambios
             </button>

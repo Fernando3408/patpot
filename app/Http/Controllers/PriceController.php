@@ -6,12 +6,15 @@ use App\Models\Customer;
 use App\Models\Price;
 use App\Models\Product;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class PriceController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = Price::with(['customer', 'product']);
 
@@ -25,7 +28,7 @@ class PriceController extends Controller
         return view('prices.index', compact('prices', 'customers'));
     }
 
-    public function create()
+    public function create(): View
     {
         $customers = Customer::where('status', true)->get();
         $products = Product::where('status', 'active')->get();
@@ -33,7 +36,7 @@ class PriceController extends Controller
         return view('prices.create', compact('customers', 'products'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
@@ -54,7 +57,7 @@ class PriceController extends Controller
         return redirect('/precios');
     }
 
-    public function edit(Price $price)
+    public function edit(Price $price): View
     {
         $customers = Customer::where('status', true)->get();
         $products = Product::where('status', 'active')->get();
@@ -62,14 +65,14 @@ class PriceController extends Controller
         return view('prices.edit', compact('price', 'customers', 'products'));
     }
 
-    public function show(Price $price)
+    public function show(Price $price): View
     {
         $price->load('customer', 'product');
 
         return view('prices._detail', compact('price'));
     }
 
-    public function update(Request $request, Price $price)
+    public function update(Request $request, Price $price): JsonResponse|RedirectResponse
     {
         try {
             if ($request->ajax()) {
@@ -107,8 +110,9 @@ class PriceController extends Controller
         }
     }
 
-    public function destroy(Request $request, Price $price)
+    public function destroy(Request $request, Price $price): JsonResponse|RedirectResponse
     {
+        $price->update(['deleted_by' => auth()->id()]);
         $price->delete();
         AuditService::log('ELIMINACIÓN DE PRECIO', 'Eliminó precio', $price);
 

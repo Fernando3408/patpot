@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -59,7 +60,7 @@ class CustomerController extends Controller
         return view('customers._detail', compact('customer'));
     }
 
-    public function update(Request $request, Customer $customer)
+    public function update(Request $request, Customer $customer): JsonResponse|RedirectResponse
     {
         try {
             $validated = $request->validate($this->rules($customer, $request->ajax()));

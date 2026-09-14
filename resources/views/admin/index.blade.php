@@ -64,7 +64,7 @@
                 .then(function(res) {
                     if (res.ok && res.data.success) {
                         var tr = form.closest('tr');
-                        var statusTd = tr.children[2];
+                        var statusTd = tr.children[3];
                         statusTd.innerHTML = res.data.status ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-secondary">Inactivo</span>';
                         var btn = form.querySelector('button');
                         if (res.data.status) {

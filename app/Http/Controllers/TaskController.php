@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -102,6 +103,7 @@ class TaskController extends Controller
     public function destroy(Request $request, Task $task): RedirectResponse
     {
         $task->delete();
+        AuditService::log('ELIMINACIÓN DE TAREA', "Eliminó tarea: {$task->title}", $task);
 
         if ($request->ajax()) {
             return response()->json(['success' => true]);

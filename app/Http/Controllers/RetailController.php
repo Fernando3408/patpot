@@ -6,13 +6,16 @@ use App\Models\Product;
 use App\Models\Retail;
 use App\Models\Store;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class RetailController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = Retail::with(['store.customer', 'product']);
 
@@ -44,7 +47,7 @@ class RetailController extends Controller
         return view('retail.index', ['records' => $paginator]);
     }
 
-    public function create()
+    public function create(): View
     {
         $stores = Store::where('status', true)->with('customer')->get();
         $products = Product::where('status', 'active')->get();
@@ -52,7 +55,7 @@ class RetailController extends Controller
         return view('retail.create', compact('stores', 'products'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'store_id' => 'required|exists:stores,id',
@@ -82,7 +85,7 @@ class RetailController extends Controller
         return redirect('/retail');
     }
 
-    public function edit(Retail $retail)
+    public function edit(Retail $retail): View
     {
         $stores = Store::where('status', true)->with('customer')->get();
         $products = Product::where('status', 'active')->get();
@@ -90,14 +93,14 @@ class RetailController extends Controller
         return view('retail.edit', compact('retail', 'stores', 'products'));
     }
 
-    public function show(Retail $retail)
+    public function show(Retail $retail): View
     {
         $retail->load('store.customer', 'product');
 
         return view('retail._detail', compact('retail'));
     }
 
-    public function update(Request $request, Retail $retail)
+    public function update(Request $request, Retail $retail): JsonResponse|RedirectResponse
     {
         try {
             if ($request->ajax()) {
@@ -155,7 +158,7 @@ class RetailController extends Controller
         }
     }
 
-    public function destroy(Request $request, Retail $retail)
+    public function destroy(Request $request, Retail $retail): JsonResponse|RedirectResponse
     {
         $retail->update(['deleted_by' => auth()->id()]);
         $retail->delete();

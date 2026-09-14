@@ -32,14 +32,14 @@ class Input extends Model
     ];
 
     protected $casts = [
-        'stock' => 'decimal:2',
-        'safety_stock' => 'decimal:2',
-        'weekly_consumption' => 'decimal:2',
+        'stock' => 'decimal:3',
+        'safety_stock' => 'decimal:3',
+        'weekly_consumption' => 'decimal:3',
         'target_weeks' => 'decimal:2',
-        'min_purchase' => 'decimal:2',
-        'purchase_multiple' => 'decimal:2',
+        'min_purchase' => 'decimal:3',
+        'purchase_multiple' => 'decimal:3',
         'unit_cost' => 'decimal:2',
-        'transit' => 'decimal:2',
+        'transit' => 'decimal:3',
         'status' => 'boolean',
     ];
 
@@ -221,13 +221,5 @@ class Input extends Model
     public function deleter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deleted_by');
-    }
-
-    public function delete(): bool
-    {
-        $this->recipes()->delete();
-        $this->purchaseLines()->delete();
-
-        return parent::delete();
     }
 }

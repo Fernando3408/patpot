@@ -44,7 +44,7 @@
                                     {{ $purchase->ordered_on->format('d-m-Y') }} · entrega {{ $purchase->expected_on?->format('d-m-Y') ?? '—' }}
                                 </div>
                             </td>
-                            <td>{{ $purchase->supplier->name }}</td>
+                            <td>{{ $purchase->supplier?->name ?? '---' }}</td>
                             <td>
                                 <div class="text-xs">
                                     @foreach($purchase->lines->take(5) as $line)

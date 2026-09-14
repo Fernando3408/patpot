@@ -48,12 +48,13 @@ class Store extends Model
     public function delete(): bool
     {
         $this->retail()->delete();
-        $this->orders()->each(function (Order $order) {
-            $order->lines()->delete();
-            $order->shipments()->each(fn (Shipment $s) => $s->lines()->delete());
-            $order->shipments()->delete();
-            $order->delete();
-        });
+
+        $orderIds = $this->orders()->pluck('id');
+        $shipmentIds = \App\Models\Shipment::whereIn('order_id', $orderIds)->pluck('id');
+        \App\Models\ShipmentLine::whereIn('shipment_id', $shipmentIds)->delete();
+        \App\Models\Shipment::whereIn('order_id', $orderIds)->delete();
+        \App\Models\OrderLine::whereIn('order_id', $orderIds)->delete();
+        $this->orders()->delete();
 
         return parent::delete();
     }

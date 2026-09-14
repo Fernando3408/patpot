@@ -88,6 +88,11 @@ class Product extends Model
 
     public function delete(): bool
     {
+        $this->recipes()->delete();
+        $this->prices()->delete();
+        $this->retail()->delete();
+        $this->productions()->delete();
+
         return parent::delete();
     }
 }

@@ -75,6 +75,7 @@
                 </div>
 
                 <div class="form-actions-end">
+                    <a href="{{ route('retail.index') }}" class="btn btn-outline-warning">Cancelar</a>
                     <button type="submit" class="btn btn-primary">
                         Guardar registro
                     </button>

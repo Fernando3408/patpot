@@ -64,6 +64,8 @@ class ProductionController extends Controller
             $produccion->refresh();
             return response()->json([
                 'success' => true,
+                'id' => $produccion->id,
+                'number' => $produccion->number,
                 'status' => $produccion->status,
                 'actual_boxes' => $produccion->actual_boxes,
                 'completed_on' => $produccion->completed_on,

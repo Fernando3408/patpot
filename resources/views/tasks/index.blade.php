@@ -106,7 +106,7 @@
                 .then(function(json) {
                     if (json.success) {
                         var tr = form.closest('tr');
-                        var statusTd = tr.children[2];
+                        var statusTd = tr.children[4];
                         statusTd.innerHTML = '<span class="badge badge-success">Completada</span>';
                         form.remove();
                         Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tarea completada', showConfirmButton: false, timer: 2000 });

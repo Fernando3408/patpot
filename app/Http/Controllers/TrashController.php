@@ -10,11 +10,14 @@ use App\Models\Retail;
 use App\Models\Store;
 use App\Models\Supplier;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class TrashController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $deletedProducts = Product::onlyTrashed()->with('deleter')->get();
         $deletedInputs = Input::onlyTrashed()->with('deleter')->get();
@@ -39,7 +42,7 @@ class TrashController extends Controller
         ));
     }
 
-    public function restore(Request $request)
+    public function restore(Request $request): JsonResponse|RedirectResponse
     {
         $model = $this->getModel($request->entity);
         $item = $model::withTrashed()->findOrFail($request->id);
@@ -55,7 +58,7 @@ class TrashController extends Controller
         return back()->with('success', 'Registro restaurado.');
     }
 
-    public function forceDelete(Request $request)
+    public function forceDelete(Request $request): JsonResponse|RedirectResponse
     {
         $model = $this->getModel($request->entity);
         $item = $model::withTrashed()->findOrFail($request->id);
@@ -69,7 +72,7 @@ class TrashController extends Controller
         return back()->with('success', 'Registro eliminado permanentemente.');
     }
 
-    public function restoreMultiple(Request $request)
+    public function restoreMultiple(Request $request): JsonResponse|RedirectResponse
     {
         $selections = json_decode($request->input('selections', '[]'), true) ?? [];
         foreach ($selections as $selection) {
@@ -89,7 +92,7 @@ class TrashController extends Controller
         return back()->with('success', 'Registros restaurados.');
     }
 
-    public function forceDeleteMultiple(Request $request)
+    public function forceDeleteMultiple(Request $request): JsonResponse|RedirectResponse
     {
         $selections = json_decode($request->input('selections', '[]'), true) ?? [];
         foreach ($selections as $selection) {

@@ -8,13 +8,16 @@ use App\Models\Product;
 use App\Models\Retail;
 use App\Models\Supplier;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class InputController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = Input::with(['supplier', 'recipes.product.productions']);
 
@@ -32,14 +35,14 @@ class InputController extends Controller
         return view('inputs.index', compact('inputs'));
     }
 
-    public function create()
+    public function create(): View
     {
         $suppliers = Supplier::where('status', true)->get();
 
         return view('inputs.create', compact('suppliers'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'code' => 'required|string|max:255|unique:inputs,code',
@@ -72,21 +75,21 @@ class InputController extends Controller
         return redirect('/insumos');
     }
 
-    public function edit(Input $input)
+    public function edit(Input $input): View
     {
         $suppliers = Supplier::where('status', true)->get();
 
         return view('inputs.edit', compact('input', 'suppliers'));
     }
 
-    public function show(Input $input)
+    public function show(Input $input): View
     {
         $input->load('supplier', 'recipes.product.productions');
 
         return view('inputs._detail', compact('input'));
     }
 
-    public function update(Request $request, Input $input)
+    public function update(Request $request, Input $input): JsonResponse|RedirectResponse
     {
         try {
             if ($request->ajax()) {
@@ -158,7 +161,7 @@ class InputController extends Controller
         }
     }
 
-    public function destroy(Request $request, Input $input)
+    public function destroy(Request $request, Input $input): JsonResponse|RedirectResponse
     {
         if ($input->recipes()->exists()) {
             return back()->withErrors([
@@ -189,7 +192,7 @@ class InputController extends Controller
         return redirect('/insumos');
     }
 
-    public function adjust(Request $request, Input $input)
+    public function adjust(Request $request, Input $input): JsonResponse
     {
         $validated = $request->validate([
             'type' => 'required|in:add,subtract,set',
@@ -222,7 +225,7 @@ class InputController extends Controller
         return response()->json(['success' => true, 'stock' => $input->stock]);
     }
 
-    public function export(Request $request, string $entity)
+    public function export(Request $request, string $entity): \Symfony\Component\HttpFoundation\StreamedResponse
     {
         $filename = "PatPot_{$entity}_".now()->format('Y-m-d').'.csv';
 

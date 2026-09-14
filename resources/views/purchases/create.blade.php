@@ -113,7 +113,7 @@
         var selectedFiles = [];
 
         function renderPreview() {
-            var preview = document.getElementById('attachment-preview');
+            var preview = document.getElementById('attachments-preview');
             if (!preview) return;
             preview.innerHTML = '';
             selectedFiles.forEach(function(f, i) {

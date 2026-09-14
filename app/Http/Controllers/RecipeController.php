@@ -6,15 +6,18 @@ use App\Models\Input;
 use App\Models\Product;
 use App\Models\Recipe;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\View\View;
 
 class RecipeController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
-        $query = Recipe::with(['product.recipes.input', 'input'])->orderBy('product_id');
+        $query = Recipe::with(['product', 'input'])->orderBy('product_id');
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -27,7 +30,7 @@ class RecipeController extends Controller
         return view('recipes.index', compact('recipes'));
     }
 
-    public function create()
+    public function create(): View
     {
         $products = Product::where('status', 'active')->get();
         $inputs = Input::where('status', true)->get();
@@ -35,7 +38,7 @@ class RecipeController extends Controller
         return view('recipes.create', compact('products', 'inputs'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'product_id' => 'required|exists:products,id',
@@ -74,7 +77,7 @@ class RecipeController extends Controller
         return redirect('/recetas');
     }
 
-    public function edit(Product $product)
+    public function edit(Product $product): View
     {
         $product->load('recipes');
 
@@ -86,14 +89,14 @@ class RecipeController extends Controller
         return view('recipes.edit', compact('product', 'inputs'));
     }
 
-    public function show(Product $product)
+    public function show(Product $product): View
     {
         $product->load('recipes.input');
 
         return view('recipes._detail', compact('product'));
     }
 
-    public function update(Request $request, Product $product)
+    public function update(Request $request, Product $product): RedirectResponse
     {
         $validator = Validator::make($request->all(), [
             'ingredients' => ['required', 'array'],
@@ -151,7 +154,7 @@ class RecipeController extends Controller
         return redirect('/recetas');
     }
 
-    public function destroy(Request $request, Recipe $recipe)
+    public function destroy(Request $request, Recipe $recipe): JsonResponse|RedirectResponse
     {
         $recipe->delete();
         AuditService::log('ELIMINACIÓN DE RECETA', 'Eliminó insumo de receta', $recipe);

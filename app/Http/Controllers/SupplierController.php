@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Models\Supplier;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class SupplierController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = Supplier::query();
 
@@ -27,12 +30,12 @@ class SupplierController extends Controller
         return view('suppliers.index', compact('suppliers'));
     }
 
-    public function create()
+    public function create(): View
     {
         return view('suppliers.create');
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -51,19 +54,19 @@ class SupplierController extends Controller
         return redirect('/proveedores');
     }
 
-    public function edit(Supplier $supplier)
+    public function edit(Supplier $supplier): View
     {
         return view('suppliers.edit', compact('supplier'));
     }
 
-    public function show(Supplier $supplier)
+    public function show(Supplier $supplier): View
     {
         $supplier->load('inputs');
 
         return view('suppliers._detail', compact('supplier'));
     }
 
-    public function update(Request $request, Supplier $supplier)
+    public function update(Request $request, Supplier $supplier): JsonResponse|RedirectResponse
     {
         try {
             if ($request->ajax()) {
@@ -107,7 +110,7 @@ class SupplierController extends Controller
         }
     }
 
-    public function destroy(Request $request, Supplier $supplier)
+    public function destroy(Request $request, Supplier $supplier): JsonResponse|RedirectResponse
     {
         // Protección: si tiene insumos asociados, no lo dejamos borrar de golpe
         if ($supplier->inputs()->exists() || $supplier->purchases()->exists()) {

@@ -40,7 +40,7 @@
                                 <div class="font-bold">{{ $production->number }}</div>
                                 <div class="text-xs text-muted">{{ $production->planned_on->format('d-m-Y') }}</div>
                             </td>
-                            <td>{{ $production->product->name }}</td>
+                            <td>{{ $production->product?->name ?? '---' }}</td>
                             <td>
                                 {{ number_format($production->planned_boxes, 0, ',', '.') }} /
                                 @if($production->actual_boxes !== null)
@@ -129,11 +129,11 @@
                 .then(function(res) {
                     if (res.ok && res.data.success) {
                         var tr = form.closest('tr');
-                        var statusTd = tr.children[5];
+                        var statusTd = tr.children[3];
                         statusTd.innerHTML = '<span class="badge badge-success">Cerrada</span>';
                         var actionsTd = tr.querySelector('.actions-cell');
                         if (actionsTd) {
-                            actionsTd.innerHTML = '<button type="button" class="btn btn-outline-info btn-sm" onclick="showInlineDetail(this)" data-title="Detalle: Producción ' + res.data.number + '">Ver detalle</button>';
+                            actionsTd.innerHTML = '<button type="button" class="btn btn-outline-info btn-sm" onclick="openDetailModal(\'' + '{{ route('productions.show', '__ID__') }}'.replace('__ID__', res.data.id) + '\', \'Detalle: Producción ' + res.data.number + '\')">Ver detalle</button>';
                         }
                         form.closest('details').removeAttribute('open');
                         Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Producción cerrada', showConfirmButton: false, timer: 2000 });

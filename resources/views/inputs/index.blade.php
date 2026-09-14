@@ -26,7 +26,7 @@
                 </thead>
                 <tbody>
                     @foreach($inputs as $input)
-                        <tr data-update-url="{{ route('inputs.update', $input) }}" data-type="{{ $input->type }}">
+                        <tr data-update-url="{{ route('inputs.update', $input) }}" data-type="{{ $input->type }}" data-input-id="{{ $input->id }}">
                             <td data-field="code" class="font-bold text-xs">{{ $input->code }}</td>
                             <td data-field="name" data-value="{{ $input->name }}">
                                 <strong>{{ $input->name }}</strong>
