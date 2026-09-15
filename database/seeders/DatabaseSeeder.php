@@ -26,32 +26,40 @@ class DatabaseSeeder extends Seeder
      */
     public function run(InventoryService $inventoryService): void
     {
-        User::query()->firstOrCreate(['email' => 'admin@patpot.cl'], [
+        $admin = User::query()->firstOrCreate(['email' => 'admin@patpot.cl'], [
             'name' => 'Administrador PatPot',
             'password' => 'password',
         ]);
+
+        $adminRole = \App\Models\Role::query()->firstOrCreate(['name' => 'admin']);
+        if (! $admin->roles()->where('role_id', $adminRole->id)->exists()) {
+            $admin->roles()->attach($adminRole);
+        }
 
         $supplier = Supplier::query()->firstOrCreate(['rut' => '76.123.456-7'], [
             'name' => 'Alimentos del Sur SpA', 'contact_name' => 'Carolina Soto', 'email' => 'ventas@alimentosdelsur.cl', 'phone' => '+56 9 5555 1111', 'lead_time_days' => 5, 'payment_terms' => '30 días', 'status' => true,
         ]);
 
         $inputs = [
-            ['code' => 'MP-PAPA', 'name' => 'Papa seleccionada', 'unit' => 'kg', 'category' => 'Materia prima', 'unit_cost' => 950, 'stock' => 0, 'transit' => 1200],
-            ['code' => 'MP-ACEITE', 'name' => 'Aceite vegetal alto oleico', 'unit' => 'l', 'category' => 'Materia prima', 'unit_cost' => 1800, 'stock' => 0, 'transit' => 180],
-            ['code' => 'MP-SAL', 'name' => 'Sal de mar fina', 'unit' => 'kg', 'category' => 'Condimento', 'unit_cost' => 620, 'stock' => 0, 'transit' => 70],
+            ['code' => 'MP-PAPA', 'name' => 'Papa seleccionada', 'unit' => 'kg', 'category' => 'Materia prima', 'type' => 'material', 'unit_cost' => 950, 'stock' => 0, 'transit' => 1200],
+            ['code' => 'MP-ACEITE', 'name' => 'Aceite vegetal alto oleico', 'unit' => 'l', 'category' => 'Materia prima', 'type' => 'material', 'unit_cost' => 1800, 'stock' => 0, 'transit' => 180],
+            ['code' => 'MP-SAL', 'name' => 'Sal de mar fina', 'unit' => 'kg', 'category' => 'Condimento', 'type' => 'material', 'unit_cost' => 620, 'stock' => 0, 'transit' => 70],
+            ['code' => 'SV-Maquila', 'name' => 'Maquila de producción', 'unit' => 'servicio', 'category' => 'Servicios', 'type' => 'service', 'unit_cost' => 3400, 'stock' => 0, 'transit' => 0],
+            ['code' => 'EV-CAJA150', 'name' => 'Caja kraft 150 g', 'unit' => 'unidad', 'category' => 'Envases', 'type' => 'material', 'unit_cost' => 120, 'stock' => 2000, 'transit' => 0],
         ];
         foreach ($inputs as $inputData) {
-            Input::query()->firstOrCreate(['code' => $inputData['code']], array_merge($inputData, ['safety_stock' => 50, 'weekly_consumption' => 120, 'lead_time_days' => 5, 'target_weeks' => 4, 'min_purchase' => 42, 'purchase_multiple' => 42, 'supplier_id' => $supplier->id, 'status' => true]));
+            Input::query()->firstOrCreate(['code' => $inputData['code']], array_merge($inputData, ['safety_stock' => $inputData['type'] === 'service' ? 0 : 50, 'weekly_consumption' => $inputData['type'] === 'service' ? 0 : 120, 'lead_time_days' => $inputData['type'] === 'service' ? 0 : 5, 'target_weeks' => $inputData['type'] === 'service' ? 0 : 4, 'min_purchase' => $inputData['type'] === 'service' ? 0 : 42, 'purchase_multiple' => $inputData['type'] === 'service' ? 1 : 42, 'supplier_id' => $supplier->id, 'status' => true]));
         }
         $potato = Input::query()->where('code', 'MP-PAPA')->firstOrFail();
         $oil = Input::query()->where('code', 'MP-ACEITE')->firstOrFail();
         $salt = Input::query()->where('code', 'MP-SAL')->firstOrFail();
+        $maquila = Input::query()->where('code', 'SV-Maquila')->firstOrFail();
 
         foreach ([[$potato, 1200, 950, 'OC-DEMO-001'], [$oil, 180, 1800, 'OC-DEMO-002'], [$salt, 70, 620, 'OC-DEMO-003']] as [$input, $quantity, $cost, $number]) {
             $purchase = Purchase::query()->firstOrCreate(['number' => $number], ['supplier_id' => $supplier->id, 'ordered_on' => today()->subDays(7), 'expected_on' => today()->subDays(2), 'notes' => 'Dato DEMO para pruebas']);
             $line = $purchase->lines()->firstOrCreate(['input_id' => $input->id], ['ordered_quantity' => $quantity, 'unit_cost' => $cost]);
             if ($purchase->fresh()->status !== 'received') {
-                $inventoryService->receivePurchase($purchase, [$line->id => $quantity]);
+                $inventoryService->receivePurchase($purchase, [$line->id => $quantity], today()->subDays(2)->toDateString());
             }
         }
 
@@ -63,10 +71,11 @@ class DatabaseSeeder extends Seeder
             Recipe::query()->updateOrCreate(['product_id' => $product->id, 'input_id' => $potato->id], ['qty_per_box' => 1.4]);
             Recipe::query()->updateOrCreate(['product_id' => $product->id, 'input_id' => $oil->id], ['qty_per_box' => 0.15]);
             Recipe::query()->updateOrCreate(['product_id' => $product->id, 'input_id' => $salt->id], ['qty_per_box' => 0.025]);
+            Recipe::query()->updateOrCreate(['product_id' => $product->id, 'input_id' => $maquila->id], ['qty_per_box' => 1]);
         }
 
         foreach ([['CLI-JUMBO', 'Cencosud Retail S.A.', 'Jumbo', '76.345.678-9', 'Jumbo Ñuñoa', 'SAL-NU'], ['CLI-UNIMARC', 'SMU S.A.', 'Unimarc', '76.456.789-0', 'Unimarc Providencia', 'UNI-PRO'], ['CLI-GOURMET', 'Distribuidora Gourmet SpA', 'Mercado Gourmet', '76.567.890-1', 'Mercado Gourmet Vitacura', 'MG-VIT']] as [$code, $businessName, $tradeName, $rut, $storeName, $storeCode]) {
-            $customer = Customer::query()->updateOrCreate(['code' => $code], ['business_name' => $businessName, 'trade_name' => $tradeName, 'rut' => $rut, 'type' => 'Retail', 'channel' => 'Retail', 'contact' => 'Equipo de compras', 'email' => 'compras@demo.cl', 'payment_terms' => '30 días', 'discount' => 2, 'status' => true]);
+            $customer = Customer::query()->updateOrCreate(['code' => $code], ['business_name' => $businessName, 'trade_name' => $tradeName, 'rut' => $rut, 'type' => 'Retail', 'channel' => 'Retail', 'contact' => 'Equipo de compras', 'email' => 'compras@demo.cl', 'payment_terms' => '30 días', 'status' => true]);
             Store::query()->updateOrCreate(['code' => $storeCode], ['customer_id' => $customer->id, 'name' => $storeName, 'city' => 'Santiago', 'region' => 'Metropolitana', 'status' => true]);
             foreach ($products as $product) {
                 Price::query()->updateOrCreate(['customer_id' => $customer->id, 'product_id' => $product->id], ['price_box' => $product->sale_price_box, 'offer_price' => $product->sale_price_box - 200, 'offer_until' => today()->addMonth()]);
@@ -84,10 +93,12 @@ class DatabaseSeeder extends Seeder
             $product = $products[array_keys($products)[$position]];
             $store = $customer->stores()->firstOrFail();
             $order = Order::query()->firstOrCreate(['number' => 'PED-DEMO-'.str_pad((string) ($position + 1), 3, '0', STR_PAD_LEFT)], ['customer_id' => $customer->id, 'store_id' => $store->id, 'ordered_on' => today()->subDay(), 'delivery_on' => today()->addDays(3), 'notes' => 'Pedido DEMO']);
-            $line = $order->lines()->firstOrCreate(['product_id' => $product->id], ['boxes' => 30, 'price_box' => $product->sale_price_box - 200, 'discount_pct' => 2]);
+            $line = $order->lines()->firstOrCreate(['product_id' => $product->id], ['boxes' => 30, 'price_box' => $product->sale_price_box - 200]);
             if ($order->fresh()->status === 'pending') {
                 $inventoryService->dispatchOrder($order, [$line->id => 10], today()->toDateString());
             }
         }
+
+        $this->call(ChatKnowledgeSeeder::class);
     }
 }

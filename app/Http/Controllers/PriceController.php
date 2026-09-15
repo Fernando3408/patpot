@@ -6,11 +6,15 @@ use App\Models\Customer;
 use App\Models\Price;
 use App\Models\Product;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class PriceController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = Price::with(['customer', 'product']);
 
@@ -19,11 +23,12 @@ class PriceController extends Controller
         }
 
         $prices = $query->orderBy('customer_id')->get();
+        $customers = Customer::where('status', true)->orderBy('business_name')->get();
 
-        return view('prices.index', compact('prices'));
+        return view('prices.index', compact('prices', 'customers'));
     }
 
-    public function create()
+    public function create(): View
     {
         $customers = Customer::where('status', true)->get();
         $products = Product::where('status', 'active')->get();
@@ -31,27 +36,20 @@ class PriceController extends Controller
         return view('prices.create', compact('customers', 'products'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
-            'product_id' => 'required|exists:products,id',
+            'product_id' => ['required', 'exists:products,id', \Illuminate\Validation\Rule::unique('prices')->where(fn ($q) => $q->where('customer_id', $request->input('customer_id'))->whereNull('deleted_at'))],
             'price_box' => 'required|numeric|min:0',
             'offer_price' => 'nullable|numeric|min:0',
             'offer_until' => 'nullable|date',
         ]);
 
-        $exists = Price::where('customer_id', $validated['customer_id'])
+        Price::withTrashed()
+            ->where('customer_id', $validated['customer_id'])
             ->where('product_id', $validated['product_id'])
-            ->exists();
-
-        if ($exists) {
-            return back()
-                ->withErrors([
-                    'product_id' => 'Ya existe un precio para este producto y este cliente. Edítalo en vez de crear uno nuevo.',
-                ])
-                ->withInput();
-        }
+            ->forceDelete();
 
         $price = Price::create($validated);
         AuditService::log('CREACIÓN DE PRECIO', 'Creó precio para cliente', $price);
@@ -59,7 +57,7 @@ class PriceController extends Controller
         return redirect('/precios');
     }
 
-    public function edit(Price $price)
+    public function edit(Price $price): View
     {
         $customers = Customer::where('status', true)->get();
         $products = Product::where('status', 'active')->get();
@@ -67,19 +65,20 @@ class PriceController extends Controller
         return view('prices.edit', compact('price', 'customers', 'products'));
     }
 
-    public function show(Price $price)
+    public function show(Price $price): View
     {
         $price->load('customer', 'product');
+
         return view('prices._detail', compact('price'));
     }
 
-    public function update(Request $request, Price $price)
+    public function update(Request $request, Price $price): JsonResponse|RedirectResponse
     {
         try {
             if ($request->ajax()) {
                 $rules = [
                     'customer_id' => 'sometimes|required|exists:customers,id',
-                    'product_id' => 'sometimes|required|exists:products,id',
+                    'product_id' => ['sometimes', 'required', 'exists:products,id', \Illuminate\Validation\Rule::unique('prices')->where(fn ($q) => $q->where('customer_id', $request->input('customer_id') ?? $price->customer_id)->whereNull('deleted_at'))->ignore($price->id)],
                     'price_box' => 'sometimes|required|numeric|min:0',
                     'offer_price' => 'sometimes|nullable|numeric|min:0',
                     'offer_until' => 'sometimes|nullable|date',
@@ -87,7 +86,7 @@ class PriceController extends Controller
             } else {
                 $rules = [
                     'customer_id' => 'required|exists:customers,id',
-                    'product_id' => 'required|exists:products,id',
+                    'product_id' => ['required', 'exists:products,id', \Illuminate\Validation\Rule::unique('prices')->where(fn ($q) => $q->where('customer_id', $request->input('customer_id'))->whereNull('deleted_at'))->ignore($price->id)],
                     'price_box' => 'required|numeric|min:0',
                     'offer_price' => 'nullable|numeric|min:0',
                     'offer_until' => 'nullable|date',
@@ -95,33 +94,15 @@ class PriceController extends Controller
             }
             $validated = $request->validate($rules);
 
-            $checkCustomerId = $validated['customer_id'] ?? $price->customer_id;
-            $checkProductId = $validated['product_id'] ?? $price->product_id;
-
-            $exists = Price::where('customer_id', $checkCustomerId)
-                ->where('product_id', $checkProductId)
-                ->where('id', '!=', $price->id)
-                ->exists();
-
-            if ($exists) {
-                if ($request->ajax()) {
-                    return response()->json(['errors' => ['product_id' => ['Ya existe un precio para este producto y este cliente.']]], 422);
-                }
-                return back()
-                    ->withErrors([
-                        'product_id' => 'Ya existe un precio para este producto y este cliente.',
-                    ])
-                    ->withInput();
-            }
-
             $price->update($validated);
             AuditService::log('ACTUALIZACIÓN DE PRECIO', 'Actualizó precio', $price);
 
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
+
             return redirect('/precios');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }
@@ -129,10 +110,15 @@ class PriceController extends Controller
         }
     }
 
-    public function destroy(Price $price)
+    public function destroy(Request $request, Price $price): JsonResponse|RedirectResponse
     {
+        $price->update(['deleted_by' => auth()->id()]);
         $price->delete();
         AuditService::log('ELIMINACIÓN DE PRECIO', 'Eliminó precio', $price);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/precios');
     }

@@ -5,16 +5,16 @@ use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthenticatedSessionController;
 use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InputController;
 use App\Http\Controllers\InventoryMovementController;
-
+use App\Http\Controllers\LoginLogController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProductionController;
 use App\Http\Controllers\PurchaseController;
-use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RegisteredUserController;
 use App\Http\Controllers\ResetPasswordController;
@@ -230,10 +230,18 @@ Route::middleware('auth')->group(function (): void {
         Route::delete('/usuarios/{user}', [AdminController::class, 'destroy'])->name('users.destroy');
         Route::post('/usuarios/{user}/toggle-status', [AdminController::class, 'toggleStatus'])->name('users.toggle-status');
 
+        Route::get('/login-logs', [LoginLogController::class, 'index'])->name('login-logs.index');
+
         /* Crear usuario */
         Route::get('/usuarios/crear', [RegisteredUserController::class, 'create'])->name('users.create');
         Route::post('/usuarios', [RegisteredUserController::class, 'store'])->name('users.store');
 
     });
 
+    Route::get('/chat', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+    Route::post('/chat/send', [\App\Http\Controllers\ChatController::class, 'send'])->name('chat.send');
+
 });
+
+Route::post('/api/telegram/webhook', [\App\Http\Controllers\TelegramController::class, 'webhook']);
+Route::get('/api/telegram/set-webhook', [\App\Http\Controllers\TelegramController::class, 'setWebhook']);

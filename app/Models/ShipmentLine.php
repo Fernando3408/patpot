@@ -10,11 +10,11 @@ class ShipmentLine extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['shipment_id', 'order_line_id', 'boxes', 'price_box'];
+    protected $fillable = ['shipment_id', 'order_line_id', 'boxes', 'price_box', 'cost_box', 'variable_cost_box'];
 
     protected function casts(): array
     {
-        return ['boxes' => 'integer', 'price_box' => 'decimal:2'];
+        return ['boxes' => 'integer', 'price_box' => 'decimal:2', 'cost_box' => 'decimal:2', 'variable_cost_box' => 'decimal:2'];
     }
 
     public function shipment(): BelongsTo

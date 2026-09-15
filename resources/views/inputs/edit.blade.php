@@ -19,6 +19,14 @@
                 </div>
 
                 <div class="form-group">
+                    <label class="form-label" for="type">Tipo</label>
+                    <select id="type" name="type" class="form-control" required>
+                        <option value="material" @selected(old('type', $input->type) === 'material')>Material</option>
+                        <option value="service" @selected(old('type', $input->type) === 'service')>Servicio (maquila, flete, etc.)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
                     <label class="form-label" for="category">Categoría</label>
                     <input type="text" id="category" name="category" class="form-control" value="{{ old('category', $input->category) }}">
                 </div>
@@ -50,21 +58,21 @@
             </div>
 
             {{-- Sección: Stock y Costos --}}
-            <h3 class="text-sm font-semibold text-slate-700 mb-3">Inventario y Costos</h3>
-            <div class="form-grid mb-6">
+            <h3 class="text-sm font-semibold text-slate-700 mb-3" id="inventory-title">Inventario y Costos</h3>
+            <div class="form-grid mb-6" id="inventory-fields">
                 <div class="form-group">
                     <label class="form-label" for="stock">Stock actual</label>
-                    <input type="number" step="1" min="0" id="stock" name="stock" class="form-control" value="{{ old('stock', $input->stock) }}" required>
+                    <input type="number" step="0.001" min="0" id="stock" name="stock" class="form-control" value="{{ old('stock', $input->stock) }}">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="safety_stock">Stock de seguridad</label>
-                    <input type="number" step="1" min="0" id="safety_stock" name="safety_stock" class="form-control" value="{{ old('safety_stock', $input->safety_stock) }}" required>
+                    <input type="number" step="0.001" min="0" id="safety_stock" name="safety_stock" class="form-control" value="{{ old('safety_stock', $input->safety_stock) }}">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="transit">Stock en tránsito</label>
-                    <input type="number" step="1" min="0" id="transit" name="transit" class="form-control" value="{{ old('transit', $input->transit) }}" required>
+                    <input type="number" step="0.001" min="0" id="transit" name="transit" class="form-control" value="{{ old('transit', $input->transit) }}">
                 </div>
 
                 <div class="form-group">
@@ -73,12 +81,12 @@
                 </div>
             </div>
 
-            {{-- Sección: Planificación de Compras --}}
-            <h3 class="text-sm font-semibold text-slate-700 mb-3">Parámetros de Reposición</h3>
-            <div class="form-grid mb-6">
+            {{-- Sección: Parámetros de Reposición (solo material) --}}
+            <h3 class="text-sm font-semibold text-slate-700 mb-3" id="planning-title">Parámetros de Reposición</h3>
+            <div class="form-grid mb-6" id="planning-fields">
                 <div class="form-group">
                     <label class="form-label" for="weekly_consumption">Consumo semanal</label>
-                    <input type="number" step="1" min="0" id="weekly_consumption" name="weekly_consumption" class="form-control" value="{{ old('weekly_consumption', $input->weekly_consumption) }}" required>
+                    <input type="number" step="0.001" min="0" id="weekly_consumption" name="weekly_consumption" class="form-control" value="{{ old('weekly_consumption', $input->weekly_consumption) }}">
                     @php $auto = $input->auto_weekly_consumption; @endphp
                     @if($auto > 0)
                         <div class="text-xs text-muted mt-1">
@@ -90,22 +98,22 @@
 
                 <div class="form-group">
                     <label class="form-label" for="lead_time_days">Lead time (días)</label>
-                    <input type="number" step="1" min="0" id="lead_time_days" name="lead_time_days" class="form-control" value="{{ old('lead_time_days', $input->lead_time_days) }}" required>
+                    <input type="number" step="1" min="0" id="lead_time_days" name="lead_time_days" class="form-control" value="{{ old('lead_time_days', $input->lead_time_days) }}">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="target_weeks">Cobertura objetivo (semanas)</label>
-                    <input type="number" step="1" min="0" id="target_weeks" name="target_weeks" class="form-control" value="{{ old('target_weeks', $input->target_weeks) }}" required>
+                    <input type="number" step="1" min="0" id="target_weeks" name="target_weeks" class="form-control" value="{{ old('target_weeks', $input->target_weeks) }}">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="min_purchase">Compra mínima</label>
-                    <input type="number" step="1" min="0" id="min_purchase" name="min_purchase" class="form-control" value="{{ old('min_purchase', $input->min_purchase) }}" required>
+                    <input type="number" step="0.001" min="0" id="min_purchase" name="min_purchase" class="form-control" value="{{ old('min_purchase', $input->min_purchase) }}">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="purchase_multiple">Múltiplo de compra</label>
-                    <input type="number" step="1" min="1" id="purchase_multiple" name="purchase_multiple" class="form-control" value="{{ old('purchase_multiple', $input->purchase_multiple) }}" required>
+                    <input type="number" step="0.001" min="0.001" id="purchase_multiple" name="purchase_multiple" class="form-control" value="{{ old('purchase_multiple', $input->purchase_multiple) }}">
                 </div>
             </div>
 
@@ -117,4 +125,36 @@
             </div>
         </form>
     </div>
+
+    <script>
+        function toggleTypeFields() {
+            var isService = document.getElementById('type').value === 'service';
+            var invFields = document.getElementById('inventory-fields');
+            var planFields = document.getElementById('planning-fields');
+            var invTitle = document.getElementById('inventory-title');
+            var planTitle = document.getElementById('planning-title');
+
+            if (isService) {
+                invTitle.textContent = 'Costo del Servicio';
+                invFields.querySelectorAll('input[type=number]').forEach(function(el) {
+                    if (el.id === 'unit_cost') return;
+                    el.value = '0';
+                    el.closest('.form-group').style.display = 'none';
+                });
+                planFields.style.display = 'none';
+                planTitle.style.display = 'none';
+            } else {
+                invTitle.textContent = 'Inventario y Costos';
+                invFields.querySelectorAll('.form-group').forEach(function(el) {
+                    el.style.display = '';
+                });
+                planFields.style.display = '';
+                planTitle.style.display = '';
+            }
+        }
+
+        document.getElementById('type').addEventListener('change', toggleTypeFields);
+        toggleTypeFields();
+    </script>
 </x-erp-layout>
+@endif

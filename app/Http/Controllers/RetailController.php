@@ -6,20 +6,24 @@ use App\Models\Product;
 use App\Models\Retail;
 use App\Models\Store;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class RetailController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = Retail::with(['store.customer', 'product']);
-        
+
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->whereHas('store', fn($q) => $q->where('code', 'like', "%{$search}%")
-                ->orWhereHas('customer', fn($q2) => $q2->where('business_name', 'like', "%{$search}%")))
-                ->orWhereHas('product', fn($q) => $q->where('name', 'like', "%{$search}%"));
+            $query->whereHas('store', fn ($q) => $q->where('code', 'like', "%{$search}%")
+                ->orWhereHas('customer', fn ($q2) => $q2->where('business_name', 'like', "%{$search}%")))
+                ->orWhereHas('product', fn ($q) => $q->where('name', 'like', "%{$search}%"));
         }
 
         $records = $query->get();
@@ -43,7 +47,7 @@ class RetailController extends Controller
         return view('retail.index', ['records' => $paginator]);
     }
 
-    public function create()
+    public function create(): View
     {
         $stores = Store::where('status', true)->with('customer')->get();
         $products = Product::where('status', 'active')->get();
@@ -51,11 +55,11 @@ class RetailController extends Controller
         return view('retail.create', compact('stores', 'products'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'store_id' => 'required|exists:stores,id',
-            'product_id' => 'required|exists:products,id',
+            'product_id' => ['required', 'exists:products,id', \Illuminate\Validation\Rule::unique('retail')->where(fn ($q) => $q->where('store_id', $request->input('store_id'))->whereNull('deleted_at'))],
             'cataloged' => 'required|boolean',
             'stock_units' => 'required|integer|min:0',
             'transit_units' => 'required|integer|min:0',
@@ -64,17 +68,10 @@ class RetailController extends Controller
             'reorder_point' => 'required|integer|min:0',
         ]);
 
-        $exists = Retail::where('store_id', $validated['store_id'])
+        Retail::withTrashed()
+            ->where('store_id', $validated['store_id'])
             ->where('product_id', $validated['product_id'])
-            ->exists();
-
-        if ($exists) {
-            return back()
-                ->withErrors([
-                    'product_id' => 'Ya existe un registro retail para esta sala y este producto.',
-                ])
-                ->withInput();
-        }
+            ->forceDelete();
 
         $validated['stock_units'] = (int) $validated['stock_units'];
         $validated['transit_units'] = (int) $validated['transit_units'];
@@ -88,7 +85,7 @@ class RetailController extends Controller
         return redirect('/retail');
     }
 
-    public function edit(Retail $retail)
+    public function edit(Retail $retail): View
     {
         $stores = Store::where('status', true)->with('customer')->get();
         $products = Product::where('status', 'active')->get();
@@ -96,19 +93,20 @@ class RetailController extends Controller
         return view('retail.edit', compact('retail', 'stores', 'products'));
     }
 
-    public function show(Retail $retail)
+    public function show(Retail $retail): View
     {
         $retail->load('store.customer', 'product');
+
         return view('retail._detail', compact('retail'));
     }
 
-    public function update(Request $request, Retail $retail)
+    public function update(Request $request, Retail $retail): JsonResponse|RedirectResponse
     {
         try {
             if ($request->ajax()) {
                 $rules = [
                     'store_id' => 'sometimes|required|exists:stores,id',
-                    'product_id' => 'sometimes|required|exists:products,id',
+                    'product_id' => ['sometimes', 'required', 'exists:products,id', \Illuminate\Validation\Rule::unique('retail')->where(fn ($q) => $q->where('store_id', $request->input('store_id') ?? $retail->store_id)->whereNull('deleted_at'))->ignore($retail->id)],
                     'cataloged' => 'sometimes|required|boolean',
                     'stock_units' => 'sometimes|required|integer|min:0',
                     'transit_units' => 'sometimes|required|integer|min:0',
@@ -119,7 +117,7 @@ class RetailController extends Controller
             } else {
                 $rules = [
                     'store_id' => 'required|exists:stores,id',
-                    'product_id' => 'required|exists:products,id',
+                    'product_id' => ['required', 'exists:products,id', \Illuminate\Validation\Rule::unique('retail')->where(fn ($q) => $q->where('store_id', $request->input('store_id'))->whereNull('deleted_at'))->ignore($retail->id)],
                     'cataloged' => 'required|boolean',
                     'stock_units' => 'required|integer|min:0',
                     'transit_units' => 'required|integer|min:0',
@@ -129,25 +127,6 @@ class RetailController extends Controller
                 ];
             }
             $validated = $request->validate($rules);
-
-            $storeId = $validated['store_id'] ?? $retail->store_id;
-            $productId = $validated['product_id'] ?? $retail->product_id;
-
-            $exists = Retail::where('store_id', $storeId)
-                ->where('product_id', $productId)
-                ->where('id', '!=', $retail->id)
-                ->exists();
-
-            if ($exists) {
-                if ($request->ajax()) {
-                    return response()->json(['errors' => ['product_id' => ['Ya existe un registro retail para esta sala y este producto.']]], 422);
-                }
-                return back()
-                    ->withErrors([
-                        'product_id' => 'Ya existe un registro retail para esta sala y este producto.',
-                    ])
-                    ->withInput();
-            }
 
             foreach (['stock_units', 'transit_units', 'weekly_sales', 'min_stock', 'reorder_point'] as $field) {
                 if (isset($validated[$field])) {
@@ -159,10 +138,19 @@ class RetailController extends Controller
             AuditService::log('ACTUALIZACIÓN DE RETAIL', 'Actualizó registro retail', $retail);
 
             if ($request->ajax()) {
-                return response()->json(['success' => true]);
+                $retail->refresh();
+                return response()->json([
+                    'success' => true,
+                    'stock_units' => $retail->stock_units,
+                    'is_break' => $retail->is_break,
+                    'isInTransit' => $retail->isInTransit,
+                    'isWarning' => $retail->isWarning,
+                    'suggested_replenishment_boxes' => $retail->suggested_replenishment_boxes,
+                ]);
             }
+
             return redirect('/retail');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }
@@ -170,11 +158,15 @@ class RetailController extends Controller
         }
     }
 
-    public function destroy(Retail $retail)
+    public function destroy(Request $request, Retail $retail): JsonResponse|RedirectResponse
     {
         $retail->update(['deleted_by' => auth()->id()]);
         $retail->delete();
         AuditService::log('ELIMINACIÓN DE RETAIL', 'Eliminó registro retail', $retail);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/retail');
     }

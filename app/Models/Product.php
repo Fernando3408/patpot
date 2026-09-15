@@ -12,13 +12,14 @@ class Product extends Model
     use SoftDeletes;
 
     protected $fillable = [
-        'sku',
         'name',
+        'sku',
         'grams',
         'units_per_box',
         'stock_boxes',
         'min_stock_boxes',
         'sale_price_box',
+        'production_cost',
         'status',
         'deleted_by',
     ];
@@ -29,6 +30,7 @@ class Product extends Model
         'stock_boxes' => 'integer',
         'min_stock_boxes' => 'integer',
         'sale_price_box' => 'decimal:2',
+        'production_cost' => 'decimal:2',
     ];
 
     public function recipes(): HasMany
@@ -58,6 +60,10 @@ class Product extends Model
 
     public function getCostPerBoxAttribute(): float
     {
+        if ($this->production_cost !== null) {
+            return (float) $this->production_cost;
+        }
+
         return round($this->recipes->sum(fn (Recipe $recipe): float => $recipe->input ? (float) $recipe->qty_per_box * (float) $recipe->input->unit_cost : 0), 2);
     }
 
@@ -82,6 +88,11 @@ class Product extends Model
 
     public function delete(): bool
     {
+        $this->recipes()->delete();
+        $this->prices()->delete();
+        $this->retail()->delete();
+        $this->productions()->delete();
+
         return parent::delete();
     }
 }

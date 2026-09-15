@@ -44,10 +44,9 @@ class Supplier extends Model
 
     public function delete(): bool
     {
-        $this->purchases()->each(function (Purchase $purchase) {
-            $purchase->lines()->delete();
-            $purchase->delete();
-        });
+        $purchaseIds = $this->purchases()->pluck('id');
+        \App\Models\PurchaseLine::whereIn('purchase_id', $purchaseIds)->delete();
+        $this->purchases()->delete();
         $this->inputs()->delete();
 
         return parent::delete();

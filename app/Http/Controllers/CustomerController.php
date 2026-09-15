@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class CustomerController extends Controller
@@ -38,7 +40,9 @@ class CustomerController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $customer = Customer::query()->create($request->validate($this->rules()));
+        $validated = $request->validate($this->rules());
+
+        $customer = Customer::query()->create($validated);
         AuditService::log('CREACIÓN DE CLIENTE', "Creó cliente: {$customer->business_name}", $customer);
 
         return redirect()->route('customers.index');
@@ -52,10 +56,11 @@ class CustomerController extends Controller
     public function show(Customer $customer): View
     {
         $customer->load('stores', 'prices');
+
         return view('customers._detail', compact('customer'));
     }
 
-    public function update(Request $request, Customer $customer)
+    public function update(Request $request, Customer $customer): JsonResponse|RedirectResponse
     {
         try {
             $validated = $request->validate($this->rules($customer, $request->ajax()));
@@ -65,8 +70,9 @@ class CustomerController extends Controller
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
+
             return redirect()->route('customers.index');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }
@@ -74,17 +80,21 @@ class CustomerController extends Controller
         }
     }
 
-    public function destroy(Customer $customer): RedirectResponse
+    public function destroy(Request $request, Customer $customer): RedirectResponse
     {
-        if ($customer->stores()->exists() || $customer->prices()->exists()) {
+        if ($customer->stores()->exists() || $customer->prices()->exists() || $customer->orders()->exists()) {
             return back()->withErrors([
-                'delete' => 'No puedes eliminar este cliente porque tiene salas o precios asociados.',
+                'delete' => 'No puedes eliminar este cliente porque tiene salas, precios o pedidos asociados.',
             ]);
         }
 
         $customer->update(['deleted_by' => auth()->id()]);
         $customer->delete();
         AuditService::log('ELIMINACIÓN DE CLIENTE', "Eliminó cliente: {$customer->business_name}", $customer);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect()->route('customers.index');
     }
@@ -95,6 +105,7 @@ class CustomerController extends Controller
     private function rules(?Customer $customer = null, bool $isAjax = false): array
     {
         $req = $isAjax ? 'sometimes' : 'required';
+
         return [
             'code' => [$req, 'string', 'max:100', Rule::unique(Customer::class)->ignore($customer)],
             'business_name' => [$req, 'string', 'max:255'],
@@ -105,8 +116,7 @@ class CustomerController extends Controller
             'contact' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'payment_terms' => ['nullable', 'string', 'max:100'],
-            'discount' => [$req, 'numeric', 'min:0', 'max:100'],
-            'status' => ['required', 'boolean'],
+            'status' => [$req, 'boolean'],
         ];
     }
 }

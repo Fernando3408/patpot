@@ -514,7 +514,7 @@ textarea.form-control {
   background: var(--white);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-lg);
-  overflow: visible;
+  overflow-x: auto;
   box-shadow: var(--shadow-sm);
 }
 
@@ -722,14 +722,17 @@ textarea.form-control {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
 }
 
 .page-header-filters {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 1rem;
 }
 
 .page-header-actions {
@@ -1697,7 +1700,6 @@ div.dataTables_wrapper div.dataTables_filter label {
 .th-action { width: 50px; }
 .th-cantidad { width: 150px; }
 .th-precio { width: 160px; }
-.th-descuento { width: 130px; }
 .th-progreso { width: 180px; }
 .th-cajas { width: 130px; }
 .col-input { width: 150px; }

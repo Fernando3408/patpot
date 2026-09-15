@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = Product::with('recipes.input');
 
@@ -17,8 +21,7 @@ class ProductController extends Controller
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('sku', 'like', "%{$search}%")
-                    ->orWhere('category', 'like', "%{$search}%");
+                    ->orWhere('sku', 'like', "%{$search}%");
             });
         }
 
@@ -27,12 +30,12 @@ class ProductController extends Controller
         return view('products.index', compact('products'));
     }
 
-    public function create()
+    public function create(): View
     {
         return view('products.create');
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
@@ -42,6 +45,7 @@ class ProductController extends Controller
             'stock_boxes' => 'required|integer|min:0',
             'min_stock_boxes' => 'required|integer|min:0',
             'sale_price_box' => 'required|numeric|min:0',
+            'production_cost' => 'nullable|numeric|min:0',
             'status' => 'required|in:active,inactive',
         ]);
 
@@ -51,29 +55,31 @@ class ProductController extends Controller
         return redirect('/productos');
     }
 
-    public function edit(Product $product)
+    public function edit(Product $product): View
     {
         return view('products.edit', compact('product'));
     }
 
-    public function show(Product $product)
+    public function show(Product $product): View
     {
         $product->load('recipes.input');
+
         return view('products._detail', compact('product'));
     }
 
-    public function update(Request $request, Product $product)
+    public function update(Request $request, Product $product): JsonResponse|RedirectResponse
     {
         try {
             if ($request->ajax()) {
-            $rules = [
-                'name' => 'sometimes|required|string|max:255',
-                'sku' => ['sometimes', 'required', 'string', 'max:255', Rule::unique(Product::class)->ignore($product)],
-                'stock_boxes' => 'sometimes|integer|min:0',
-                'min_stock_boxes' => 'sometimes|integer|min:0',
-                'sale_price_box' => 'sometimes|nullable|numeric|min:0',
-                'status' => 'sometimes|required|in:active,inactive',
-            ];
+                $rules = [
+                    'name' => 'sometimes|required|string|max:255',
+                    'sku' => ['sometimes', 'required', 'string', 'max:255', Rule::unique(Product::class)->ignore($product)],
+                    'stock_boxes' => 'sometimes|integer|min:0',
+                    'min_stock_boxes' => 'sometimes|integer|min:0',
+                    'sale_price_box' => 'sometimes|nullable|numeric|min:0',
+                    'production_cost' => 'sometimes|nullable|numeric|min:0',
+                    'status' => 'sometimes|required|in:active,inactive',
+                ];
             } else {
                 $rules = [
                     'name' => 'required|string|max:255',
@@ -83,6 +89,7 @@ class ProductController extends Controller
                     'stock_boxes' => 'required|integer|min:0',
                     'min_stock_boxes' => 'required|integer|min:0',
                     'sale_price_box' => 'required|numeric|min:0',
+                    'production_cost' => 'nullable|numeric|min:0',
                     'status' => 'required|in:active,inactive',
                 ];
             }
@@ -94,17 +101,20 @@ class ProductController extends Controller
 
             if ($request->ajax()) {
                 $margin = $product->sale_price_box - $product->cost_per_box;
+
                 return response()->json([
                     'success' => true,
                     'sale_price_box' => $product->sale_price_box,
                     'cost_per_box' => $product->cost_per_box,
+                    'production_cost' => $product->production_cost,
                     'margin' => $margin,
                     'margin_pct' => $product->sale_price_box > 0 ? round($margin / $product->sale_price_box * 100, 1) : 0,
                     'production_capacity' => $product->production_capacity,
                 ]);
             }
+
             return redirect('/productos');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }
@@ -112,7 +122,7 @@ class ProductController extends Controller
         }
     }
 
-    public function destroy(Product $product)
+    public function destroy(Request $request, Product $product): JsonResponse|RedirectResponse
     {
         if ($product->orderLines()->exists()) {
             return back()->withErrors([
@@ -147,6 +157,10 @@ class ProductController extends Controller
         $product->update(['deleted_by' => auth()->id()]);
         $product->delete();
         AuditService::log('ELIMINACIÓN DE PRODUCTO', "Eliminó producto: {$product->name}", $product);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/productos')->with('success', 'Producto eliminado correctamente.');
     }

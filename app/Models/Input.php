@@ -15,6 +15,7 @@ class Input extends Model
         'code',
         'name',
         'category',
+        'type',
         'unit',
         'stock',
         'safety_stock',
@@ -31,14 +32,14 @@ class Input extends Model
     ];
 
     protected $casts = [
-        'stock' => 'decimal:2',
-        'safety_stock' => 'decimal:2',
-        'weekly_consumption' => 'decimal:2',
+        'stock' => 'decimal:3',
+        'safety_stock' => 'decimal:3',
+        'weekly_consumption' => 'decimal:3',
         'target_weeks' => 'decimal:2',
-        'min_purchase' => 'decimal:2',
-        'purchase_multiple' => 'decimal:2',
+        'min_purchase' => 'decimal:3',
+        'purchase_multiple' => 'decimal:3',
         'unit_cost' => 'decimal:2',
-        'transit' => 'decimal:2',
+        'transit' => 'decimal:3',
         'status' => 'boolean',
     ];
 
@@ -120,6 +121,16 @@ class Input extends Model
         }), 2);
     }
 
+    public function isService(): bool
+    {
+        return $this->type === 'service';
+    }
+
+    public function isMaterial(): bool
+    {
+        return $this->type === 'material';
+    }
+
     public function getInventoryLevelAttribute(): string
     {
         $stock = (float) $this->stock;
@@ -198,21 +209,17 @@ class Input extends Model
 
     private function usesWholeQuantities(): bool
     {
-        $unit = mb_strtolower($this->unit);
+        $unit = trim(mb_strtolower($this->unit));
 
-        return ! str_contains($unit, 'kg') && ! str_contains($unit, 'litro');
+        if ($unit === 'kg' || $unit === 'litro') {
+            return false;
+        }
+
+        return true;
     }
 
     public function deleter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deleted_by');
-    }
-
-    public function delete(): bool
-    {
-        $this->recipes()->delete();
-        $this->purchaseLines()->delete();
-
-        return parent::delete();
     }
 }

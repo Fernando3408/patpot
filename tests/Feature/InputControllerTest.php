@@ -62,7 +62,7 @@ class InputControllerTest extends TestCase
 
         $this->assertSame('Papa lavada', $input->name);
         $this->assertSame('INS-PAPA-LAVADA', $input->code);
-        $this->assertSame('125.50', $input->stock);
+        $this->assertSame('125.500', $input->stock);
     }
 
     public function test_an_input_used_in_a_recipe_cannot_be_deleted(): void
@@ -111,6 +111,7 @@ class InputControllerTest extends TestCase
             'code' => 'INS-PAPA',
             'name' => 'Papa seleccionada',
             'category' => 'Materia prima',
+            'type' => 'material',
             'unit' => 'kg',
             'stock' => 100,
             'safety_stock' => 20,

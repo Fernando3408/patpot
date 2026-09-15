@@ -40,7 +40,7 @@
                                 <div class="font-bold">{{ $production->number }}</div>
                                 <div class="text-xs text-muted">{{ $production->planned_on->format('d-m-Y') }}</div>
                             </td>
-                            <td>{{ $production->product->name }}</td>
+                            <td>{{ $production->product?->name ?? '---' }}</td>
                             <td>
                                 {{ number_format($production->planned_boxes, 0, ',', '.') }} /
                                 @if($production->actual_boxes !== null)
@@ -50,7 +50,7 @@
                                 @endif
                                 cajas
                             </td>
-                            <td data-field="status" data-type="select" data-options='[{"value":"planned","label":"Planificada"},{"value":"in_progress","label":"En proceso"},{"value":"closed","label":"Cerrada"}]'>
+                            <td data-field="status" data-type="select" data-options='[{"value":"planned","label":"Planificada"},{"value":"in_progress","label":"En proceso"}]'>
                                 @php
                                     $statusBadge = match($production->status) {
                                         'closed' => 'badge-success',
@@ -82,7 +82,7 @@
                                         <details class="d-inline-block">
                                             <summary class="btn btn-primary btn-sm">Cerrar</summary>
                                             <div class="mt-2 p-3 bg-light border rounded tooltip-box">
-                                                <form method="POST" action="{{ route('productions.close', $production) }}">
+                                                <form method="POST" action="{{ route('productions.close', $production) }}" class="close-production-form">
                                                     @csrf
                                                     <div class="form-group mb-2">
                                                         <label class="text-xs">Cajas reales</label>
@@ -113,4 +113,36 @@
             </div>
         </div>
     @endif
+
+    <script>
+        document.querySelectorAll('.close-production-form').forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var formData = new FormData(form);
+                var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData
+                })
+                .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, data: d }; }); })
+                .then(function(res) {
+                    if (res.ok && res.data.success) {
+                        var tr = form.closest('tr');
+                        var statusTd = tr.children[3];
+                        statusTd.innerHTML = '<span class="badge badge-success">Cerrada</span>';
+                        var actionsTd = tr.querySelector('.actions-cell');
+                        if (actionsTd) {
+                            actionsTd.innerHTML = '<button type="button" class="btn btn-outline-info btn-sm" onclick="openDetailModal(\'' + '{{ route('productions.show', '__ID__') }}'.replace('__ID__', res.data.id) + '\', \'Detalle: Producción ' + res.data.number + '\')">Ver detalle</button>';
+                        }
+                        form.closest('details').removeAttribute('open');
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Producción cerrada', showConfirmButton: false, timer: 2000 });
+                    } else {
+                        Swal.fire('Error', res.data.message || 'No se pudo cerrar.', 'error');
+                    }
+                })
+                .catch(function() { Swal.fire('Error', 'No se pudo cerrar.', 'error'); });
+            });
+        });
+    </script>
 </x-erp-layout>

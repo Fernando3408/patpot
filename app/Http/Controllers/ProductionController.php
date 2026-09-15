@@ -8,6 +8,7 @@ use App\Services\AuditService;
 use App\Services\InventoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ProductionController extends Controller
@@ -40,7 +41,7 @@ class ProductionController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate(['number' => ['required', 'string', 'max:255', 'unique:productions,number'], 'product_id' => ['required', 'exists:products,id'], 'planned_boxes' => ['required', 'integer', 'gt:0'], 'planned_on' => ['required', 'date'], 'notes' => ['nullable', 'string']]);
+        $data = $request->validate(['number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('productions', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'product_id' => ['required', 'exists:products,id'], 'planned_boxes' => ['required', 'integer', 'gt:0'], 'planned_on' => ['required', 'date'], 'notes' => ['nullable', 'string']]);
         $production = Production::create($data);
         AuditService::log('CREACIÓN DE PRODUCCIÓN', "Creó producción: {$production->number}", $production);
 
@@ -50,13 +51,26 @@ class ProductionController extends Controller
     public function show(Production $produccion): View
     {
         $produccion->load('product');
+
         return view('productions._detail', ['production' => $produccion]);
     }
 
-    public function close(Request $request, Production $produccion): RedirectResponse
+    public function close(Request $request, Production $produccion)
     {
         $data = $request->validate(['actual_boxes' => ['required', 'integer', 'gt:0'], 'completed_on' => ['required', 'date']]);
         $this->inventoryService->closeProduction($produccion, (float) $data['actual_boxes'], $data['completed_on']);
+
+        if ($request->ajax()) {
+            $produccion->refresh();
+            return response()->json([
+                'success' => true,
+                'id' => $produccion->id,
+                'number' => $produccion->number,
+                'status' => $produccion->status,
+                'actual_boxes' => $produccion->actual_boxes,
+                'completed_on' => $produccion->completed_on,
+            ]);
+        }
 
         return redirect('/produccion')->with('success', 'Producción cerrada correctamente.');
     }
@@ -73,12 +87,13 @@ class ProductionController extends Controller
                 if ($request->ajax()) {
                     return response()->json(['errors' => ['production' => ['No puedes editar una producción cerrada.']]], 422);
                 }
+
                 return back()->withErrors(['production' => 'No puedes editar una producción cerrada.']);
             }
 
             if ($request->ajax()) {
                 $rules = [
-                    'number' => ['sometimes', 'required', 'string', 'max:255', 'unique:productions,number,'.$produccion->id],
+                    'number' => ['sometimes', 'required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('productions', 'number')->ignore($produccion->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
                     'product_id' => ['sometimes', 'required', 'exists:products,id'],
                     'planned_boxes' => ['sometimes', 'required', 'integer', 'gt:0'],
                     'planned_on' => ['sometimes', 'required', 'date'],
@@ -87,7 +102,7 @@ class ProductionController extends Controller
                 ];
             } else {
                 $rules = [
-                    'number' => ['required', 'string', 'max:255', 'unique:productions,number,'.$produccion->id],
+                    'number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('productions', 'number')->ignore($produccion->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
                     'product_id' => ['required', 'exists:products,id'],
                     'planned_boxes' => ['required', 'integer', 'gt:0'],
                     'planned_on' => ['required', 'date'],
@@ -102,8 +117,9 @@ class ProductionController extends Controller
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
+
             return redirect('/produccion')->with('success', 'Producción actualizada correctamente.');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }
@@ -111,7 +127,7 @@ class ProductionController extends Controller
         }
     }
 
-    public function destroy(Production $produccion): RedirectResponse
+    public function destroy(Request $request, Production $produccion): RedirectResponse
     {
         if ($produccion->status === 'closed') {
             return back()->withErrors(['delete' => 'No puedes eliminar una producción que ya fue cerrada.']);
@@ -119,6 +135,10 @@ class ProductionController extends Controller
 
         $produccion->delete();
         AuditService::log('ELIMINACIÓN DE PRODUCCIÓN', "Eliminó producción: {$produccion->number}", $produccion);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/produccion')->with('success', 'Producción eliminada correctamente.');
     }

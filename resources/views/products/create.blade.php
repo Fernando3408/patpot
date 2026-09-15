@@ -103,6 +103,21 @@
                 </div>
 
                 <div class="form-group">
+                    <label for="production_cost" class="form-label">Costo piso por caja ($)</label>
+                    <input
+                        type="number"
+                        id="production_cost"
+                        name="production_cost"
+                        class="form-control"
+                        value="{{ old('production_cost') }}"
+                        placeholder="Dejar vacío para costo calculado"
+                        step="1"
+                        min="0"
+                    >
+                    <p class="text-xs text-gray-500 mt-1">Si se define, reemplaza el costo calculado por receta.</p>
+                </div>
+
+                <div class="form-group">
                     <label for="status" class="form-label">Estado</label>
                     <select id="status" name="status" class="form-control">
                         <option value="active" @selected(old('status') === 'active')>Activo</option>

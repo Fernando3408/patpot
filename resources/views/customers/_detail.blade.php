@@ -13,7 +13,6 @@
             <div><strong>Contacto:</strong> {{ $customer->contact ?? '—' }}</div>
             <div><strong>Email:</strong> {{ $customer->email ?? '—' }}</div>
             <div><strong>Condiciones de pago:</strong> {{ $customer->payment_terms ?? '—' }}</div>
-            <div><strong>Descuento:</strong> {{ $customer->discount }}%</div>
             <div>
                 <strong>Estado:</strong>
                 <span class="badge {{ $customer->status ? 'badge-success' : 'badge-danger' }}">

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
@@ -28,7 +29,7 @@ class RegisteredUserController extends Controller
         $user = User::query()->create($validated);
 
         $roleName = $request->input('role', 'administrativo');
-        $role = \App\Models\Role::where('name', $roleName)->first();
+        $role = Role::where('name', $roleName)->first();
         if ($role) {
             $user->roles()->attach($role);
         }

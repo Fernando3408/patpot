@@ -58,10 +58,10 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <input type="number" step="0.0001" min="0" name="lines[{{ $index }}][ordered_quantity]" class="form-control" value="{{ old("lines.$index.ordered_quantity") }}" placeholder="0">
+                                    <input type="number" step="1" min="1" name="lines[{{ $index }}][ordered_quantity]" class="form-control" value="{{ old("lines.$index.ordered_quantity") }}" placeholder="0">
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" min="0" name="lines[{{ $index }}][unit_cost]" class="form-control" value="{{ old("lines.$index.unit_cost") }}" placeholder="$ 0">
+                                    <input type="number" step="1" min="0" name="lines[{{ $index }}][unit_cost]" class="form-control" value="{{ old("lines.$index.unit_cost") }}" placeholder="$ 0">
                                 </td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-danger btn-sm btn-remove-line" title="Eliminar línea">&times;</button>
@@ -110,6 +110,26 @@
         }
     @endphp
     <script>
+        var selectedFiles = [];
+
+        function renderPreview() {
+            var preview = document.getElementById('attachments-preview');
+            if (!preview) return;
+            preview.innerHTML = '';
+            selectedFiles.forEach(function(f, i) {
+                var item = document.createElement('div');
+                item.className = 'attachment-item';
+                var size = f.size < 1024 ? f.size + ' B' : f.size < 1048576 ? (f.size / 1024).toFixed(1) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB';
+                item.innerHTML = '<span class="attachment-name">' + f.name + '</span><span class="attachment-size">' + size + '</span><button type="button" class="btn btn-danger btn-sm" onclick="removeAttachment(' + i + ')">&times;</button>';
+                preview.appendChild(item);
+            });
+        }
+
+        function removeAttachment(i) {
+            selectedFiles.splice(i, 1);
+            renderPreview();
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const table = document.getElementById('lines-table');
             const tbody = table.querySelector('tbody');
@@ -127,10 +147,10 @@
                         </select>
                     </td>
                     <td>
-                        <input type="number" step="0.0001" min="0" name="lines[${lineIndex}][ordered_quantity]" class="form-control" value="" placeholder="0">
+                        <input type="number" step="1" min="1" name="lines[${lineIndex}][ordered_quantity]" class="form-control" value="" placeholder="0">
                     </td>
                     <td>
-                        <input type="number" step="0.01" min="0" name="lines[${lineIndex}][unit_cost]" class="form-control" value="" placeholder="$ 0">
+                        <input type="number" step="1" min="0" name="lines[${lineIndex}][unit_cost]" class="form-control" value="" placeholder="$ 0">
                     </td>
                     <td class="text-center">
                         <button type="button" class="btn btn-danger btn-sm btn-remove-line" title="Eliminar línea">&times;</button>
@@ -150,8 +170,6 @@
             });
 
             var fileInput = document.getElementById('attachments-input');
-            var preview = document.getElementById('attachments-preview');
-            var selectedFiles = [];
 
             fileInput.addEventListener('change', function() {
                 var newFiles = Array.from(this.files);
@@ -165,22 +183,6 @@
                 renderPreview();
             });
 
-            function renderPreview() {
-                preview.innerHTML = '';
-                selectedFiles.forEach(function(f, i) {
-                    var item = document.createElement('div');
-                    item.className = 'attachment-item';
-                    var size = f.size < 1024 ? f.size + ' B' : f.size < 1048576 ? (f.size / 1024).toFixed(1) + ' KB' : (f.size / 1048576).toFixed(1) + ' MB';
-                    item.innerHTML = '<span class="attachment-name">' + f.name + '</span><span class="attachment-size">' + size + '</span><button type="button" class="btn btn-danger btn-sm" onclick="removeAttachment(' + i + ')">&times;</button>';
-                    preview.appendChild(item);
-                });
-            }
-
-            function removeAttachment(i) {
-                selectedFiles.splice(i, 1);
-                renderPreview();
-            }
-
             var form = fileInput.closest('form');
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -193,9 +195,19 @@
                     headers: { 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest' },
                     body: formData
                 })
-                .then(function(r) { return r.json(); })
-                .then(function(data) { window.location.href = '/compras'; })
-                .catch(function() { form.submit(); });
+                .then(function(r) {
+                    if (!r.ok) { return r.json().then(function(d) { throw d; }); }
+                    return r.json();
+                })
+                .then(function() { window.location.href = '/compras'; })
+                .catch(function(err) {
+                    if (err && err.errors) {
+                        var msgs = Object.values(err.errors).flat().join('\n');
+                        Swal.fire({ icon: 'error', title: 'Error de validación', text: msgs });
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: 'No se pudo crear la compra.' });
+                    }
+                });
             });
         });
     </script>

@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Customer;
 use App\Models\Store;
 use App\Services\AuditService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class StoreController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $query = Store::with('customer');
 
@@ -27,14 +31,14 @@ class StoreController extends Controller
         return view('stores.index', compact('stores'));
     }
 
-    public function create()
+    public function create(): View
     {
         $customers = Customer::where('status', true)->get();
 
         return view('stores.create', compact('customers'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
@@ -63,20 +67,21 @@ class StoreController extends Controller
         return redirect('/salas');
     }
 
-    public function edit(Store $store)
+    public function edit(Store $store): View
     {
         $customers = Customer::where('status', true)->get();
 
         return view('stores.edit', compact('store', 'customers'));
     }
 
-    public function show(Store $store)
+    public function show(Store $store): View
     {
         $store->load('customer');
+
         return view('stores._detail', compact('store'));
     }
 
-    public function update(Request $request, Store $store)
+    public function update(Request $request, Store $store): JsonResponse|RedirectResponse
     {
         try {
             if ($request->ajax()) {
@@ -110,6 +115,7 @@ class StoreController extends Controller
                 if ($request->ajax()) {
                     return response()->json(['errors' => ['code' => ['Ese código de sala ya existe para este cliente.']]], 422);
                 }
+
                 return back()
                     ->withErrors([
                         'code' => 'Ese código de sala ya existe para este cliente.',
@@ -123,8 +129,9 @@ class StoreController extends Controller
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
+
             return redirect('/salas');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }
@@ -132,11 +139,15 @@ class StoreController extends Controller
         }
     }
 
-    public function destroy(Store $store)
+    public function destroy(Request $request, Store $store): JsonResponse|RedirectResponse
     {
         $store->update(['deleted_by' => auth()->id()]);
         $store->delete();
         AuditService::log('ELIMINACIÓN DE SALA', "Eliminó sala: {$store->name}", $store);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/salas');
     }

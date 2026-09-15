@@ -80,11 +80,11 @@
                                         <input
                                             type="number"
                                             class="form-control text-right"
-                                            step="0.01"
+                                            step="0.001"
                                             min="0"
                                             name="ingredients[{{ $input->id }}][qty_per_box]"
-                                            value="{{ $quantity !== null ? round($quantity, 2) : '' }}"
-                                            placeholder="0.00"
+                                            value="{{ $quantity !== null ? round($quantity, 3) : '' }}"
+                                            placeholder="0.000"
                                         >
                                     </td>
                                     <td class="text-right font-bold">
@@ -115,7 +115,6 @@
             <div class="data-table-empty mb-4">
                 <p>No hay insumos activos disponibles. Crea un insumo antes de configurar una receta.</p>
             </div>
-            <div class="form-actions">
         @endif
 
     </div>

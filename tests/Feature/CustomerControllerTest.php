@@ -27,7 +27,7 @@ class CustomerControllerTest extends TestCase
 
         $this->get('/clientes/create')
             ->assertOk()
-            ->assertSee('Nuevo cliente');
+            ->assertSee('Nuevo Cliente');
     }
 
     public function test_a_customer_can_be_created_with_its_operational_profile(): void
@@ -114,7 +114,6 @@ class CustomerControllerTest extends TestCase
             'contact' => 'Compras retail',
             'email' => 'compras@cencosud.cl',
             'payment_terms' => '60 días',
-            'discount' => 0,
             'status' => 1,
         ], $overrides);
     }

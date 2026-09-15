@@ -40,10 +40,10 @@
                             id="qty_per_box"
                             name="qty_per_box"
                             class="form-control"
-                            min="0.01"
-                            step="0.01"
+                            min="0.001"
+                            step="0.001"
                             value="{{ old('qty_per_box') }}"
-                            placeholder="Ej: 1.50"
+                            placeholder="Ej: 1.500"
                             required
                         >
                     </div>
@@ -60,7 +60,6 @@
             <div class="data-table-empty mb-4">
                 <p>Necesitas al menos un producto activo y un insumo activo para crear una receta.</p>
             </div>
-            <div class="form-actions">
         @endif
 
     </div>

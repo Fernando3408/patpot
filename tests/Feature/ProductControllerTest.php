@@ -65,7 +65,6 @@ class ProductControllerTest extends TestCase
         $customer = Customer::query()->create([
             'code' => 'CLI-PRUEBA',
             'business_name' => 'Cliente de prueba',
-            'discount' => 0,
             'status' => true,
         ]);
 

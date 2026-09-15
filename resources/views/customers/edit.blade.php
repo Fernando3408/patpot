@@ -48,10 +48,6 @@
                         <input id="payment_terms" type="text" name="payment_terms" class="form-control" value="{{ old('payment_terms', $customer->payment_terms) }}">
                     </div>
                     <div class="form-group">
-                        <label class="form-label" for="discount">Descuento (%) *:</label>
-                        <input id="discount" type="number" step="0.01" min="0" max="100" name="discount" class="form-control" value="{{ old('discount', $customer->discount) }}" required>
-                    </div>
-                    <div class="form-group">
                         <label class="form-label" for="status">Estado *:</label>
                         <select id="status" name="status" class="form-control" required>
                             <option value="1" {{ old('status', $customer->status) == 1 ? 'selected' : '' }}>Activo</option>

@@ -26,13 +26,12 @@
                             <td class="font-bold">{{ $recipe->product->name }}</td>
                             <td class="text-xs">{{ $recipe->product->sku }}</td>
                             <td class="text-xs">{{ $recipe->input->code }}</td>
-                            <td class="text-right font-bold">{{ $recipe->qty_per_box == floor($recipe->qty_per_box) ? number_format($recipe->qty_per_box, 0, ',', '.') : number_format($recipe->qty_per_box, 2, ',', '.') }}</td>
+                            <td class="text-right font-bold">{{ rtrim(rtrim(rtrim(number_format($recipe->qty_per_box, 3, ',', '.'), '0'), '.'), ',') }}</td>
                             <td>{{ $recipe->input->unit }}</td>
                             <td class="text-right font-bold">${{ number_format($recipe->qty_per_box * (float) $recipe->input->unit_cost, 0, ',', '.') }}</td>
                             <td class="text-xs">{{ $recipe->product->production_capacity ? number_format($recipe->product->production_capacity, 0, ',', '.') . ' cajas' : '—' }}</td>
                             <td class="text-right">
                                 <div class="actions-cell">
-                                    <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('recipes.show', $recipe->product) }}" data-title="Receta: {{ $recipe->product->name }}">Ver detalle</button>
                                     <a href="/recetas/{{ $recipe->product->id }}/edit" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="/recetas/{{ $recipe->product->id }}/edit" data-title="Editar receta">Editar</a>
                                     @if(auth()->user()->canManage())
                                         <form method="POST" action="/recetas/{{ $recipe->id }}" style="display: inline;">

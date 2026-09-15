@@ -7,7 +7,6 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Production;
 use App\Models\Purchase;
-use App\Models\Retail;
 use App\Models\Shipment;
 use App\Models\ShipmentLine;
 use App\Models\Task;
@@ -26,10 +25,13 @@ class HomeController extends Controller
 
         $marginMonth = ShipmentLine::query()
             ->whereHas('shipment', fn ($q) => $q->where('shipped_on', '>=', $startOfMonth))
+            ->with('orderLine.product.recipes.input')
             ->get()
             ->sum(function (ShipmentLine $line) {
-                $cost = $line->orderLine?->product?->cost_per_box ?? 0;
+                $storedCost = (float) $line->cost_box + (float) $line->variable_cost_box;
+                $cost = $storedCost > 0 ? $storedCost : ($line->orderLine?->product?->cost_per_box ?? 0);
                 $revenue = $line->price_box * $line->boxes;
+
                 return $revenue - ($cost * $line->boxes);
             });
 
@@ -104,9 +106,14 @@ class HomeController extends Controller
             $value = (float) ShipmentLine::query()
                 ->whereHas('shipment', fn ($q) => $q->whereMonth('shipped_on', $date->month)
                     ->whereYear('shipped_on', $date->year))
+                ->with('orderLine.product.recipes.input')
                 ->get()
-                ->sum(fn (ShipmentLine $line) => $line->price_box * $line->boxes
-                    - (($line->orderLine?->product?->cost_per_box ?? 0) * $line->boxes));
+                ->sum(function (ShipmentLine $line): float {
+                    $storedCost = (float) $line->cost_box + (float) $line->variable_cost_box;
+                    $cost = $storedCost > 0 ? $storedCost : ($line->orderLine?->product?->cost_per_box ?? 0);
+
+                    return $line->price_box * $line->boxes - ($cost * $line->boxes);
+                });
             if ($value > 0) {
                 $marginMonths->push(['label' => $date->format('M'), 'value' => $value]);
             }
@@ -146,9 +153,8 @@ class HomeController extends Controller
         ];
 
         // 7. Stock PT: por producto
-        $allProducts = Product::all();
-        $chartPTLabels = $allProducts->pluck('name')->toArray();
-        $chartPTValues = $allProducts->pluck('stock_boxes')->map(fn ($v) => (int) $v)->toArray();
+        $chartPTLabels = $allProductsWithRecipes->pluck('name')->toArray();
+        $chartPTValues = $allProductsWithRecipes->pluck('stock_boxes')->map(fn ($v) => (int) $v)->toArray();
 
         // 8. Stock insumos: datos para selector
         $allInputs = Input::select('id', 'name', 'unit', 'stock', 'safety_stock')->get();

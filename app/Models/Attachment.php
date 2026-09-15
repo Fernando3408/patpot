@@ -33,17 +33,19 @@ class Attachment extends Model
     {
         $bytes = $this->size;
         if ($bytes >= 1048576) {
-            return round($bytes / 1048576, 1) . ' MB';
+            return round($bytes / 1048576, 1).' MB';
         }
         if ($bytes >= 1024) {
-            return round($bytes / 1024, 1) . ' KB';
+            return round($bytes / 1024, 1).' KB';
         }
-        return $bytes . ' B';
+
+        return $bytes.' B';
     }
 
     public function getIconAttribute(): string
     {
         $ext = strtolower(pathinfo($this->original_name, PATHINFO_EXTENSION));
+
         return match ($ext) {
             'pdf' => 'file-text',
             'jpg', 'jpeg', 'png', 'gif', 'webp' => 'image',

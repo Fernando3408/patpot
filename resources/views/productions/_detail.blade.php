@@ -16,7 +16,7 @@
             @endphp
             <span class="badge {{ $statusClass }}">{{ $statusLabel }}</span>
         </div>
-        <div><strong>Producto:</strong> {{ $production->product->name ?? '—' }}</div>
+        <div><strong>Producto:</strong> {{ $production->product?->name ?? '—' }}</div>
         <div><strong>Fecha planificada:</strong> {{ $production->planned_on?->format('d/m/Y') ?? '—' }}</div>
         <div><strong>Fecha completada:</strong> {{ $production->completed_on?->format('d/m/Y') ?? '—' }}</div>
         <div><strong>Cajas planificadas:</strong> {{ number_format($production->planned_boxes, 0, ',', '.') }}</div>

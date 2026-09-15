@@ -64,7 +64,7 @@
                             <td class="text-right">
                                 <div class="actions-cell">
                                     @if($task->status !== 'completed')
-                                        <form method="POST" action="{{ route('tasks.complete', $task) }}" style="display:inline;">
+                                        <form method="POST" action="{{ route('tasks.complete', $task) }}" class="complete-task-form" style="display:inline;">
                                             @csrf
                                             <button type="submit" class="btn btn-primary btn-sm">Completar</button>
                                         </form>
@@ -92,4 +92,28 @@
             </div>
         </div>
     @endif
+
+    <script>
+        document.querySelectorAll('.complete-task-form').forEach(function(form) {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+                fetch(form.action, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': token, 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(function(r) { return r.json(); })
+                .then(function(json) {
+                    if (json.success) {
+                        var tr = form.closest('tr');
+                        var statusTd = tr.children[4];
+                        statusTd.innerHTML = '<span class="badge badge-success">Completada</span>';
+                        form.remove();
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tarea completada', showConfirmButton: false, timer: 2000 });
+                    }
+                })
+                .catch(function() { Swal.fire('Error', 'No se pudo completar.', 'error'); });
+            });
+        });
+    </script>
 </x-erp-layout>

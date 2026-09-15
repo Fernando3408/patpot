@@ -86,4 +86,24 @@
             </div>
         </div>
     @endif
+
+    <script>
+        window.onInlineEditSuccess = function(row, json) {
+            if (!json || !json.success) return;
+
+            var quiebreTd = row.children[3];
+            if (json.is_break) {
+                quiebreTd.innerHTML = '<span class="badge alert-danger">QUIEBRE</span>';
+            } else if (json.isInTransit) {
+                quiebreTd.innerHTML = '<span class="badge badge-warning">EN TRÁNSITO</span>';
+            } else if (json.isWarning) {
+                quiebreTd.innerHTML = '<span class="badge badge-warning">ATENCIÓN</span>';
+            } else {
+                quiebreTd.innerHTML = '<span class="badge badge-success">OK</span>';
+            }
+
+            var reposTd = row.children[4];
+            reposTd.textContent = new Intl.NumberFormat('es-CL').format(json.suggested_replenishment_boxes) + ' cajas';
+        };
+    </script>
 </x-erp-layout>

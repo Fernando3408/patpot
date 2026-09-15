@@ -82,7 +82,6 @@ class StoreControllerTest extends TestCase
             'code' => 'CLI-PRUEBA',
             'business_name' => 'Cliente de prueba SpA',
             'trade_name' => 'Cliente de prueba',
-            'discount' => 0,
             'status' => true,
         ]);
     }

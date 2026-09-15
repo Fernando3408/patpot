@@ -15,6 +15,6 @@ class Task extends Model
 
     public function getIsOverdueAttribute(): bool
     {
-        return $this->status === 'pending' && $this->due_on->isPast();
+        return $this->status === 'pending' && $this->due_on->isBefore(today());
     }
 }

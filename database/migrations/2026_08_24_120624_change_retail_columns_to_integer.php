@@ -1,25 +1,30 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
     public function up(): void
     {
-        DB::statement('ALTER TABLE retail MODIFY stock_units INT UNSIGNED NOT NULL DEFAULT 0');
-        DB::statement('ALTER TABLE retail MODIFY transit_units INT UNSIGNED NOT NULL DEFAULT 0');
-        DB::statement('ALTER TABLE retail MODIFY weekly_sales INT UNSIGNED NOT NULL DEFAULT 0');
-        DB::statement('ALTER TABLE retail MODIFY min_stock INT UNSIGNED NOT NULL DEFAULT 0');
-        DB::statement('ALTER TABLE retail MODIFY reorder_point INT UNSIGNED NOT NULL DEFAULT 0');
+        Schema::table('retail', function (Blueprint $table): void {
+            $table->unsignedInteger('stock_units')->default(0)->change();
+            $table->unsignedInteger('transit_units')->default(0)->change();
+            $table->unsignedInteger('weekly_sales')->default(0)->change();
+            $table->unsignedInteger('min_stock')->default(0)->change();
+            $table->unsignedInteger('reorder_point')->default(0)->change();
+        });
     }
 
     public function down(): void
     {
-        DB::statement('ALTER TABLE retail MODIFY stock_units DECIMAL(12,2) NOT NULL DEFAULT 0');
-        DB::statement('ALTER TABLE retail MODIFY transit_units DECIMAL(12,2) NOT NULL DEFAULT 0');
-        DB::statement('ALTER TABLE retail MODIFY weekly_sales DECIMAL(12,2) NOT NULL DEFAULT 0');
-        DB::statement('ALTER TABLE retail MODIFY min_stock DECIMAL(12,2) NOT NULL DEFAULT 0');
-        DB::statement('ALTER TABLE retail MODIFY reorder_point DECIMAL(12,2) NOT NULL DEFAULT 0');
+        Schema::table('retail', function (Blueprint $table): void {
+            $table->decimal('stock_units', 12, 2)->default(0)->change();
+            $table->decimal('transit_units', 12, 2)->default(0)->change();
+            $table->decimal('weekly_sales', 12, 2)->default(0)->change();
+            $table->decimal('min_stock', 12, 2)->default(0)->change();
+            $table->decimal('reorder_point', 12, 2)->default(0)->change();
+        });
     }
 };

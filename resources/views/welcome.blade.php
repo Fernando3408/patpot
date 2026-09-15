@@ -174,7 +174,7 @@
                                     <span class="badge {{ $badge }}">{{ $label }}</span>
                                 </td>
                                 <td class="text-right">{{ $o->lines->sum('boxes') }}</td>
-                                <td class="text-right font-bold">${{ number_format($o->lines->sum(fn($l) => $l->boxes * ($l->price_box ?? 0) * (1 - ($l->discount_pct ?? 0) / 100)), 0, ',', '.') }}</td>
+                                <td class="text-right font-bold">${{ number_format($o->lines->sum(fn($l) => $l->boxes * ($l->price_box ?? 0)), 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -276,7 +276,7 @@
                                 <td>{{ $o->store?->name ?? '—' }}</td>
                                 <td class="text-negative">{{ $o->delivery_on?->format('d/m/Y') ?? '—' }}</td>
                                 <td class="text-right">{{ $o->lines->sum('boxes') }}</td>
-                                <td class="text-right font-bold">${{ number_format($o->lines->sum(fn($l) => $l->boxes * ($l->price_box ?? 0) * (1 - ($l->discount_pct ?? 0) / 100)), 0, ',', '.') }}</td>
+                                <td class="text-right font-bold">${{ number_format($o->lines->sum(fn($l) => $l->boxes * ($l->price_box ?? 0)), 0, ',', '.') }}</td>
                                 <td><a href="{{ route('pedidos.index') }}" class="btn btn-outline-info btn-sm">Ver</a></td>
                             </tr>
                         @endforeach

@@ -3,25 +3,27 @@
 namespace App\Http\Controllers;
 
 use App\Models\Task;
+use App\Services\AuditService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class TaskController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Task::query()
-            ->orderByRaw("FIELD(status, 'pending', 'in_progress', 'completed')")
-            ->orderBy('due_on');
-        
+        $query = Task::query();
+
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where('title', 'like', "%{$search}%")
                 ->orWhere('owner', 'like', "%{$search}%");
         }
-        
-        $tasks = $query->get();
+
+        $tasks = $query->get()->sortBy(function ($task) {
+            return array_search($task->status, ['pending', 'in_progress', 'completed']);
+        })->sortBy('due_on')->values();
 
         return view('tasks.index', compact('tasks'));
     }
@@ -88,8 +90,9 @@ class TaskController extends Controller
             if ($request->ajax()) {
                 return response()->json(['success' => true]);
             }
+
             return redirect('/tareas')->with('success', 'Tarea actualizada correctamente.');
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             if ($request->ajax()) {
                 return response()->json(['errors' => $e->errors()], 422);
             }
@@ -97,16 +100,25 @@ class TaskController extends Controller
         }
     }
 
-    public function destroy(Task $task): RedirectResponse
+    public function destroy(Request $request, Task $task): RedirectResponse
     {
         $task->delete();
+        AuditService::log('ELIMINACIÓN DE TAREA', "Eliminó tarea: {$task->title}", $task);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
 
         return redirect('/tareas')->with('success', 'Tarea eliminada correctamente.');
     }
 
-    public function complete(Task $task): RedirectResponse
+    public function complete(Request $request, Task $task)
     {
         $task->update(['status' => 'completed', 'completed_on' => now()->toDateString()]);
+
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'status' => $task->status]);
+        }
 
         return redirect('/tareas')->with('success', 'Tarea marcada como completada.');
     }

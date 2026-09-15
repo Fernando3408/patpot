@@ -1,4 +1,4 @@
-<x-erp-layout title="Clientes" subtitle="Gestiona los clientes, sus condiciones de pago y descuentos.">
+<x-erp-layout title="Clientes" subtitle="Gestiona los clientes y sus condiciones comerciales.">
     <div class="page-header">
         <div class="page-header-actions">
             <a href="{{ route('customers.create') }}" class="btn btn-outline-primary btn-sm">+ Nuevo cliente</a>
@@ -15,7 +15,6 @@
                         <th>RUT</th>
                         <th>Contacto</th>
                         <th>Pago</th>
-                        <th>Descuento</th>
                         <th>Estado</th>
                         <th class="text-right"></th>
                     </tr>
@@ -33,7 +32,6 @@
                             <td data-field="rut" class="text-xs">{{ $customer->rut ?? '—' }}</td>
                             <td data-field="contact" class="text-xs">{{ $customer->contact ?? '—' }}</td>
                             <td data-field="payment_terms" class="text-xs">{{ $customer->payment_terms ?? '—' }}</td>
-                            <td data-field="discount" data-value="{{ (int) $customer->discount }}" data-cleanup="int" class="text-xs font-bold">{{ $customer->discount }}%</td>
                             <td data-field="status" data-type="select" data-options='[{"value":"1","label":"Activo"},{"value":"0","label":"Inactivo"}]'>
                                 <span class="badge {{ $customer->status ? 'badge-success' : 'badge-danger' }}">
                                     {{ $customer->status ? 'Activo' : 'Inactivo' }}
