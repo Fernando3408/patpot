@@ -20,19 +20,19 @@
                 </thead>
                 <tbody>
                     @foreach($stores as $store)
-                        <tr data-update-url="{{ route('salas.update', $store) }}">
+                        <tr>
                             <td class="font-bold">{{ $store->customer?->trade_name ?? $store->customer?->business_name }}</td>
-                            <td data-field="code" class="text-xs">{{ $store->code }}</td>
-                            <td data-field="name">{{ $store->name }}</td>
-                            <td data-field="city">{{ $store->city ?? '—' }}</td>
-                            <td data-field="status" data-type="select" data-options='[{"value":"1","label":"Activo"},{"value":"0","label":"Inactivo"}]'>
+                            <td class="text-xs">{{ $store->code }}</td>
+                            <td>{{ $store->name }}</td>
+                            <td>{{ $store->city ?? '—' }}</td>
+                            <td>
                                 <span class="badge @if($store->status) badge-success @else badge-danger @endif">
                                     {{ $store->status ? 'Activo' : 'Inactivo' }}
                                 </span>
                             </td>
                             <td class="text-right">
                                 <div class="actions-cell">
-                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="{{ route('salas.edit', $store) }}" data-title="Editar: {{ $store->name }}">Editar</button>
                                     <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('salas.show', $store) }}" data-title="Detalle: {{ $store->name }}">Ver detalle</button>
                                     @if(auth()->user()->canManage())
                                         <form method="POST" action="{{ route('salas.destroy', $store) }}" class="inline-form" style="display:inline;">

@@ -1,5 +1,9 @@
-@if(!request()->ajax())
+@php
+    $isPartial = request()->ajax() || request()->has('_partial');
+@endphp
+@if(!$isPartial)
 <x-erp-layout title="Editar pedido" subtitle="Puedes editar pedidos mientras no tengan despachos registrados.">
+@endif
     
     <div class="form-card">
         <form method="POST" action="{{ route('pedidos.update', $order) }}">
@@ -88,7 +92,7 @@
                                         <input type="number" step="1" min="{{ $hasDispatch ? (int) $line->dispatched_boxes : 1 }}" name="lines[{{ $index }}][boxes]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.boxes", $line->boxes) }}" required>
                                     </td>
                                     <td class="text-right">
-                                        <input type="number" step="0.01" min="0" name="lines[{{ $index }}][price_box]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.price_box", $line->price_box) }}" @readonly($hasDispatch)>
+                                        <input type="number" step="1" min="0" name="lines[{{ $index }}][price_box]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.price_box", floatval($line->price_box)) }}" @readonly($hasDispatch)>
                                     </td>
                                     <td class="text-right font-bold">{{ number_format($line->dispatched_boxes, 0, ',', '.') }}</td>
                                     <td class="text-right">
@@ -112,7 +116,7 @@
                                         <input type="number" step="1" min="1" name="lines[{{ $index }}][boxes]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.boxes") }}">
                                     </td>
                                     <td class="text-right">
-                                        <input type="number" step="0.01" min="0" name="lines[{{ $index }}][price_box]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.price_box") }}" placeholder="Auto">
+                                        <input type="number" step="1" min="0" name="lines[{{ $index }}][price_box]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.price_box") }}" placeholder="Auto">
                                     </td>
                                     <td class="text-right text-muted">—</td>
                                     <td></td>
@@ -136,5 +140,6 @@
         </form>
     </div>
 
+@if(!$isPartial)
 </x-erp-layout>
 @endif

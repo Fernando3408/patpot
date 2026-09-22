@@ -1448,12 +1448,13 @@ textarea.form-control {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.45);
   z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn 0.15s ease;
+  backdrop-filter: blur(2px);
 }
 
 .modal-container {
@@ -1464,42 +1465,54 @@ textarea.form-control {
   max-height: 85vh;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.25s ease;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  animation: slideUp 0.2s ease;
+  overflow: hidden;
+}
+
+.modal-container--wide {
+  max-width: 800px;
 }
 
 .modal-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-light);
+  padding: 0.85rem 1.5rem;
+  background: linear-gradient(180deg, #2c2e39 0%, #363947 100%);
+  flex-shrink: 0;
 }
 
 .modal-header h3 {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  color: var(--text);
+  color: #fff;
   margin: 0;
 }
 
 .modal-close {
-  background: none;
+  background: rgba(255, 255, 255, 0.12);
   border: none;
-  font-size: 1.5rem;
-  color: var(--text-muted);
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.7);
   cursor: pointer;
-  padding: 0.25rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
-  transition: color 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .modal-close:hover {
-  color: var(--danger);
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
 }
 
 .modal-body {
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem 1.5rem;
   overflow-y: auto;
   flex: 1;
 }
@@ -1511,16 +1524,80 @@ textarea.form-control {
   font-size: 0.9rem;
 }
 
+/* --- Edit form inside modal --- */
 .modal-body .form-grid {
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem 1rem;
 }
 
 .modal-body .form-group {
+  margin-bottom: 0;
+}
+
+.modal-body .form-group.col-span-full {
+  grid-column: 1 / -1;
+}
+
+.modal-body .form-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.3rem;
+  display: block;
+  letter-spacing: 0.01em;
+}
+
+.modal-body .form-control,
+.modal-body .form-input {
+  border-color: #e2e8f0;
+  border-radius: 6px;
+  padding: 0.5rem 0.7rem;
+  font-size: 0.85rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.modal-body .form-control:focus,
+.modal-body .form-input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(223, 100, 3, 0.1);
+}
+
+.modal-body h3.text-sm,
+.modal-body .section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  padding-bottom: 0.45rem;
+  border-bottom: 2px solid var(--primary-light);
   margin-bottom: 0.75rem;
+  margin-top: 1rem;
+}
+
+.modal-body h3.text-sm:first-child,
+.modal-body .section-title:first-child {
+  margin-top: 0;
+}
+
+.modal-body .form-actions {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-light);
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .modal-body .btn {
-  margin-top: 0.5rem;
+  margin-top: 0;
+}
+
+.modal-body .form-hint,
+.modal-body .text-xs.text-muted {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 0.3rem;
 }
 
 @keyframes fadeIn {
@@ -2032,9 +2109,6 @@ td[data-field]:not([data-readonly="true"]):hover {
 /* ==========================================================================
    DETAIL MODAL
    ========================================================================== */
-.modal-container--wide {
-  max-width: 800px;
-}
 
 /* ==========================================================================
    3D BAR CHART

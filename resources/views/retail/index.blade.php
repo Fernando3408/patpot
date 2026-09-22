@@ -20,10 +20,10 @@
                 </thead>
                 <tbody>
                     @foreach($records as $r)
-                        <tr data-update-url="{{ route('retail.update', $r) }}">
+                        <tr>
                             <td class="font-bold">{{ $r->store?->code }} — {{ $r->store?->customer?->trade_name ?? $r->store?->customer?->business_name }}</td>
                             <td>{{ $r->product?->name }} <span class="text-xs text-muted">({{ $r->product?->sku }})</span></td>
-                            <td data-field="stock_units" class="text-right font-bold">{{ number_format($r->stock_units, 0, ',', '.') }}</td>
+                            <td class="text-right font-bold">{{ number_format($r->stock_units, 0, ',', '.') }}</td>
                             <td>
                                 @if($r->is_break)
                                     <span class="badge alert-danger">QUIEBRE</span>
@@ -35,35 +35,11 @@
                                     <span class="badge badge-success">OK</span>
                                 @endif
                             </td>
-                            <td data-field="suggested_replenishment_boxes" class="text-right">{{ number_format($r->suggested_replenishment_boxes, 0, ',', '.') }} cajas</td>
+                            <td class="text-right">{{ number_format($r->suggested_replenishment_boxes, 0, ',', '.') }} cajas</td>
                             <td class="text-right">
                                 <div class="actions-cell">
-                                    <button type="button" class="btn btn-outline-info btn-sm" onclick="showInlineDetail(this)" data-title="Detalle: Retail {{ $r->store?->code }}">Ver detalle</button>
-                                    <template>
-                                        <div class="card">
-                                            <div class="card__header"><h2 class="card__title">Retail</h2></div>
-                                            <div class="card__body">
-                                                <div class="form-grid">
-                                                    <div><strong>Sala:</strong> {{ $r->store?->code }} — {{ $r->store?->customer?->trade_name ?? $r->store?->customer?->business_name ?? '—' }}</div>
-                                                    <div><strong>Producto:</strong> {{ $r->product?->name }} ({{ $r->product?->sku ?? '—' }})</div>
-                                                    <div><strong>Catalogado:</strong> {{ $r->cataloged ? 'Sí' : 'No' }}</div>
-                                                    <div><strong>Stock unidades:</strong> {{ number_format($r->stock_units, 0, ',', '.') }}</div>
-                                                    <div><strong>Tránsito unidades:</strong> {{ number_format($r->transit_units, 0, ',', '.') }}</div>
-                                                    <div><strong>Venta semanal:</strong> {{ number_format($r->weekly_sales, 0, ',', '.') }}</div>
-                                                    <div><strong>Cobertura:</strong> {{ $r->coverage_weeks !== null ? number_format($r->coverage_weeks, 1, ',', '.') . ' semanas' : '—' }}</div>
-                                                    <div><strong>Quiebre:</strong>
-                                                        @if($r->is_break)
-                                                            <span class="badge alert-danger">QUIEBRE</span>
-                                                        @else
-                                                            <span class="badge badge-success">No</span>
-                                                        @endif
-                                                    </div>
-                                                    <div><strong>Reposición sugerida:</strong> {{ number_format($r->suggested_replenishment_boxes, 0, ',', '.') }} cajas</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
+                                    <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('retail.show', $r) }}" data-title="Detalle: Retail {{ $r->store?->code }}">Ver detalle</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="{{ route('retail.edit', $r) }}" data-title="Editar: Retail">Editar</button>
                                     @if(auth()->user()->canManage())
                                         <form method="POST" action="{{ route('retail.destroy', $r) }}" class="inline-form" style="display:inline;">
                                             @csrf
@@ -86,24 +62,4 @@
             </div>
         </div>
     @endif
-
-    <script>
-        window.onInlineEditSuccess = function(row, json) {
-            if (!json || !json.success) return;
-
-            var quiebreTd = row.children[3];
-            if (json.is_break) {
-                quiebreTd.innerHTML = '<span class="badge alert-danger">QUIEBRE</span>';
-            } else if (json.isInTransit) {
-                quiebreTd.innerHTML = '<span class="badge badge-warning">EN TRÁNSITO</span>';
-            } else if (json.isWarning) {
-                quiebreTd.innerHTML = '<span class="badge badge-warning">ATENCIÓN</span>';
-            } else {
-                quiebreTd.innerHTML = '<span class="badge badge-success">OK</span>';
-            }
-
-            var reposTd = row.children[4];
-            reposTd.textContent = new Intl.NumberFormat('es-CL').format(json.suggested_replenishment_boxes) + ' cajas';
-        };
-    </script>
 </x-erp-layout>
