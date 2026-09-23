@@ -35,7 +35,7 @@
                 </thead>
                 <tbody>
                     @foreach ($prices as $price)
-                        <tr data-update-url="{{ route('precios.update', $price) }}">
+                        <tr>
                             <td>
                                 <strong>{{ $price->customer?->trade_name ?? $price->customer?->business_name ?? '—' }}</strong>
                                 @if ($price->customer?->code)
@@ -48,24 +48,24 @@
                                     <br><span class="text-xs text-muted">{{ $price->product->sku }}</span>
                                 @endif
                             </td>
-                            <td class="text-right" data-field="price_box">
+                            <td class="text-right">
                                 <strong>${{ number_format($price->price_box, 0, ',', '.') }}</strong>
                             </td>
-                            <td class="text-right" data-field="offer_price">
+                            <td class="text-right">
                                 @if ($price->offer_price)
                                     <strong class="text-price">${{ number_format($price->offer_price, 0, ',', '.') }}</strong>
                                 @else
                                     <span class="text-muted">—</span>
                                 @endif
                             </td>
-                            <td data-field="offer_until" data-type="date">
+                            <td>
                                 @if ($price->offer_until)
                                     {{ $price->offer_until->format('d/m/Y') }}
                                 @else
                                     <span class="text-muted">—</span>
                                 @endif
                             </td>
-                            <td data-readonly="true">
+                            <td>
                                 @if ($price->offer_until)
                                     @if ($price->offer_until < now()->toDateString())
                                         <span class="badge badge-warning">Vencida</span>
@@ -78,23 +78,8 @@
                             </td>
                             <td class="text-right">
                                 <div class="actions-cell">
-                                    <button type="button" class="btn btn-outline-info btn-sm" onclick="showInlineDetail(this)" data-title="Detalle: Precio">Ver detalle</button>
-                                    <template>
-                                        <div class="card">
-                                            <div class="card__header"><h2 class="card__title">Precio por Cliente</h2></div>
-                                            <div class="card__body">
-                                                <div class="form-grid">
-                                                    <div><strong>Cliente:</strong> {{ $price->customer?->business_name ?? '—' }}</div>
-                                                    <div><strong>Producto:</strong> {{ $price->product?->name ?? '—' }}</div>
-                                                    <div><strong>Precio base:</strong> ${{ number_format($price->price_box, 0, ',', '.') }}</div>
-                                                    <div><strong>Precio oferta:</strong> {{ $price->offer_price ? '$' . number_format($price->offer_price, 0, ',', '.') : '—' }}</div>
-                                                    <div><strong>Vigencia hasta:</strong> {{ $price->offer_until?->format('d/m/Y') ?? '—' }}</div>
-                                                    <div><strong>Precio efectivo:</strong> <strong>${{ number_format($price->effective_price, 0, ',', '.') }}</strong></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </template>
-                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
+                                    <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('precios.show', $price) }}" data-title="Detalle: Precio">Ver detalle</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="{{ route('precios.edit', $price) }}" data-title="Editar: Precio">Editar</button>
                                     @if(auth()->user()->canManage())
                                         <form method="POST" action="{{ route('precios.destroy', $price) }}" class="inline-form" style="display:inline;">
                                             @csrf

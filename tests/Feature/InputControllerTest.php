@@ -48,7 +48,7 @@ class InputControllerTest extends TestCase
 
         $this->get("/insumos/{$input->id}/edit")
             ->assertOk()
-            ->assertSee('Editar insumo');
+            ->assertSee('Identificación General');
 
         $response = $this->put("/insumos/{$input->id}", $this->inputData([
             'name' => 'Papa lavada',

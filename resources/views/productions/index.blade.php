@@ -35,7 +35,7 @@
                 </thead>
                 <tbody>
                     @foreach($productions as $production)
-                        <tr data-update-url="{{ route('produccion.update', $production) }}">
+                        <tr>
                             <td>
                                 <div class="font-bold">{{ $production->number }}</div>
                                 <div class="text-xs text-muted">{{ $production->planned_on->format('d-m-Y') }}</div>
@@ -50,7 +50,7 @@
                                 @endif
                                 cajas
                             </td>
-                            <td data-field="status" data-type="select" data-options='[{"value":"planned","label":"Planificada"},{"value":"in_progress","label":"En proceso"}]'>
+                            <td>
                                 @php
                                     $statusBadge = match($production->status) {
                                         'closed' => 'badge-success',
@@ -69,7 +69,7 @@
                                 <div class="actions-cell">
                                     <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('productions.show', $production) }}" data-title="Detalle: {{ $production->number }}">Ver detalle</button>
                                     @if($production->status !== 'closed')
-                                        <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
+                                        <button type="button" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="{{ route('produccion.edit', $production) }}" data-title="Editar: {{ $production->number }}">Editar</button>
 
                                         @if(auth()->user()->canManage())
                                             <form method="POST" action="{{ route('produccion.destroy', $production) }}" class="inline-form" style="display:inline;">
@@ -96,7 +96,6 @@
                                                 </form>
                                             </div>
                                         </details>
-                                    @else
                                     @endif
                                 </div>
                             </td>

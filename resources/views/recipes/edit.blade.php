@@ -1,5 +1,9 @@
-@if(!request()->ajax())
+@php
+    $isPartial = request()->ajax() || request()->has('_partial');
+@endphp
+@if(!$isPartial)
 <x-erp-layout title="Editar receta / BOM" subtitle="Configura la lista de materiales (BOM) y cantidades consumidas por cada caja terminada.">
+@endif
     <div class="form-card">
         
         {{-- Ficha Informativa del Producto --}}
@@ -119,5 +123,6 @@
 
     </div>
 
+@if(!$isPartial)
 </x-erp-layout>
 @endif

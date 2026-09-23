@@ -1,5 +1,9 @@
-@if(!request()->ajax())
+@php
+    $isPartial = request()->ajax() || request()->has('_partial');
+@endphp
+@if(!$isPartial)
 <x-erp-layout title="Editar compra" subtitle="Puedes editar líneas sin recepción. Las líneas ya recibidas quedan bloqueadas para conservar la historia.">
+@endif
     <div class="form-card">
         <form method="POST" action="{{ route('compras.update', $purchase) }}">
             @csrf
@@ -113,5 +117,6 @@
         </form>
     </div>
 
+@if(!$isPartial)
 </x-erp-layout>
 @endif

@@ -23,12 +23,12 @@
                 </thead>
                 <tbody>
                     @foreach($products as $product)
-                        <tr data-update-url="{{ route('products.update', $product) }}">
-                            <td data-field="name" class="font-bold">{{ $product->name }}</td>
-                            <td data-field="sku" class="text-xs">{{ $product->sku }}</td>
-                            <td data-field="stock_boxes" data-cleanup="int" class="text-right font-bold">{{ number_format($product->stock_boxes, 0, ',', '.') }} cajas</td>
-                            <td data-field="sale_price_box" data-cleanup="currency" class="text-right font-bold">${{ number_format($product->sale_price_box, 0, ',', '.') }}</td>
-                            <td data-field="production_cost" data-cleanup="currency" class="text-right font-bold">
+                        <tr>
+                            <td class="font-bold">{{ $product->name }}</td>
+                            <td class="text-xs">{{ $product->sku }}</td>
+                            <td class="text-right font-bold">{{ number_format($product->stock_boxes, 0, ',', '.') }} cajas</td>
+                            <td class="text-right font-bold">${{ number_format($product->sale_price_box, 0, ',', '.') }}</td>
+                            <td class="text-right font-bold">
                                 @if($product->production_cost !== null)
                                     ${{ number_format($product->production_cost, 0, ',', '.') }}
                                 @else
@@ -39,11 +39,11 @@
                                 $margin = $product->sale_price_box - $product->cost_per_box;
                                 $marginPct = $product->sale_price_box > 0 ? round($margin / $product->sale_price_box * 100, 1) : 0;
                             @endphp
-                            <td data-calculated="true" class="text-right">
+                            <td class="text-right">
                                 <span class="{{ $margin >= 0 ? 'text-positive' : 'text-negative' }} fw-600">${{ number_format($margin, 0, ',', '.') }}</span>
                                 <span class="text-xs text-muted">{{ $marginPct }}%</span>
                             </td>
-                            <td data-calculated="true" class="text-right">
+                            <td class="text-right">
                                 @php $cap = $product->production_capacity; @endphp
                                 @if($cap !== null)
                                     <strong>{{ number_format($cap, 0, ',', '.') }}</strong> <span class="text-xs text-muted">cajas</span>
@@ -51,7 +51,7 @@
                                     <span class="text-muted">—</span>
                                 @endif
                             </td>
-                            <td data-field="status" data-type="select" data-options='[{"value":"active","label":"Activo"},{"value":"inactive","label":"Inactivo"}]'>
+                            <td>
                                 <span class="badge @if($product->status === 'active') badge-success @else badge-danger @endif">
                                     {{ $product->status === 'active' ? 'Activo' : 'Inactivo' }}
                                 </span>
@@ -59,7 +59,7 @@
                             <td class="text-right">
                                 <div class="actions-cell">
                                     <a href="/recetas/{{ $product->id }}/edit" class="btn btn-outline-success btn-sm">Receta</a>
-                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="{{ route('products.edit', $product) }}" data-title="Editar: {{ $product->name }}">Editar</button>
                                     <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('products.show', $product) }}" data-title="Detalle: {{ $product->name }}">Ver detalle</button>
                                     @if(auth()->user()->canManage())
                                         <form method="POST" action="{{ route('products.destroy', $product) }}" class="inline-form" style="display:inline;">
@@ -83,25 +83,4 @@
             </div>
         </div>
     @endif
-
-    <script>
-        window.onInlineEditSuccess = function(row, json) {
-            var cells = Array.from(row.querySelectorAll('td'));
-            if (json.production_cost != null) {
-                cells[4].innerHTML = '$' + Math.round(json.production_cost).toLocaleString('es-CL');
-            } else if (json.cost_per_box != null) {
-                cells[4].innerHTML = '<span class="text-muted" title="Calculado por receta">$' + Math.round(json.cost_per_box).toLocaleString('es-CL') + '*</span>';
-            }
-            if (json.cost_per_box != null) {
-                var effectiveCost = json.production_cost != null ? json.production_cost : json.cost_per_box;
-                if (json.margin != null) {
-                    var cls = json.margin >= 0 ? 'text-positive' : 'text-negative';
-                    cells[5].innerHTML = '<span class="' + cls + ' fw-600">$' + Math.round(json.margin).toLocaleString('es-CL') + '</span><span class="text-xs text-muted">' + json.margin_pct + '%</span>';
-                }
-            }
-            if (json.production_capacity != null) {
-                cells[6].innerHTML = '<strong>' + Math.round(json.production_capacity).toLocaleString('es-CL') + '</strong> <span class="text-xs text-muted">cajas</span>';
-            }
-        };
-    </script>
 </x-erp-layout>

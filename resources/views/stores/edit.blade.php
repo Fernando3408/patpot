@@ -1,72 +1,43 @@
-@if(!request()->ajax())
-<x-erp-layout title="Editar sala - PatPot" subtitle="Modifica los datos de la sala en el sistema.">
+<form method="POST" action="{{ route('salas.update', $store) }}">
+    @csrf
+    @method('PUT')
 
-    <div class="card">
-        
-        <div class="card__header">
-            <h2 class="card__title">Editar Sala: {{ $store->name ?? $store->code }}</h2>
+    <h3 class="text-sm" style="margin-top:0;">Datos de la Sala</h3>
+    <div class="form-grid">
+        <div class="form-group">
+            <label class="form-label">Cliente *</label>
+            <select name="customer_id" class="form-control" required>
+                @foreach ($customers as $customer)
+                    <option value="{{ $customer->id }}" @selected(old('customer_id', $store->customer_id) == $customer->id)>{{ $customer->trade_name ?? $customer->business_name }}</option>
+                @endforeach
+            </select>
         </div>
-
-        <div class="card__body">
-
-            <form method="POST" action="{{ route('salas.update', $store) }}">
-                @csrf
-                @method('PUT')
-
-                <div class="form-grid">
-
-                    <div class="form-group">
-                        <label class="form-label" for="customer_id">Cliente *:</label>
-                        <select id="customer_id" name="customer_id" class="form-input" required>
-                            @foreach ($customers as $customer)
-                                <option value="{{ $customer->id }}" @selected(old('customer_id', $store->customer_id) == $customer->id)>
-                                    {{ $customer->trade_name ?? $customer->business_name }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="code">Código de sala *:</label>
-                        <input id="code" type="text" name="code" class="form-input" value="{{ old('code', $store->code) }}" required>
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="name">Nombre:</label>
-                        <input id="name" type="text" name="name" class="form-input" value="{{ old('name', $store->name) }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="city">Ciudad:</label>
-                        <input id="city" type="text" name="city" class="form-input" value="{{ old('city', $store->city) }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="region">Región:</label>
-                        <input id="region" type="text" name="region" class="form-input" value="{{ old('region', $store->region) }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="status">Estado *:</label>
-                        <select id="status" name="status" class="form-input" required>
-                            <option value="1" @selected(old('status', $store->status) == 1)>Activo</option>
-                            <option value="0" @selected(old('status', $store->status) == 0)>Inactivo</option>
-                        </select>
-                    </div>
-
-                </div>
-
-                <div class="form-actions">
-                    <a href="{{ route('salas.index') }}" class="btn btn-outline-warning">Cancelar</a>
-                    <button type="submit" class="btn btn-primary">
-                        Guardar cambios
-                    </button>
-                </div>
-
-            </form>
-
+        <div class="form-group">
+            <label class="form-label">Código de sala *</label>
+            <input type="text" name="code" class="form-control" value="{{ old('code', $store->code) }}" required>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Nombre</label>
+            <input type="text" name="name" class="form-control" value="{{ old('name', $store->name) }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Ciudad</label>
+            <input type="text" name="city" class="form-control" value="{{ old('city', $store->city) }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Región</label>
+            <input type="text" name="region" class="form-control" value="{{ old('region', $store->region) }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Estado *</label>
+            <select name="status" class="form-control" required>
+                <option value="1" @selected(old('status', $store->status) == 1)>Activo</option>
+                <option value="0" @selected(old('status', $store->status) == 0)>Inactivo</option>
+            </select>
         </div>
     </div>
 
-</x-erp-layout>
-@endif
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    </div>
+</form>

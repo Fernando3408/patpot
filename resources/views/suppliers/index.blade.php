@@ -20,24 +20,24 @@
                 </thead>
                 <tbody>
                     @foreach($suppliers as $supplier)
-                        <tr data-update-url="{{ route('proveedores.update', $supplier) }}">
-                            <td data-field="name" class="font-bold">{{ $supplier->name }}</td>
-                            <td data-field="rut" class="text-xs">{{ $supplier->rut ?? '—' }}</td>
-                            <td data-field="contact_name" data-value="{{ $supplier->contact_name ?? '' }}">
+                        <tr>
+                            <td class="font-bold">{{ $supplier->name }}</td>
+                            <td class="text-xs">{{ $supplier->rut ?? '—' }}</td>
+                            <td>
                                 <strong>{{ $supplier->contact_name ?? '—' }}</strong>
                                 @if ($supplier->email)
                                     <br><span class="text-xs text-muted">{{ $supplier->email }}</span>
                                 @endif
                             </td>
-                            <td data-field="lead_time_days" data-value="{{ (int) $supplier->lead_time_days }}" class="text-xs text-center">{{ $supplier->lead_time_days }} días</td>
-                            <td data-field="status" data-type="select" data-options='[{"value":"1","label":"Activo"},{"value":"0","label":"Inactivo"}]'>
+                            <td class="text-xs text-center">{{ $supplier->lead_time_days }} días</td>
+                            <td>
                                 <span class="badge @if($supplier->status) badge-success @else badge-danger @endif">
                                     {{ $supplier->status ? 'Activo' : 'Inactivo' }}
                                 </span>
                             </td>
                             <td class="text-right">
                                 <div class="actions-cell">
-                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="{{ route('proveedores.edit', $supplier) }}" data-title="Editar: {{ $supplier->name }}">Editar</button>
                                     <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('proveedores.show', $supplier) }}" data-title="Detalle: {{ $supplier->name }}">Ver detalle</button>
                                     @if(auth()->user()->canManage())
                                         <form method="POST" action="{{ route('proveedores.destroy', $supplier) }}" class="inline-form" style="display:inline;">

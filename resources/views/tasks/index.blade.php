@@ -20,16 +20,16 @@
                 </thead>
                 <tbody>
                     @foreach($tasks as $task)
-                        <tr class="{{ $task->is_overdue ? 'row-overdue' : '' }}" data-update-url="{{ route('tasks.update', $task) }}">
-                            <td data-field="title" data-value="{{ $task->title }}">
+                        <tr class="{{ $task->is_overdue ? 'row-overdue' : '' }}">
+                            <td>
                                 <strong>{{ $task->title }}</strong>
                                 @if($task->notes)
                                     <br><span class="text-xs text-muted">{{ Str::limit($task->notes, 60) }}</span>
                                 @endif
                             </td>
-                            <td data-field="owner" class="text-xs">{{ $task->owner ?? '—' }}</td>
-                            <td data-field="due_on" class="text-xs">{{ $task->due_on?->format('d-m-Y') ?? '—' }}</td>
-                            <td data-field="priority" data-type="select" data-options='[{"value":"urgent","label":"Urgente"},{"value":"high","label":"Alta"},{"value":"medium","label":"Media"},{"value":"low","label":"Baja"}]'>
+                            <td class="text-xs">{{ $task->owner ?? '—' }}</td>
+                            <td class="text-xs">{{ $task->due_on?->format('d-m-Y') ?? '—' }}</td>
+                            <td>
                                 @php
                                     $priorityBadge = match($task->priority) {
                                         'urgent' => 'badge-danger',
@@ -46,7 +46,7 @@
                                 @endphp
                                 <span class="badge {{ $priorityBadge }}">{{ $priorityLabel }}</span>
                             </td>
-                            <td data-field="status" data-type="select" data-options='[{"value":"pending","label":"Pendiente"},{"value":"in_progress","label":"En proceso"},{"value":"completed","label":"Completado"}]'>
+                            <td>
                                 @php
                                     $statusBadge = match($task->status) {
                                         'completed' => 'badge-success',
@@ -69,7 +69,7 @@
                                             <button type="submit" class="btn btn-primary btn-sm">Completar</button>
                                         </form>
                                     @endif
-                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="{{ route('tasks.edit', $task) }}" data-title="Editar: {{ $task->title }}">Editar</button>
                                     @if(auth()->user()->canManage())
                                         <form method="POST" action="{{ route('tasks.destroy', $task) }}" class="inline-form" style="display:inline;">
                                             @csrf

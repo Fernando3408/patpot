@@ -1,68 +1,55 @@
-@if(!request()->ajax())
-<x-erp-layout title="Editar cliente - PatPot" subtitle="Modifica los datos del cliente en el sistema.">
-@endif
+<form method="POST" action="{{ route('customers.update', $customer) }}">
+    @csrf
+    @method('PUT')
 
-    <div class="card">
-        <div class="card__header">
-            <h2 class="card__title">Editar Cliente</h2>
+    <h3 class="text-sm" style="margin-top:0;">Datos del Cliente</h3>
+    <div class="form-grid">
+        <div class="form-group">
+            <label class="form-label">Código *</label>
+            <input type="text" name="code" class="form-control" value="{{ old('code', $customer->code) }}" required>
         </div>
-        <div class="card__body">
-            <form method="POST" action="{{ route('customers.update', $customer) }}">
-                @csrf
-                @method('PUT')
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label class="form-label" for="code">Código *:</label>
-                        <input id="code" type="text" name="code" class="form-control" value="{{ old('code', $customer->code) }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="business_name">Razón social *:</label>
-                        <input id="business_name" type="text" name="business_name" class="form-control" value="{{ old('business_name', $customer->business_name) }}" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="trade_name">Nombre de fantasía:</label>
-                        <input id="trade_name" type="text" name="trade_name" class="form-control" value="{{ old('trade_name', $customer->trade_name) }}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="rut">RUT:</label>
-                        <input id="rut" type="text" name="rut" class="form-control" value="{{ old('rut', $customer->rut) }}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="type">Tipo:</label>
-                        <input id="type" type="text" name="type" class="form-control" value="{{ old('type', $customer->type) }}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="channel">Canal:</label>
-                        <input id="channel" type="text" name="channel" class="form-control" value="{{ old('channel', $customer->channel) }}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="contact">Contacto:</label>
-                        <input id="contact" type="text" name="contact" class="form-control" value="{{ old('contact', $customer->contact) }}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="email">Correo electrónico:</label>
-                        <input id="email" type="email" name="email" class="form-control" value="{{ old('email', $customer->email) }}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="payment_terms">Condición de pago:</label>
-                        <input id="payment_terms" type="text" name="payment_terms" class="form-control" value="{{ old('payment_terms', $customer->payment_terms) }}">
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label" for="status">Estado *:</label>
-                        <select id="status" name="status" class="form-control" required>
-                            <option value="1" {{ old('status', $customer->status) == 1 ? 'selected' : '' }}>Activo</option>
-                            <option value="0" {{ old('status', $customer->status) == 0 ? 'selected' : '' }}>Inactivo</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-actions">
-                    <a href="{{ route('customers.index') }}" class="btn btn-outline-warning">Cancelar</a>
-                    <button type="submit" class="btn btn-primary">Guardar cambios</button>
-                </div>
-            </form>
+        <div class="form-group">
+            <label class="form-label">Razón social *</label>
+            <input type="text" name="business_name" class="form-control" value="{{ old('business_name', $customer->business_name) }}" required>
+        </div>
+        <div class="form-group">
+            <label class="form-label">Nombre de fantasía</label>
+            <input type="text" name="trade_name" class="form-control" value="{{ old('trade_name', $customer->trade_name) }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">RUT</label>
+            <input type="text" name="rut" class="form-control" value="{{ old('rut', $customer->rut) }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Tipo</label>
+            <input type="text" name="type" class="form-control" value="{{ old('type', $customer->type) }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Canal</label>
+            <input type="text" name="channel" class="form-control" value="{{ old('channel', $customer->channel) }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Contacto</label>
+            <input type="text" name="contact" class="form-control" value="{{ old('contact', $customer->contact) }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Correo electrónico</label>
+            <input type="email" name="email" class="form-control" value="{{ old('email', $customer->email) }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Condición de pago</label>
+            <input type="text" name="payment_terms" class="form-control" value="{{ old('payment_terms', $customer->payment_terms) }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label">Estado *</label>
+            <select name="status" class="form-control" required>
+                <option value="1" {{ old('status', $customer->status) == 1 ? 'selected' : '' }}>Activo</option>
+                <option value="0" {{ old('status', $customer->status) == 0 ? 'selected' : '' }}>Inactivo</option>
+            </select>
         </div>
     </div>
 
-@if(!request()->ajax())
-</x-erp-layout>
-@endif
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+    </div>
+</form>

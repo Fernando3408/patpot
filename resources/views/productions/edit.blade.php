@@ -1,5 +1,9 @@
-@if(!request()->ajax())
+@php
+    $isPartial = request()->ajax() || request()->has('_partial');
+@endphp
+@if(!$isPartial)
 <x-erp-layout title="Editar producción" subtitle="Solo se pueden modificar órdenes que todavía no han sido cerradas.">
+@endif
     <form method="POST" action="{{ route('produccion.update', $production) }}">
         @csrf 
         @method('PUT')
@@ -49,5 +53,6 @@
             </button>
         </div>
     </form>
+@if(!$isPartial)
 </x-erp-layout>
 @endif

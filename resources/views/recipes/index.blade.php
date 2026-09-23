@@ -32,7 +32,6 @@
                             <td class="text-xs">{{ $recipe->product->production_capacity ? number_format($recipe->product->production_capacity, 0, ',', '.') . ' cajas' : '—' }}</td>
                             <td class="text-right">
                                 <div class="actions-cell">
-                                    <a href="/recetas/{{ $recipe->product->id }}/edit" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="/recetas/{{ $recipe->product->id }}/edit" data-title="Editar receta">Editar</a>
                                     @if(auth()->user()->canManage())
                                         <form method="POST" action="/recetas/{{ $recipe->id }}" style="display: inline;">
                                             @csrf

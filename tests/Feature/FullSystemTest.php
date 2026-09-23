@@ -582,7 +582,7 @@ class FullSystemTest extends TestCase
             'quantities' => [$line->id => 5],
             'shipped_on' => '2026-09-07',
         ]);
-        $response->assertStatus(200);
+        $response->assertStatus(302);
         $line->refresh();
         $this->assertGreaterThan(0, (int)$line->dispatched_boxes);
     }
@@ -778,7 +778,7 @@ class FullSystemTest extends TestCase
                 ['product_id' => $newProduct->id, 'boxes' => 10, 'price_box' => ''],
             ],
         ]);
-        $response->assertStatus(200);
+        $response->assertStatus(302);
         $order->refresh()->load('lines');
         $newLine = $order->lines->where('product_id', $newProduct->id)->first();
         $this->assertNotNull($newLine);

@@ -50,7 +50,7 @@ class StoreControllerTest extends TestCase
 
         $this->get("/salas/{$store->id}/edit")
             ->assertOk()
-            ->assertSee('Editar sala');
+            ->assertSee('Datos de la Sala');
 
         $response = $this->put("/salas/{$store->id}", $this->storeData($customer, [
             'code' => 'JUM-002',

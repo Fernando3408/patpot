@@ -21,25 +21,25 @@
                 </thead>
                 <tbody>
                     @foreach ($customers as $customer)
-                        <tr data-update-url="{{ route('customers.update', $customer) }}">
-                            <td data-field="code" class="font-bold text-xs">{{ $customer->code }}</td>
-                            <td data-field="business_name" data-value="{{ $customer->business_name }}">
+                        <tr>
+                            <td class="font-bold text-xs">{{ $customer->code }}</td>
+                            <td>
                                 <strong>{{ $customer->business_name }}</strong>
                                 @if($customer->trade_name)
                                     <br><span class="text-xs text-muted">{{ $customer->trade_name }}</span>
                                 @endif
                             </td>
-                            <td data-field="rut" class="text-xs">{{ $customer->rut ?? '—' }}</td>
-                            <td data-field="contact" class="text-xs">{{ $customer->contact ?? '—' }}</td>
-                            <td data-field="payment_terms" class="text-xs">{{ $customer->payment_terms ?? '—' }}</td>
-                            <td data-field="status" data-type="select" data-options='[{"value":"1","label":"Activo"},{"value":"0","label":"Inactivo"}]'>
+                            <td class="text-xs">{{ $customer->rut ?? '—' }}</td>
+                            <td class="text-xs">{{ $customer->contact ?? '—' }}</td>
+                            <td class="text-xs">{{ $customer->payment_terms ?? '—' }}</td>
+                            <td>
                                 <span class="badge {{ $customer->status ? 'badge-success' : 'badge-danger' }}">
                                     {{ $customer->status ? 'Activo' : 'Inactivo' }}
                                 </span>
                             </td>
                             <td class="text-right">
                                 <div class="actions-cell">
-                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-inline" onclick="enableInlineEdit(this.closest('tr'))">Editar</button>
+                                    <button type="button" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="{{ route('customers.edit', $customer) }}" data-title="Editar: {{ $customer->business_name }}">Editar</button>
                                     <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('customers.show', $customer) }}" data-title="Detalle: {{ $customer->business_name }}">Ver detalle</button>
                                     @if(auth()->user()->canManage())
                                         <form method="POST" action="{{ route('customers.destroy', $customer) }}" class="inline-form" style="display:inline;">
