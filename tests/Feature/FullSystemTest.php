@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Production;
 use App\Models\Recipe;
+use App\Models\Role;
 use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\User;
@@ -725,6 +726,21 @@ class FullSystemTest extends TestCase
     {
         $response = $this->get('/admin/usuarios/' . $this->admin->id . '/editar');
         $response->assertStatus(200);
+    }
+
+    public function test_admin_update_user_roles(): void
+    {
+        $user = User::create(['name' => 'Test User', 'email' => 'test@test.com', 'password' => bcrypt('password'), 'status' => true]);
+        $operadorRole = Role::where('name', 'operador')->first();
+
+        $response = $this->put('/admin/usuarios/' . $user->id, [
+            'name' => 'Test User Updated',
+            'email' => 'test@test.com',
+            'roles' => [$operadorRole->id],
+        ]);
+        $response->assertRedirect('/admin');
+        $user->refresh();
+        $this->assertTrue($user->roles->contains($operadorRole->id));
     }
 
     public function test_admin_toggle_status(): void

@@ -60,17 +60,17 @@
             <div class="form-grid mb-6" id="inventory-fields">
                 <div class="form-group">
                     <label class="form-label" for="stock">Stock actual</label>
-                    <input type="number" step="0.001" id="stock" name="stock" class="form-control" value="{{ old('stock', 0) }}" min="0">
+                    <input type="number" step="1" id="stock" name="stock" class="form-control" value="{{ old('stock', 0) }}" min="0">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="safety_stock">Stock de seguridad</label>
-                    <input type="number" step="0.001" id="safety_stock" name="safety_stock" class="form-control" value="{{ old('safety_stock', 0) }}" min="0">
+                    <input type="number" step="1" id="safety_stock" name="safety_stock" class="form-control" value="{{ old('safety_stock', 0) }}" min="0">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label" for="transit">Stock en tránsito</label>
-                    <input type="number" step="0.001" id="transit" name="transit" class="form-control" value="{{ old('transit', 0) }}" min="0">
+                    <input type="number" step="1" id="transit" name="transit" class="form-control" value="{{ old('transit', 0) }}" min="0">
                 </div>
 
                 <div class="form-group">
@@ -84,7 +84,7 @@
             <div class="form-grid mb-6" id="planning-fields">
                 <div class="form-group">
                     <label class="form-label" for="weekly_consumption">Consumo semanal</label>
-                    <input type="number" step="0.001" id="weekly_consumption" name="weekly_consumption" class="form-control" value="{{ old('weekly_consumption', 0) }}" min="0">
+                    <input type="number" step="1" id="weekly_consumption" name="weekly_consumption" class="form-control" value="{{ old('weekly_consumption', 0) }}" min="0">
                 </div>
 
                 <div class="form-group">
@@ -129,11 +129,12 @@
                 invTitle.textContent = 'Costo del Servicio';
                 invFields.querySelectorAll('input[type=number]').forEach(function(el) {
                     if (el.id === 'unit_cost') return;
-                    el.value = '0';
-                    el.closest('.form-group').style.display = 'none';
+                    // Always show stock, safety_stock, transit, weekly_consumption for both types
+                    el.closest('.form-group').style.display = '';
                 });
-                planFields.style.display = 'none';
-                planTitle.style.display = 'none';
+                // Show planning params for services too
+                planFields.style.display = '';
+                planTitle.style.display = '';
             } else {
                 invTitle.textContent = 'Inventario y Costos';
                 invFields.querySelectorAll('.form-group').forEach(function(el) {
