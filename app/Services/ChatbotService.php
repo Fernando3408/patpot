@@ -24,7 +24,7 @@ class ChatbotService
 {
     private string $apiKey;
     private string $model = 'openai/gpt-oss-120b';
-    private int $maxHistory = 20;
+    private int $maxHistory = 30;
     private int $maxContextTokens = 120000;
 
     public function __construct()
@@ -140,15 +140,19 @@ Puedes responder sobre:
 - **Retail**: stock en tiendas, quiebres, reposiciones
 - **Sugerencias**: cuándo comprar, qué reponer, prioridades
 - **Resumen**: dashboard ejecutivo del negocio
+- **Cualquier duda** sobre cómo funciona el ERP: módulos, flujos, reportes, reglas de negocio
 
 ## REGLAS DE RESPUESTA
 1. Usa SOLO los datos que te proporciono en el contexto. No inventes.
-2. Sé conciso: máximo 5-6 líneas por respuesta a menos que te pidan detalle.
-3. Usa formato: listas, negritas, separadores para hacer la info legible.
-4. Si te piden crear/editar/eliminar algo, indica que eso se hace desde el ERP web.
-5. Si detectas un problema (stock bajo, pedido atrasado), menciónalo proactivamente.
-6. Puedes hacer cálculos simples (totales, porcentajes, días restantes).
-7. Responde en español chileno natural.
+2. Responde de forma **conversacional y natural**, como un compañero de trabajo experto.
+3. Evita formatos de tabla, listas rígidas o reportes estructurados salvo que te pidan explícitamente un reporte.
+4. Usa párrafos normales, frases completas y explicaciones naturales.
+5. Si mencionas números o datos, intégralos en la conversación de forma fluida.
+6. Si te piden crear/editar/eliminar algo, indica que eso se hace desde el ERP web.
+7. Si detectas un problema (stock bajo, pedido atrasado), menciónalo proactivamente.
+8. Puedes hacer cálculos simples (totales, porcentajes, días restantes).
+9. Responde en español chileno natural.
+10. No uses markdown de tablas, ni viñetas excesivas, ni formatos de reporte salvo que se te solicite.
 
 ## CONOCIMIENTO DEL NEGOCIO
 PROMPT;
@@ -300,39 +304,22 @@ PROMPT;
     {
         $name = auth()->check() ? auth()->user()->name : 'usuario';
         return "Hola {$name}! 👋 Soy PatBot, tu asistente del ERP de PatPot.\n\n"
-            . "Puedo ayudarte con:\n"
-            . "• **Stock** de productos e insumos\n"
-            . "• **Pedidos** y despachos\n"
-            . "• **Producción** y recetas\n"
-            . "• **Compras** y proveedores\n"
-            . "• **Precios** y clientes\n"
-            . "• **Alertas** y sugerencias\n\n"
-            . "Escribe tu pregunta o usa **ayuda** para ver todos los comandos.";
+            . "Puedo ayudarte con cualquier duda sobre el sistema: stock, pedidos, producción, compras, precios, recetas, clientes, retail, alertas, sugerencias... o cómo funciona cada módulo.\n\n"
+            . "Solo pregúntame lo que necesites, conversamos normal.";
     }
 
     private function helpText(): string
     {
-        return "🤖 **Comandos de PatBot:**\n\n"
-            . "**Consultas rápidas:**\n"
-            . "• `stock` — Inventario completo\n"
-            . "• `pedidos` — Pedidos pendientes\n"
-            . "• `producción` — Órdenes en curso\n"
-            . "• `compras` — Órdenes de compra\n"
-            . "• `retail` — Quiebres en tiendas\n"
-            . "• `precios` — Precios por cliente\n"
-            . "• `recetas` — Fórmulas de productos\n"
-            . "• `clientes` — Lista de clientes\n"
-            . "• `alertas` — Stock crítico\n"
-            . "• `sugerencias` — Qué comprar\n"
-            . "• `resumen` — Dashboard ejecutivo\n\n"
-            . "**Preguntas libres:**\n"
-            . "• \"¿Cuánto stock hay de papas?\"\n"
-            . "• \"¿Qué pedidos están atrasados?\"\n"
-            . "• \"¿Cuánto cuesta producir una caja?\"\n"
-            . "• \"¿Cuándo debo comprar aceite?\"\n"
-            . "• \"Dame un resumen del mes\"\n\n"
-            . "**Contexto:**\n"
-            . "Puedo recordar lo que hablamos en esta conversación. Si me dices \"recuerda que...\", lo guardaré.";
+        return "🤖 **PatBot - Comandos útiles:**\n\n"
+            . "Pregúntame cosas como:\n"
+            . "• \"¿Cuánto stock hay de papas y aceite?\"\n"
+            . "• \"¿Qué pedidos están pendientes de despachar?\"\n"
+            . "• \"¿Cómo va la producción de hoy?\"\n"
+            . "• \"¿Qué debo comprar esta semana?\"\n"
+            . "• \"¿Cuáles son los precios para Jumbo?\"\n"
+            . "• \"¿Cómo funciona el módulo de retail?\"\n"
+            . "• \"Dame un resumen de cómo va el mes\"\n\n"
+            . "También puedo recordarte cosas si me dices \"recuerda que...\".";
     }
 
     private function getOrCreateConversation(?int $userId): ChatConversation
@@ -393,9 +380,9 @@ PROMPT;
         $payload = [
             'model' => $this->model,
             'messages' => $messages,
-            'max_tokens' => 1024,
-            'temperature' => 0.5,
-            'top_p' => 0.9,
+            'max_tokens' => 2048,
+            'temperature' => 0.7,
+            'top_p' => 0.95,
         ];
 
         for ($attempt = 1; $attempt <= 2; $attempt++) {
