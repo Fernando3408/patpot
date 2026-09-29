@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class AdminController extends Controller
@@ -31,27 +32,46 @@ class AdminController extends Controller
         return view('admin.users.edit', compact('user', 'roles'));
     }
 
-    public function update(Request $request, User $user): RedirectResponse
+    public function update(Request $request, User $user): JsonResponse|RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
-            'roles' => ['nullable', 'array'],
-            'roles.*' => ['exists:roles,id'],
-        ]);
+        try {
+            // Filter empty strings from roles before validation (hidden input sends "")
+            $request->merge([
+                'roles' => array_values(array_filter(
+                    $request->input('roles', []),
+                    fn ($value): bool => filled($value)
+                )),
+            ]);
 
-        $user->update($validated);
+            $validated = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
+                'roles' => ['nullable', 'array'],
+                'roles.*' => ['exists:roles,id'],
+            ]);
 
-        if ($request->filled('password')) {
-            $request->validate(['password' => 'required|string|min:8']);
-            $user->update(['password' => Hash::make($request->password)]);
+            $user->update($validated);
+
+            if ($request->filled('password')) {
+                $request->validate(['password' => 'required|string|min:8']);
+                $user->update(['password' => Hash::make($request->password)]);
+            }
+
+            $user->roles()->sync($validated['roles'] ?? []);
+
+            AuditService::log('ACTUALIZACIÓN DE USUARIO', "Actualizó usuario: {$user->name}", $user);
+
+            if ($request->ajax()) {
+                return response()->json(['success' => true]);
+            }
+
+            return redirect()->route('admin.index')->with('success', 'Usuario actualizado.');
+        } catch (ValidationException $e) {
+            if ($request->ajax()) {
+                return response()->json(['errors' => $e->errors()], 422);
+            }
+            throw $e;
         }
-
-        $user->roles()->sync($request->roles);
-
-        AuditService::log('ACTUALIZACIÓN DE USUARIO', "Actualizó usuario: {$user->name}", $user);
-
-        return redirect()->route('admin.index')->with('success', 'Usuario actualizado.');
     }
 
     public function destroy(User $user): RedirectResponse

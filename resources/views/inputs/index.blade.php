@@ -41,54 +41,42 @@
                                     <span class="badge badge-secondary">Material</span>
                                 @endif
                             </td>
-                            <td class="text-right font-bold">{{ $input->type === 'material' ? number_format((int) $input->stock, 0, ',', '.') : '—' }}</td>
-                            <td class="text-right text-xs">{{ $input->type === 'material' ? number_format((int) $input->safety_stock, 0, ',', '.') : '—' }}</td>
+                            <td class="text-right font-bold">{{ number_format((int) $input->stock, 0, ',', '.') }}</td>
+                            <td class="text-right text-xs">{{ number_format((int) $input->safety_stock, 0, ',', '.') }}</td>
                             <td class="text-xs font-bold">{{ $input->unit }}</td>
                             <td class="text-right text-xs font-bold">${{ number_format($input->unit_cost, 0, ',', '.') }}</td>
                             <td class="text-center text-xs">
-                                @if($input->type === 'material')
-                                    <div class="fw-600">{{ number_format($input->weekly_consumption, 0, ',', '.') }}</div>
-                                    @php $auto = $input->auto_weekly_consumption; @endphp
-                                    @if($auto > 0 && $auto != $input->weekly_consumption)
-                                        <div class="text-muted" style="font-size:0.7rem;">Real: {{ number_format($auto, 0, ',', '.') }}</div>
-                                        <button type="button" class="btn btn-outline-primary btn-sm" style="font-size:0.65rem;padding:0.1rem 0.3rem;margin-top:2px;" onclick="useAverage(this, {{ $input->id }}, {{ $auto }})">Usar promedio</button>
-                                    @endif
-                                @else
-                                    —
+                                <div class="fw-600">{{ number_format($input->weekly_consumption, 0, ',', '.') }}</div>
+                                @php $auto = $input->auto_weekly_consumption; @endphp
+                                @if($auto > 0 && $auto != $input->weekly_consumption)
+                                    <div class="text-muted" style="font-size:0.7rem;">Real: {{ number_format($auto, 0, ',', '.') }}</div>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" style="font-size:0.65rem;padding:0.1rem 0.3rem;margin-top:2px;" onclick="useAverage(this, {{ $input->id }}, {{ $auto }})">Usar promedio</button>
                                 @endif
                             </td>
-                            <td class="text-right text-xs">{{ $input->type === 'material' ? number_format($input->reorder_point, 0, ',', '.') : '—' }}</td>
+                            <td class="text-right text-xs">{{ number_format($input->reorder_point, 0, ',', '.') }}</td>
                             <td class="text-xs text-center">
-                                @if($input->type === 'material')
-                                    @if($input->coverage_days !== null)
-                                        <div class="fw-600 mb-1">{{ $input->coverage_days }} días</div>
-                                        @php
-                                            $maxDays = 90;
-                                            $pct = min(($input->coverage_days / $maxDays) * 100, 100);
-                                            $color = $input->coverage_days <= 7 ? '#dc2626' : ($input->coverage_days <= 21 ? '#f59e0b' : '#16a34a');
-                                        @endphp
-                                        <div class="coverage-bar-bg">
-                                            <div class="coverage-bar-fill" style="width:{{ $pct }}%;background:{{ $color }};"></div>
-                                        </div>
-                                    @else
-                                        —
-                                    @endif
+                                @if($input->coverage_days !== null)
+                                    <div class="fw-600 mb-1">{{ $input->coverage_days }} días</div>
+                                    @php
+                                        $maxDays = 90;
+                                        $pct = min(($input->coverage_days / $maxDays) * 100, 100);
+                                        $color = $input->coverage_days <= 7 ? '#dc2626' : ($input->coverage_days <= 21 ? '#f59e0b' : '#16a34a');
+                                    @endphp
+                                    <div class="coverage-bar-bg">
+                                        <div class="coverage-bar-fill" style="width:{{ $pct }}%;background:{{ $color }};"></div>
+                                    </div>
                                 @else
                                     —
                                 @endif
                             </td>
                             <td>
-                                @if($input->type === 'material')
-                                    @php $level = $input->inventory_level; @endphp
-                                    @if($level === 'ok')
-                                        <span class="badge badge-success">Óptimo</span>
-                                    @elseif($level === 'atencion')
-                                        <span class="badge badge-warning">Atencion</span>
-                                    @else
-                                        <span class="badge badge-danger">Crítico</span>
-                                    @endif
+                                @php $level = $input->inventory_level; @endphp
+                                @if($level === 'ok')
+                                    <span class="badge badge-success">Óptimo</span>
+                                @elseif($level === 'atencion')
+                                    <span class="badge badge-warning">Atencion</span>
                                 @else
-                                    <span class="badge badge-secondary">N/A</span>
+                                    <span class="badge badge-danger">Crítico</span>
                                 @endif
                             </td>
                             <td class="text-right">

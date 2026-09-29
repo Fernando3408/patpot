@@ -113,11 +113,12 @@
         if (invTitle) invTitle.textContent = isService ? 'Costo del Servicio' : 'Inventario y Costos';
         if (invFields) invFields.querySelectorAll('input[type=number]').forEach(function(inp) {
             if (inp.name === 'unit_cost') return;
-            if (isService) { inp.value = '0'; inp.closest('.form-group').style.display = 'none'; }
-            else { inp.closest('.form-group').style.display = ''; }
+            // Always show stock, safety_stock, transit, weekly_consumption for both types
+            inp.closest('.form-group').style.display = '';
         });
-        if (planFields) planFields.style.display = isService ? 'none' : '';
-        if (planTitle) planTitle.style.display = isService ? 'none' : '';
+        // Planning params visible for both types
+        if (planFields) planFields.style.display = '';
+        if (planTitle) planTitle.style.display = '';
     }
     el.addEventListener('change', toggleTypeFields);
     toggleTypeFields();
