@@ -41,7 +41,7 @@ class ProductionController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate(['number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('productions', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'product_id' => ['required', 'exists:products,id'], 'planned_boxes' => ['required', 'integer', 'gt:0'], 'planned_on' => ['required', 'date'], 'notes' => ['nullable', 'string']]);
+        $data = $request->validate(['number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('productions', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('status', 'active')], 'planned_boxes' => ['required', 'integer', 'gt:0'], 'planned_on' => ['required', 'date'], 'notes' => ['nullable', 'string']]);
         $production = Production::create($data);
         AuditService::log('CREACIÓN DE PRODUCCIÓN', "Creó producción: {$production->number}", $production);
 
@@ -57,7 +57,7 @@ class ProductionController extends Controller
 
     public function close(Request $request, Production $produccion)
     {
-        $data = $request->validate(['actual_boxes' => ['required', 'integer', 'gt:0'], 'completed_on' => ['required', 'date']]);
+        $data = $request->validate(['actual_boxes' => ['required', 'integer', 'gt:0', 'lte:' . $produccion->planned_boxes], 'completed_on' => ['required', 'date']], ['actual_boxes.lte' => 'Las cajas reales no pueden superar las cajas planificadas.']);
         $this->inventoryService->closeProduction($produccion, (float) $data['actual_boxes'], $data['completed_on']);
 
         if ($request->ajax()) {
@@ -67,6 +67,7 @@ class ProductionController extends Controller
                 'id' => $produccion->id,
                 'number' => $produccion->number,
                 'status' => $produccion->status,
+                'planned_boxes' => $produccion->planned_boxes,
                 'actual_boxes' => $produccion->actual_boxes,
                 'completed_on' => $produccion->completed_on,
             ]);

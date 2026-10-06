@@ -41,7 +41,7 @@ class InventoryService
                 if ($quantity > $remaining) {
                     throw ValidationException::withMessages(['receipt' => 'La recepción supera lo pendiente.']);
                 }
-                $input = Input::query()->lockForUpdate()->findOrFail($line->input_id);
+            $input = Input::query()->where('status', true)->lockForUpdate()->findOrFail($line->input_id);
                 $input->increment('stock', $quantity);
                 $input->decrement('transit', min($quantity, (float) $input->transit));
                 $input->update(['unit_cost' => $line->unit_cost]);
@@ -94,7 +94,7 @@ class InventoryService
 
                 if ($submittedLine === null) {
                     $input = Input::query()->lockForUpdate()->findOrFail($existingLine->input_id);
-                    $input->decrement('transit', $existingLine->ordered_quantity);
+                    $input->update(['transit' => max(0, (float) $input->transit - (float) $existingLine->ordered_quantity)]);
                     $existingLine->delete();
                 }
             }
@@ -118,7 +118,7 @@ class InventoryService
                 }
 
                 $previousInput = Input::query()->lockForUpdate()->findOrFail($existingLine->input_id);
-                $previousInput->decrement('transit', $existingLine->ordered_quantity);
+                $previousInput->update(['transit' => max(0, (float) $previousInput->transit - (float) $existingLine->ordered_quantity)]);
                 $existingLine->update($line);
                 $input->increment('transit', $line['ordered_quantity']);
             }
@@ -196,11 +196,14 @@ class InventoryService
             if ($lockedProduction->status === 'closed') {
                 throw ValidationException::withMessages(['production' => 'La producción ya fue cerrada.']);
             }
+            if ($lockedProduction->product->recipes->isEmpty()) {
+                throw ValidationException::withMessages(['production' => 'No puedes cerrar una producción sin receta configurada.']);
+            }
+            if ($boxes > (float) $lockedProduction->planned_boxes) {
+                throw ValidationException::withMessages(['production' => 'Las cajas reales no pueden superar las cajas planificadas.']);
+            }
             foreach ($lockedProduction->product->recipes as $recipe) {
                 $input = Input::query()->lockForUpdate()->findOrFail($recipe->input_id);
-                if ($input->isService()) {
-                    continue;
-                }
                 $needed = $boxes * (float) $recipe->qty_per_box;
                 if ((float) $input->stock < $needed) {
                     throw ValidationException::withMessages(['production' => "Stock insuficiente de {$input->name}."]);
@@ -307,7 +310,7 @@ class InventoryService
                 continue;
             }
             if ((float) $input->stock < $needed) {
-                continue;
+                throw ValidationException::withMessages(['dispatch' => "Stock insuficiente de {$input->name} para completar el despacho."]);
             }
             $input->decrement('stock', $needed);
             InventoryMovement::query()->create([
