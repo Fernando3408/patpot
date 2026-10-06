@@ -113,7 +113,7 @@ class ChatbotService
      */
     private function buildSystemPrompt(string $intent = 'general'): string
     {
-        $cacheKey = 'chatbot_system_prompt_v3';
+        $cacheKey = 'chatbot_system_prompt_v5';
         return Cache::remember($cacheKey, 1800, fn () => $this->buildFreshPrompt());
     }
 
@@ -148,11 +148,13 @@ Puedes responder sobre:
 3. Evita formatos de tabla, listas rígidas o reportes estructurados salvo que te pidan explícitamente un reporte.
 4. Usa párrafos normales, frases completas y explicaciones naturales.
 5. Si mencionas números o datos, intégralos en la conversación de forma fluida.
-6. Si te piden crear/editar/eliminar algo, indica que eso se hace desde el ERP web.
-7. Si detectas un problema (stock bajo, pedido atrasado), menciónalo proactivamente.
-8. Puedes hacer cálculos simples (totales, porcentajes, días restantes).
-9. Responde en español chileno natural.
-10. No uses markdown de tablas, ni viñetas excesivas, ni formatos de reporte salvo que se te solicite.
+6. Eres un asistente **solo de consulta**: nunca crees, edites, elimines, cierres, despaches ni modifiques registros.
+7. Si el usuario pide realizar una operación, explica que puede hacerla desde el módulo correspondiente del ERP, pero no la ejecutes.
+8. Cuando entregues un dato, menciona naturalmente su contexto: inventario, pedido, compra, producción, retail, cliente o tarea.
+9. Si detectas un problema (stock bajo, pedido atrasado), menciónalo proactivamente.
+10. Puedes hacer cálculos simples (totales, porcentajes, días restantes).
+11. Responde en español chileno natural.
+12. No uses markdown de tablas, ni viñetas excesivas, ni formatos de reporte salvo que se te solicite.
 
 ## CONOCIMIENTO DEL NEGOCIO
 PROMPT;
@@ -204,7 +206,7 @@ PROMPT;
                 if ($productRecipes->isNotEmpty()) {
                     $ctx .= "**{$p->name}:**\n";
                     foreach ($productRecipes as $r) {
-                        $tipo = $r->input->type === 'service' ? ' _(servicio, no descuenta stock)_' : '';
+                        $tipo = $r->input->type === 'service' ? ' _(servicio con control de unidades)_' : '';
                         $costoLinea = $r->qty_per_box * $r->input->unit_cost;
                         $ctx .= "  - {$r->input->name}: " . rtrim(rtrim(rtrim(number_format($r->qty_per_box, 3, ',', '.'), '0'), '.'), ',') . " {$r->input->unit} (\$" . number_format($costoLinea, 0, ',', '.') . "){$tipo}\n";
                     }
@@ -213,7 +215,7 @@ PROMPT;
         }
 
         // Insumos
-        $inputs = Input::where('type', 'material')->where('status', true)
+        $inputs = Input::where('status', true)
             ->get(['name', 'code', 'stock', 'safety_stock', 'weekly_consumption', 'lead_time_days', 'target_weeks', 'min_purchase', 'purchase_multiple', 'unit', 'unit_cost', 'transit']);
         if ($inputs->isNotEmpty()) {
             $ctx .= "\n### Insumos (materiales)\n";
@@ -224,6 +226,68 @@ PROMPT;
                 $transito = $i->transit > 0 ? ", tránsito: {$i->transit} {$i->unit}" : '';
                 $ctx .= "- **{$i->name}** ({$i->code}): {$i->stock} {$i->unit} {$nivel}{$transito}\n";
                 $ctx .= "  Cobertura: {$cobertura} sem | Lead time: {$i->lead_time_days} días | Días para reordenar: {$diasRestantes}\n";
+            }
+        }
+
+        // Pedidos recientes y pendientes
+        $orders = Order::with(['customer', 'store', 'lines.product'])
+            ->whereIn('status', ['pending', 'partial'])
+            ->latest('ordered_on')
+            ->limit(30)
+            ->get();
+        if ($orders->isNotEmpty()) {
+            $ctx .= "\n### Pedidos pendientes o parciales\n";
+            foreach ($orders as $order) {
+                $customer = $order->customer?->trade_name ?? $order->customer?->business_name ?? 'sin cliente';
+                $lines = $order->lines->map(fn ($line) => $line->boxes . ' cajas de ' . ($line->product?->name ?? 'producto'))->implode(', ');
+                $ctx .= "- {$order->number}: {$order->status}, cliente {$customer}, fecha {$order->ordered_on?->format('d/m/Y')}, líneas: {$lines}\n";
+            }
+        }
+
+        // Producciones abiertas
+        $productions = Production::with('product')
+            ->whereIn('status', ['planned', 'in_progress'])
+            ->latest('planned_on')
+            ->limit(30)
+            ->get();
+        if ($productions->isNotEmpty()) {
+            $ctx .= "\n### Producciones abiertas\n";
+            foreach ($productions as $production) {
+                $ctx .= "- {$production->number}: {$production->status}, producto " . ($production->product?->name ?? 'sin producto') . ", planificadas {$production->planned_boxes} cajas, fecha {$production->planned_on?->format('d/m/Y')}\n";
+            }
+        }
+
+        // Compras abiertas y recepciones pendientes
+        $purchases = Purchase::with(['supplier', 'lines.input'])
+            ->whereIn('status', ['pending', 'partial'])
+            ->latest('ordered_on')
+            ->limit(30)
+            ->get();
+        if ($purchases->isNotEmpty()) {
+            $ctx .= "\n### Compras pendientes o parciales\n";
+            foreach ($purchases as $purchase) {
+                $supplier = $purchase->supplier?->name ?? 'sin proveedor';
+                $lines = $purchase->lines->map(fn ($line) => $line->quantity . ' ' . ($line->input?->unit ?? '') . ' de ' . ($line->input?->name ?? 'insumo'))->implode(', ');
+                $ctx .= "- {$purchase->number}: {$purchase->status}, proveedor {$supplier}, líneas: {$lines}\n";
+            }
+        }
+
+        // Situación en tiendas y tareas operativas
+        $retail = Retail::with(['store.customer', 'product'])->where('cataloged', true)->get();
+        if ($retail->isNotEmpty()) {
+            $ctx .= "\n### Retail y tiendas\n";
+            foreach ($retail as $item) {
+                $store = $item->store?->code ?? 'sin sala';
+                $product = $item->product?->name ?? 'producto';
+                $ctx .= "- {$store}: {$product}, stock {$item->stock_units}, tránsito {$item->transit_units}, venta semanal {$item->weekly_sales}, mínimo {$item->min_stock}\n";
+            }
+        }
+
+        $tasks = DB::table('tasks')->where('status', 'pending')->orderBy('due_on')->limit(30)->get();
+        if ($tasks->isNotEmpty()) {
+            $ctx .= "\n### Tareas pendientes\n";
+            foreach ($tasks as $task) {
+                $ctx .= "- {$task->title}, responsable {$task->owner}, vencimiento {$task->due_on}\n";
             }
         }
 
@@ -431,8 +495,6 @@ PROMPT;
     {
         return $response === 'Error IA'
             || str_starts_with($response, 'Error')
-            || str_starts_with($response, 'Estoy')
-            || str_starts_with($response, 'La IA')
             || str_starts_with($response, 'No pude procesar');
     }
 }

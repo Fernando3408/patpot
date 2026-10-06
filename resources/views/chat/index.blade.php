@@ -17,10 +17,16 @@
         .chat-msg.bot { justify-content:flex-start; }
         .chat-bubble {
             max-width:80%; padding:0.6rem 1rem; border-radius:12px;
-            font-size:0.9rem; line-height:1.4; white-space:pre-wrap;
+            font-size:0.9rem; line-height:1.4; white-space:normal;
         }
         .user-bubble { background:#df6403; color:#fff; border-bottom-right-radius:4px; }
         .bot-bubble { background:#2c2e39; color:#e0e0e0; border-bottom-left-radius:4px; }
+        .bot-bubble p { margin:0 0 .65rem; }
+        .bot-bubble p:last-child { margin-bottom:0; }
+        .bot-bubble strong { color:#fff; font-weight:700; }
+        .bot-bubble .chat-heading { color:#fff; font-weight:700; margin:.1rem 0 .55rem; }
+        .bot-bubble ul, .bot-bubble ol { margin:.35rem 0 .65rem 1.2rem; padding:0; }
+        .bot-bubble li { margin:.25rem 0; }
         .chat-typing { display:flex; gap:4px; padding:0.6rem 1rem; }
         .chat-typing span { width:8px; height:8px; background:#888; border-radius:50%; animation: blink 1.4s infinite both; }
         .chat-typing span:nth-child(2) { animation-delay:0.2s; }
@@ -33,12 +39,81 @@
         var chatForm = document.getElementById('chatForm');
         var chatInput = document.getElementById('chatInput');
 
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>'"]/g, function(char) {
+                return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char];
+            });
+        }
+
+        function formatBotMessage(text) {
+            var safe = escapeHtml(text).replace(/\r\n/g, '\n').trim();
+            var lines = safe.split('\n');
+            var html = '';
+            var paragraph = [];
+            var listType = null;
+
+            function flushParagraph() {
+                if (paragraph.length) {
+                    html += '<p>' + paragraph.join(' ') + '</p>';
+                    paragraph = [];
+                }
+            }
+
+            function closeList() {
+                if (listType) {
+                    html += '</' + listType + '>';
+                    listType = null;
+                }
+            }
+
+            lines.forEach(function(line) {
+                var trimmed = line.trim();
+                if (!trimmed) {
+                    flushParagraph();
+                    closeList();
+                    return;
+                }
+
+                var heading = trimmed.match(/^#{1,3}\s+(.+)$/);
+                var bullet = trimmed.match(/^[-*]\s+(.+)$/);
+                var numbered = trimmed.match(/^\d+[.)]\s+(.+)$/);
+
+                if (heading) {
+                    flushParagraph();
+                    closeList();
+                    html += '<div class="chat-heading">' + heading[1] + '</div>';
+                } else if (bullet || numbered) {
+                    flushParagraph();
+                    var desiredList = bullet ? 'ul' : 'ol';
+                    if (listType !== desiredList) {
+                        closeList();
+                        html += '<' + desiredList + '>';
+                        listType = desiredList;
+                    }
+                    html += '<li>' + (bullet ? bullet[1] : numbered[1]) + '</li>';
+                } else {
+                    closeList();
+                    paragraph.push(trimmed);
+                }
+            });
+
+            flushParagraph();
+            closeList();
+
+            return html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                .replace(/`([^`]+)`/g, '<strong>$1</strong>');
+        }
+
         function addMessage(text, type) {
             var div = document.createElement('div');
             div.className = 'chat-msg ' + type;
             var bubble = document.createElement('div');
             bubble.className = 'chat-bubble ' + (type === 'user' ? 'user-bubble' : 'bot-bubble');
-            bubble.textContent = text;
+            if (type === 'bot') {
+                bubble.innerHTML = formatBotMessage(text);
+            } else {
+                bubble.textContent = text;
+            }
             div.appendChild(bubble);
             chatMessages.appendChild(div);
             chatMessages.scrollTop = chatMessages.scrollHeight;

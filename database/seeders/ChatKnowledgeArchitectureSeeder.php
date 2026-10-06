@@ -21,7 +21,7 @@ class ChatKnowledgeArchitectureSeeder extends Seeder
             // === FLUJOS ===
             ['category' => 'Flujos', 'key' => 'Inventario', 'content' => 'FLUJO: COMPRA (insumos suben) → PRODUCCIÓN (insumos bajan, productos suben) → DESPACHO (productos bajan). Cada paso registra inventory_movements.'],
             ['category' => 'Flujos', 'key' => 'Compra', 'content' => 'CREAR compra → AGREGAR líneas → Guardar incrementa TRANSITO → RECIBIR baja transito y sube STOCK. Estados: pending, received, partial. No editar si ya recibida.'],
-            ['category' => 'Flujos', 'key' => 'Producción', 'content' => 'CREAR producción con producto y cajas → CERRAR descuenta insumos según receta y suma stock producto. Maquila NO descuenta. Envases NO están en recetas.'],
+            ['category' => 'Flujos', 'key' => 'Producción', 'content' => 'CREAR producción con producto y cajas → CERRAR descuenta todos los insumos incluidos en la receta según su cantidad por caja y suma el stock del producto. La maquila se controla por unidades y también se descuenta.'],
             ['category' => 'Flujos', 'key' => 'Despacho', 'content' => 'CREAR pedido con cliente y tienda → AGREGAR líneas → DESPACHAR descuenta stock producto, crea shipment. Precio viene de prices (cliente+producto).'],
 
             // === REGLAS DE NEGOCIO ===

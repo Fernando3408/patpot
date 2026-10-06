@@ -11,6 +11,7 @@ use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -200,29 +201,34 @@ class InputController extends Controller
             'reason' => 'required|string|max:255',
         ]);
 
-        $before = (float) $input->stock;
-        $qty = (float) $validated['qty'];
+        return DB::transaction(function () use ($input, $validated): JsonResponse {
+            $lockedInput = Input::query()->lockForUpdate()->findOrFail($input->id);
+            $before = (float) $lockedInput->stock;
+            $qty = (float) $validated['qty'];
 
-        match ($validated['type']) {
-            'add' => $input->stock = $before + $qty,
-            'subtract' => $input->stock = max(0, $before - $qty),
-            'set' => $input->stock = $qty,
-        };
+            if ($validated['type'] === 'subtract' && $qty > $before) {
+                throw ValidationException::withMessages(['qty' => 'La cantidad a restar no puede superar el stock disponible.']);
+            }
 
-        $input->save();
+            $after = match ($validated['type']) {
+                'add' => $before + $qty,
+                'subtract' => $before - $qty,
+                'set' => $qty,
+            };
 
-        InventoryMovement::create([
-            'input_id' => $input->id,
-            'kind' => 'Ajuste de inventario',
-            'quantity' => $input->stock - $before,
-            'reference' => strtoupper($validated['type']),
-            'notes' => $validated['reason'],
-            'user_id' => auth()->id(),
-        ]);
+            $lockedInput->update(['stock' => $after]);
+            InventoryMovement::create([
+                'input_id' => $lockedInput->id,
+                'kind' => 'Ajuste de inventario',
+                'quantity' => $after - $before,
+                'reference' => strtoupper($validated['type']),
+                'notes' => $validated['reason'],
+                'user_id' => auth()->id(),
+            ]);
+            AuditService::log('AJUSTAR INSUMO', "{$lockedInput->name}: {$before} → {$after}. {$validated['reason']}", $lockedInput);
 
-        AuditService::log('AJUSTAR INSUMO', "{$input->name}: {$before} → {$input->stock}. {$validated['reason']}", $input);
-
-        return response()->json(['success' => true, 'stock' => $input->stock]);
+            return response()->json(['success' => true, 'stock' => $after]);
+        });
     }
 
     public function export(Request $request, string $entity): \Symfony\Component\HttpFoundation\StreamedResponse

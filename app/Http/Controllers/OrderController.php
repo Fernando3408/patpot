@@ -49,7 +49,7 @@ class OrderController extends Controller
     public function store(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
     {
         $request->merge(['lines' => array_values(array_filter($request->input('lines', []), fn (array $line): bool => filled($line['product_id'] ?? null)))]);
-        $data = $this->validateLines($request->all(), ['number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('orders', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'customer_id' => ['required', 'exists:customers,id'], 'store_id' => ['nullable', 'exists:stores,id'], 'ordered_on' => ['required', 'date'], 'delivery_on' => ['nullable', 'date'], 'notes' => ['nullable', 'string'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'distinct', 'exists:products,id'], 'lines.*.boxes' => ['required', 'integer', 'gt:0'], 'lines.*.price_box' => ['nullable', 'numeric', 'min:0']]);
+        $data = $this->validateLines($request->all(), ['number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('orders', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'customer_id' => ['required', \Illuminate\Validation\Rule::exists('customers', 'id')->where('status', true)], 'store_id' => ['nullable', \Illuminate\Validation\Rule::exists('stores', 'id')->where('status', true)], 'ordered_on' => ['required', 'date'], 'delivery_on' => ['nullable', 'date'], 'notes' => ['nullable', 'string'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'distinct', \Illuminate\Validation\Rule::exists('products', 'id')->where('status', 'active')], 'lines.*.boxes' => ['required', 'integer', 'gt:0'], 'lines.*.price_box' => ['nullable', 'numeric', 'min:0']]);
         $this->ensureStoreBelongsToCustomer($data);
         foreach ($data['lines'] as &$line) {
             if (blank($line['price_box'] ?? null)) {
@@ -170,7 +170,7 @@ class OrderController extends Controller
             if ($request->ajax()) {
                 $rules = [
                     'number' => ['sometimes', 'required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('orders', 'number')->ignore($pedido->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
-                    'customer_id' => ['sometimes', 'required', 'exists:customers,id'],
+                    'customer_id' => ['sometimes', 'required', \Illuminate\Validation\Rule::exists('customers', 'id')->where('status', true)],
                     'store_id' => ['sometimes', 'nullable', 'exists:stores,id'],
                     'ordered_on' => ['sometimes', 'required', 'date'],
                     'delivery_on' => ['sometimes', 'nullable', 'date'],
@@ -179,7 +179,7 @@ class OrderController extends Controller
             } else {
                 $rules = [
                     'number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('orders', 'number')->ignore($pedido->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
-                    'customer_id' => ['required', 'exists:customers,id'],
+                    'customer_id' => ['required', \Illuminate\Validation\Rule::exists('customers', 'id')->where('status', true)],
                     'store_id' => ['nullable', 'exists:stores,id'],
                     'ordered_on' => ['required', 'date'],
                     'delivery_on' => ['nullable', 'date'],
@@ -191,7 +191,7 @@ class OrderController extends Controller
                 $rules = array_merge($rules, [
                     'lines' => ['required', 'array', 'min:1'],
                     'lines.*.id' => ['nullable', 'integer'],
-                    'lines.*.product_id' => ['required', 'distinct', 'exists:products,id'],
+                    'lines.*.product_id' => ['required', 'distinct', \Illuminate\Validation\Rule::exists('products', 'id')->where('status', 'active')],
                     'lines.*.boxes' => ['required', 'integer', 'gt:0'],
                     'lines.*.price_box' => ['nullable', 'numeric', 'min:0'],
                 ]);

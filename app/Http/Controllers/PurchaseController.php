@@ -48,7 +48,7 @@ class PurchaseController extends Controller
     {
         $request->merge(['lines' => array_values(array_filter($request->input('lines', []), fn (array $line): bool => filled($line['input_id'] ?? null)))]);
         $data = $this->validateLines($request->all(),
-            ['number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('purchases', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'supplier_id' => ['required', 'exists:suppliers,id'], 'ordered_on' => ['required', 'date'], 'expected_on' => ['nullable', 'date'], 'notes' => ['nullable', 'string'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.input_id' => ['required', 'distinct', 'exists:inputs,id'], 'lines.*.ordered_quantity' => ['required', 'numeric', 'gt:0'], 'lines.*.unit_cost' => ['required', 'numeric', 'min:0']],
+            ['number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('purchases', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'supplier_id' => ['required', \Illuminate\Validation\Rule::exists('suppliers', 'id')->where('status', true)], 'ordered_on' => ['required', 'date'], 'expected_on' => ['nullable', 'date'], 'notes' => ['nullable', 'string'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.input_id' => ['required', 'distinct', \Illuminate\Validation\Rule::exists('inputs', 'id')->where('status', true)], 'lines.*.ordered_quantity' => ['required', 'numeric', 'gt:0'], 'lines.*.unit_cost' => ['required', 'numeric', 'min:0']],
             ['number.unique' => 'El número de compra ya existe.']
         );
         $this->ensureWholeUnitLines($data['lines']);
@@ -204,6 +204,11 @@ class PurchaseController extends Controller
                 if (isset($data['lines'])) {
                     $this->inventoryService->updatePurchaseLines($compra, $data['lines']);
                 }
+                $compra->refresh()->load('lines');
+                $compra->update(['status' => $compra->lines->isEmpty()
+                    ? 'pending'
+                    : ($compra->lines->every(fn ($line) => (float) $line->received_quantity >= (float) $line->ordered_quantity) ? 'received'
+                        : ($compra->lines->some(fn ($line) => (float) $line->received_quantity > 0) ? 'partial' : 'pending'))]);
                 AuditService::log('ACTUALIZACIÓN DE COMPRA', "Actualizó compra: {$compra->number}", $compra);
             }, attempts: 5);
 

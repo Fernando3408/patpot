@@ -635,11 +635,13 @@
         .chat-fab svg { width: 24px; height: 24px; }
 
         .chat-popup {
-            display: none; position: fixed; bottom: 78px; right: 20px; z-index: 9999;
-            width: 360px; height: 480px; background: #1a1d29; border-radius: 12px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.4); flex-direction: column; overflow: hidden;
-            border: 1px solid #333;
-        }
+             display: none; position: fixed; bottom: 78px; right: 20px; z-index: 9999;
+             width: 360px; height: 480px; background: #1a1d29; border-radius: 12px;
+             box-shadow: 0 8px 32px rgba(0,0,0,0.4); flex-direction: column; overflow: hidden;
+             border: 1px solid #333; resize: both; min-width: 300px; min-height: 360px;
+             max-width: min(720px, calc(100vw - 40px)); max-height: calc(100vh - 110px);
+             box-sizing: border-box;
+         }
         .chat-popup.visible { display: flex; }
 
         .chat-popup-header {
@@ -681,7 +683,11 @@
             background: #df6403; color: #fff; cursor: pointer; display: flex;
             align-items: center; justify-content: center; flex-shrink: 0;
         }
-        .chat-popup-input button:hover { background: #c55800; }
+         .chat-popup-input button:hover { background: #c55800; }
+
+         @media (max-width: 600px) {
+             .chat-popup { right: 10px; bottom: 70px; min-width: 0; width: calc(100vw - 20px); max-width: calc(100vw - 20px); }
+         }
 
         .chat-msg-widget { display: flex; }
         .chat-msg-widget.user { justify-content: flex-end; }
@@ -731,13 +737,45 @@
     </div>
 
     <script>
+    function formatChatResponse(text) {
+        var safe = String(text).replace(/[&<>'"]/g, function(char) {
+            return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[char];
+        });
+        return safe
+            .replace(/^#{1,3}\s+(.+)$/gm, '<strong>$1</strong>')
+            .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+            .replace(/^[-*]\s+(.+)$/gm, '<br>• $1')
+            .replace(/\n\n/g, '<br><br>')
+            .replace(/\n/g, '<br>');
+    }
+
     (function() {
         var fab = document.getElementById('chatFab');
         var popup = document.getElementById('chatPopup');
         var msgs = document.getElementById('chatPopupMessages');
         var form = document.getElementById('chatPopupForm');
         var input = document.getElementById('chatPopupInput');
-        var closeBtn = document.getElementById('chatCloseBtn');
+         var closeBtn = document.getElementById('chatCloseBtn');
+
+         // Preserve the user's preferred chat size between page loads.
+         var savedChatSize = localStorage.getItem('patpot-chat-size');
+         if (savedChatSize) {
+             try {
+                 var size = JSON.parse(savedChatSize);
+                 if (window.innerWidth > 600 && size.width && size.height) {
+                     popup.style.width = Math.min(size.width, window.innerWidth - 40) + 'px';
+                     popup.style.height = Math.min(size.height, window.innerHeight - 110) + 'px';
+                 }
+             } catch (e) {}
+         }
+         if (window.ResizeObserver) {
+             new ResizeObserver(function(entries) {
+                 var rect = entries[0].contentRect;
+                 if (rect.width >= 300 && rect.height >= 360) {
+                     localStorage.setItem('patpot-chat-size', JSON.stringify({ width: Math.round(rect.width), height: Math.round(rect.height) }));
+                 }
+             }).observe(popup);
+         }
 
         fab.addEventListener('click', function() {
             popup.classList.toggle('visible');
@@ -754,7 +792,11 @@
             div.className = 'chat-msg-widget ' + type;
             var bubble = document.createElement('div');
             bubble.className = 'chat-bubble-widget ' + (type === 'user' ? 'user-bubble-widget' : 'bot-bubble-widget');
-            bubble.textContent = text;
+             if (type === 'bot' && typeof formatChatResponse === 'function') {
+                 bubble.innerHTML = formatChatResponse(text);
+             } else {
+                 bubble.textContent = text;
+             }
             div.appendChild(bubble);
             msgs.appendChild(div);
             msgs.scrollTop = msgs.scrollHeight;

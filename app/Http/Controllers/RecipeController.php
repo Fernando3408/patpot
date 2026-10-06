@@ -11,6 +11,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class RecipeController extends Controller
@@ -41,8 +42,8 @@ class RecipeController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'input_id' => 'required|exists:inputs,id',
+            'product_id' => ['required', Rule::exists('products', 'id')->where('status', 'active')],
+            'input_id' => ['required', Rule::exists('inputs', 'id')->where('status', true)],
             'qty_per_box' => 'required|numeric|min:0.0001',
         ]);
 

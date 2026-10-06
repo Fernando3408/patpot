@@ -129,6 +129,11 @@
                     if (res.ok && res.data.success) {
                         var tr = form.closest('tr');
                         var statusTd = tr.children[3];
+                        var planRealTd = tr.children[2];
+                        var plannedBoxes = res.data.planned_boxes;
+                        if (planRealTd) {
+                            planRealTd.innerHTML = Number(plannedBoxes).toLocaleString('es-CL') + ' / ' + Number(res.data.actual_boxes).toLocaleString('es-CL') + ' cajas';
+                        }
                         statusTd.innerHTML = '<span class="badge badge-success">Cerrada</span>';
                         var actionsTd = tr.querySelector('.actions-cell');
                         if (actionsTd) {
