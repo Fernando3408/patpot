@@ -12,7 +12,7 @@ class Order extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['number', 'customer_id', 'store_id', 'ordered_on', 'delivery_on', 'notes', 'status'];
+    protected $fillable = ['number', 'customer_order_number', 'customer_id', 'store_id', 'ordered_on', 'delivery_on', 'notes', 'status'];
 
     protected function casts(): array
     {
@@ -37,6 +37,16 @@ class Order extends Model
     public function shipments(): HasMany
     {
         return $this->hasMany(Shipment::class);
+    }
+
+    public function inputConsumptions(): HasMany
+    {
+        return $this->hasMany(OrderInputConsumption::class);
+    }
+
+    public function expenses(): HasMany
+    {
+        return $this->hasMany(OrderExpense::class);
     }
 
     public function attachments(): MorphMany

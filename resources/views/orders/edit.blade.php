@@ -29,6 +29,11 @@
                 </div>
 
                 <div class="form-group">
+                    <label class="form-label">Orden de compra del cliente (opcional)</label>
+                    <input name="customer_order_number" class="form-control" value="{{ old('customer_order_number', $order->customer_order_number) }}">
+                </div>
+
+                <div class="form-group">
                     <label class="form-label">Sala</label>
                     <select name="store_id" class="form-control">
                         <option value="">Sin sala específica</option>
@@ -49,6 +54,19 @@
                     <label class="form-label">Fecha entrega</label>
                     <input type="date" name="delivery_on" class="form-control" value="{{ old('delivery_on', $order->delivery_on?->format('Y-m-d')) }}">
                 </div>
+            </div>
+
+            <div class="card p-4 mb-4">
+                <h3 class="text-sm font-semibold text-slate-700 mb-3">Gastos asociados al pedido</h3>
+                @foreach(range(0, 2) as $expenseIndex)
+                    @php $expense = $order->expenses[$expenseIndex] ?? null; @endphp
+                    <div class="form-grid mb-2">
+                        <select name="expenses[{{ $expenseIndex }}][concept]" class="form-control"><option value="">Concepto</option>@foreach($expenseConcepts as $concept)<option value="{{ $concept }}" @selected(old("expenses.$expenseIndex.concept", $expense?->concept) === $concept)>{{ $concept }}</option>@endforeach<option value="Otro" @selected(old("expenses.$expenseIndex.concept", $expense?->concept) === 'Otro')>Otro</option></select>
+                        <select name="expenses[{{ $expenseIndex }}][kind]" class="form-control"><option value="fixed" @selected(old("expenses.$expenseIndex.kind", $expense?->kind) === 'fixed')>Monto fijo</option><option value="percent" @selected(old("expenses.$expenseIndex.kind", $expense?->kind) === 'percent')>Porcentaje</option></select>
+                        <input type="number" step="0.01" min="0" name="expenses[{{ $expenseIndex }}][value]" class="form-control" value="{{ old("expenses.$expenseIndex.value", $expense?->value) }}" placeholder="Monto o porcentaje">
+                        <input type="text" name="expenses[{{ $expenseIndex }}][notes]" class="form-control" value="{{ old("expenses.$expenseIndex.notes", $expense?->notes) }}" placeholder="Detalle opcional">
+                    </div>
+                @endforeach
             </div>
 
             {{-- Observaciones --}}

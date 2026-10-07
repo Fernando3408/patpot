@@ -51,6 +51,17 @@
 </div>
 @endif
 
+@if($customer->orders->count())
+<div class="card mt-4">
+    <div class="card__header"><h2 class="card__title">Últimos pedidos</h2></div>
+    <div class="card__body"><table class="data-table"><thead><tr><th>Pedido</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>
+        @foreach($customer->orders as $order)
+            <tr><td>{{ $order->number }}</td><td>{{ $order->ordered_on?->format('d/m/Y') }}</td><td>{{ ucfirst($order->status) }}</td></tr>
+        @endforeach
+    </tbody></table></div>
+</div>
+@endif
+
 @if($customer->prices->count())
 <div class="card mt-4">
     <div class="card__header">

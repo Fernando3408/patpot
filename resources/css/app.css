@@ -729,6 +729,49 @@ textarea.form-control {
   border-radius: 0.5rem;
 }
 
+.results-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+  background: var(--surface, #fff);
+  border: 1px solid var(--border, #e5e7eb);
+  border-radius: 14px;
+}
+.results-toolbar form { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; }
+.results-section-heading { display: flex; justify-content: space-between; align-items: baseline; margin: 0 0 .8rem; color: #334155; font-weight: 700; }
+.results-section-heading small { color: #64748b; font-weight: 400; }
+.kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; }
+.kpi-card { min-height: 132px; padding: 1.15rem 1.25rem; display: flex; flex-direction: column; justify-content: space-between; background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 8px 24px rgba(15, 23, 42, .05); }
+.kpi-card span { color: #64748b; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.kpi-card strong { color: #172033; font-size: clamp(1.35rem, 2vw, 1.9rem); line-height: 1.1; }
+.kpi-card small { color: #94a3b8; font-size: .78rem; }
+.kpi-card--sales { border-top: 3px solid #2563eb; }
+.kpi-card--profit { border-top: 3px solid #16a34a; }
+.kpi-card--net { border-top: 3px solid #df6403; background: #fffaf5; }
+.order-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; background: #fffaf5; border: 1px solid #fed7aa; }
+.order-summary div { display: flex; flex-direction: column; gap: .25rem; }
+.order-summary span { color: #64748b; font-size: .8rem; }
+.order-summary strong { color: #172033; font-size: 1.2rem; }
+.admin-option-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; margin-top: 1rem; }
+.admin-section-title { margin: 1.25rem 0 .75rem; color: #334155; font-size: 1rem; }
+.admin-users-panel.is-hidden, .admin-users-table.is-hidden, .admin-options-panel.is-hidden { display: none !important; }
+.admin-tabs { display: flex; gap: .5rem; margin: 1.25rem 0 .75rem; border-bottom: 1px solid #e2e8f0; }
+.admin-tab { border: 0; border-bottom: 3px solid transparent; background: transparent; color: #64748b; padding: .75rem 1rem; font-weight: 700; cursor: pointer; }
+.admin-tab.is-active { color: #df6403; border-bottom-color: #df6403; }
+.admin-options-panel { margin-top: 0 !important; }
+.admin-users-table { display: block !important; visibility: visible !important; min-height: 90px; }
+.admin-users-table table { display: table !important; visibility: visible !important; width: 100%; }
+.admin-option-group { padding: 1rem; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; }
+.admin-option-group h3 { margin: 0 0 .75rem; color: #334155; font-size: .9rem; font-weight: 700; }
+.admin-option-list { display: flex; flex-direction: column; gap: .5rem; }
+.admin-option-item { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .55rem .7rem; background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; color: #475569; font-size: .88rem; }
+.admin-option-item form { flex: 0 0 auto; }
+@media (max-width: 760px) { .results-toolbar { justify-content: stretch; } .results-toolbar form { width: 100%; } .results-toolbar .form-control { flex: 1 1 100%; } .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 480px) { .kpi-grid { grid-template-columns: 1fr; } }
+@media (max-width: 760px) { .order-summary { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 760px) { .admin-option-columns { grid-template-columns: 1fr; } }
+
 .page-header-filters {
   display: flex;
   align-items: center;
@@ -2283,3 +2326,22 @@ td[data-field]:not([data-readonly="true"]):hover {
   text-align: center;
   font-size: 0.8rem;
 }
+.results-print-title { display: none; }
+
+@media print {
+  .app-sidebar, .page-topbar-actions, .page-header form, .chat-fab, .chat-popup,
+  .sidebar-footer, button, form { display: none !important; }
+  .page-wrapper { margin-left: 0 !important; }
+  .page-content { padding: 0 !important; }
+  .results-print-title { display: block; margin-bottom: 1rem; }
+  .kpi-grid { grid-template-columns: repeat(3, 1fr) !important; }
+  body { background: #fff !important; color: #111 !important; }
+}
+
+/* Base readability improvements for operational screens. */
+body { font-size: 15px; }
+.page-topbar-title h1 { font-size: 1.6rem; }
+.form-label { font-size: .95rem; }
+.form-control, select.form-control { min-height: 42px; font-size: .95rem; }
+.data-table th { font-size: .88rem; text-transform: none; }
+.data-table td { font-size: .92rem; }

@@ -107,10 +107,9 @@
                                         <a href="{{ route('pedidos.edit', $order) }}" class="btn btn-outline-success btn-sm btn-edit-order">Editar</a>
                                     @endif
                                     @if(auth()->user()->canManage() && !$order->lines->contains(fn($line) => $line->dispatched_boxes > 0) && !in_array($order->status, ['completed', 'cancelled']))
-                                        <form method="POST" action="{{ route('pedidos.destroy', $order) }}" class="inline-form" style="display:inline;">
+                                        <form method="POST" action="{{ route('orders.cancel', $order) }}" class="inline-form" style="display:inline;">
                                             @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-sm btn-delete">Eliminar</button>
+                                            <button type="submit" class="btn btn-danger btn-sm btn-delete" @disabled($order->status === 'cancelled')>Anular</button>
                                         </form>
                                     @endif
                                     @if(!in_array($order->status, ['completed', 'cancelled']))

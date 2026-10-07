@@ -3,7 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Models\Attachment;
+use App\Models\Customer;
+use App\Models\Input;
+use App\Models\MonthlyCost;
+use App\Models\Order;
+use App\Models\Price;
+use App\Models\Product;
+use App\Models\Production;
+use App\Models\Purchase;
+use App\Models\Retail;
+use App\Models\Store;
+use App\Models\Supplier;
+use App\Models\Task;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -40,17 +53,18 @@ class AttachmentController extends Controller
 
         $modelClass = $request->model_class;
         $allowed = [
-            \App\Models\Product::class,
-            \App\Models\Input::class,
-            \App\Models\Order::class,
-            \App\Models\Purchase::class,
-            \App\Models\Production::class,
-            \App\Models\Supplier::class,
-            \App\Models\Customer::class,
-            \App\Models\Store::class,
-            \App\Models\Retail::class,
-            \App\Models\Price::class,
-            \App\Models\Task::class,
+            Product::class,
+            Input::class,
+            Order::class,
+            Purchase::class,
+            Production::class,
+            Supplier::class,
+            Customer::class,
+            Store::class,
+            Retail::class,
+            Price::class,
+            Task::class,
+            MonthlyCost::class,
         ];
 
         if (! in_array($modelClass, $allowed)) {
@@ -85,7 +99,7 @@ class AttachmentController extends Controller
         return Storage::disk('local')->download($attachment->path, $attachment->original_name);
     }
 
-    public function destroy(Attachment $attachment): JsonResponse|\Illuminate\Http\RedirectResponse
+    public function destroy(Attachment $attachment): JsonResponse|RedirectResponse
     {
         Storage::disk('local')->delete($attachment->path);
         $attachment->delete();

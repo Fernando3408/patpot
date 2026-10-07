@@ -37,6 +37,12 @@
             <a href="{{ route('dashboard') }}" class="sidebar-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <i data-lucide="home" class="sidebar-link-icon"></i> Dashboard
             </a>
+            <a href="{{ route('results.index') }}" class="sidebar-link {{ request()->routeIs('results.*') ? 'active' : '' }}">
+                <i data-lucide="chart-no-axes-combined" class="sidebar-link-icon"></i> Resultados
+            </a>
+            <a href="{{ route('pedidos.index') }}" class="sidebar-link {{ request()->routeIs('pedidos.*', 'orders.*') ? 'active' : '' }}">
+                <i data-lucide="shopping-bag" class="sidebar-link-icon"></i> Pedidos
+            </a>
 
             {{-- Inventario --}}
             <div class="sidebar-group {{ request()->is(['productos*', 'insumos*', 'recetas*']) ? 'open' : '' }}">
@@ -81,7 +87,6 @@
                     <span class="sidebar-caret">▸</span>
                 </button>
                 <div class="sidebar-group-menu">
-                    <a href="/pedidos" class="sidebar-link {{ request()->is('pedidos*') ? 'active' : '' }}">Pedidos</a>
                     <a href="/precios" class="sidebar-link {{ request()->is('precios*') ? 'active' : '' }}">Precios</a>
                     <a href="{{ route('customers.index') }}" class="sidebar-link {{ request()->routeIs('customers.*') ? 'active' : '' }}">Clientes</a>
                     <a href="{{ route('salas.index') }}" class="sidebar-link {{ request()->routeIs('salas.*') ? 'active' : '' }}">Salas</a>
@@ -93,13 +98,14 @@
             @php
                 $isAdminControl = request()->routeIs(['movements.*', 'audit.*', 'admin.*']);
             @endphp
-            <div class="sidebar-group {{ $isAdminControl || request()->routeIs('tasks.*') || request()->routeIs('admin.trash.*') ? 'open' : '' }}">
+            <div class="sidebar-group {{ $isAdminControl || request()->routeIs('tasks.*') || request()->routeIs('admin.trash.*') || request()->routeIs('monthly-costs.*') ? 'open' : '' }}">
                 <button class="sidebar-group-toggle" onclick="this.parentElement.classList.toggle('open')">
                     <span><i data-lucide="settings" class="sidebar-link-icon"></i> Control</span>
                     <span class="sidebar-caret">▸</span>
                 </button>
                 <div class="sidebar-group-menu">
                     <a href="{{ route('tasks.index') }}" class="sidebar-link {{ request()->routeIs('tasks.*') ? 'active' : '' }}">Tareas</a>
+                    <a href="{{ route('monthly-costs.index') }}" class="sidebar-link {{ request()->routeIs('monthly-costs.*') ? 'active' : '' }}">Costos mensuales</a>
                     @if(auth()->check() && auth()->user()->canManage())
                     <a href="{{ route('admin.trash.index') }}" class="sidebar-link {{ request()->routeIs('admin.trash.*') ? 'active' : '' }}">Papelera</a>
                     @endif
@@ -138,21 +144,7 @@
                 @endif
             </div>
             <div class="page-topbar-actions">
-                <div class="quick-menu-wrapper">
-                    <button type="button" class="btn btn-primary btn-sm quick-menu-trigger" id="quickBtn">
-                        <span class="plus-icon">+</span> Ingreso rápido
-                    </button>
-                    <div id="quickMenu" class="quick-menu-dropdown" style="display:none;">
-                        <a href="/pedidos/create" class="quick-menu-item">Nuevo pedido</a>
-                        <a href="/compras/create" class="quick-menu-item">Nueva compra</a>
-                        <a href="/produccion/create" class="quick-menu-item">Nueva producción</a>
-                        <a href="/retail/create" class="quick-menu-item">Actualizar retail</a>
-                        <a href="/tareas/create" class="quick-menu-item">Nueva tarea</a>
-                    </div>
-                </div>
-                @if(auth()->check() && auth()->user()->canManage() && !request()->routeIs('dashboard'))
-                <a class="btn btn-outline-info btn-sm" href="{{ route('admin.trash.index') }}"><i data-lucide="trash-2" class="icon-sm"></i> Papelera</a>
-                @endif
+                <a class="btn btn-primary btn-sm" href="{{ route('pedidos.create') }}"><span class="plus-icon">+</span> Nuevo pedido</a>
             </div>
         </header>
 

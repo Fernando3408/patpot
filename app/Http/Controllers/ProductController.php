@@ -63,8 +63,9 @@ class ProductController extends Controller
     public function show(Product $product): View
     {
         $product->load('recipes.input');
+        $recipeSources = Product::where('status', 'active')->where('id', '!=', $product->id)->whereHas('recipes')->orderBy('name')->get(['id', 'name']);
 
-        return view('products._detail', compact('product'));
+        return view('products._detail', compact('product', 'recipeSources'));
     }
 
     public function update(Request $request, Product $product): JsonResponse|RedirectResponse

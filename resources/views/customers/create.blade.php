@@ -1,4 +1,4 @@
-<x-erp-layout title="Crear Cliente - PatPot" subtitle="Registra un nuevo cliente en el sistema.">
+<x-erp-layout title="Nuevo cliente" subtitle="Registra la información comercial y de contacto del cliente.">
 
     <div class="card">
         
@@ -16,11 +16,6 @@
                 <div class="form-grid">
 
                     <div class="form-group">
-                        <label class="form-label" for="code">Código *:</label>
-                        <input id="code" type="text" name="code" class="form-input" value="{{ old('code') }}" required>
-                    </div>
-
-                    <div class="form-group">
                         <label class="form-label" for="business_name">Razón social *:</label>
                         <input id="business_name" type="text" name="business_name" class="form-input" value="{{ old('business_name') }}" required>
                     </div>
@@ -36,13 +31,13 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label" for="type">Tipo:</label>
-                        <input id="type" type="text" name="type" class="form-input" value="{{ old('type') }}">
-                    </div>
-
-                    <div class="form-group">
                         <label class="form-label" for="channel">Canal:</label>
-                        <input id="channel" type="text" name="channel" class="form-input" value="{{ old('channel') }}">
+                        <select id="channel" name="channel" class="form-input">
+                            <option value="">Seleccione un canal</option>
+                            @foreach(['Supermercado','Distribuidor','Tienda especializada','HORECA','Exportación','Venta directa'] as $channel)
+                                <option value="{{ $channel }}" @selected(old('channel') === $channel)>{{ $channel }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <div class="form-group">
@@ -55,16 +50,15 @@
                         <input id="email" type="email" name="email" class="form-input" value="{{ old('email') }}">
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="payment_terms">Condición de pago:</label>
-                        <input id="payment_terms" type="text" name="payment_terms" class="form-input" value="{{ old('payment_terms') }}">
-                    </div>
+                    <div class="form-group"><label class="form-label">Contactos adicionales</label>@foreach(range(0, 2) as $contactIndex)<div class="form-grid mt-1"><input name="contacts[{{ $contactIndex }}][name]" class="form-input" placeholder="Nombre"><input name="contacts[{{ $contactIndex }}][phone]" class="form-input" placeholder="Teléfono"><input name="contacts[{{ $contactIndex }}][email]" type="email" class="form-input" placeholder="Correo"></div>@endforeach</div>
 
                     <div class="form-group">
-                        <label class="form-label" for="status">Estado *:</label>
-                        <select id="status" name="status" class="form-input" required>
-                            <option value="1" {{ old('status', '1') == '1' ? 'selected' : '' }}>Activo</option>
-                            <option value="0" {{ old('status') == '0' ? 'selected' : '' }}>Inactivo</option>
+                        <label class="form-label" for="payment_terms">Condición de pago:</label>
+                        <select id="payment_terms" name="payment_terms" class="form-input">
+                            <option value="">Seleccione una condición</option>
+                            @foreach(['Contado','30 días','60 días','90 días'] as $term)
+                                <option value="{{ $term }}" @selected(old('payment_terms') === $term)>{{ $term }}</option>
+                            @endforeach
                         </select>
                     </div>
 

@@ -44,6 +44,11 @@ class Customer extends Model
         return $this->hasMany(Order::class);
     }
 
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(CustomerContact::class);
+    }
+
     public function deleter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'deleted_by');

@@ -50,7 +50,7 @@ class CustomerControllerTest extends TestCase
 
         $this->from('/clientes/create')
             ->post('/clientes', $this->customerData([
-                'rut' => '77.000.000-0',
+                'rut' => '77.000.000-9',
             ]))
             ->assertRedirect('/clientes/create')
             ->assertSessionHasErrors('code');
@@ -108,7 +108,7 @@ class CustomerControllerTest extends TestCase
             'code' => 'CLI-CENC',
             'business_name' => 'Cencosud Retail S.A.',
             'trade_name' => 'Cencosud',
-            'rut' => '76.000.001-1',
+            'rut' => '76.000.001-9',
             'type' => 'Supermercado',
             'channel' => 'Retail',
             'contact' => 'Compras retail',

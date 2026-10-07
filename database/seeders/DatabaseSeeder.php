@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Customer;
+use App\Models\ExpenseOption;
 use App\Models\Input;
 use App\Models\Order;
 use App\Models\Price;
@@ -10,6 +11,8 @@ use App\Models\Product;
 use App\Models\Production;
 use App\Models\Purchase;
 use App\Models\Recipe;
+use App\Models\Retail;
+use App\Models\Role;
 use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\Task;
@@ -28,16 +31,25 @@ class DatabaseSeeder extends Seeder
             'name' => 'Administrador PatPot',
             'password' => 'password',
         ]);
-        $adminRole = \App\Models\Role::query()->firstOrCreate(['name' => 'admin']);
+        $adminRole = Role::query()->firstOrCreate(['name' => 'admin']);
+        Role::query()->firstOrCreate(['name' => 'ventas']);
+        Role::query()->firstOrCreate(['name' => 'produccion']);
+        Role::query()->firstOrCreate(['name' => 'administrativo']);
         if (! $admin->roles()->where('role_id', $adminRole->id)->exists()) {
             $admin->roles()->attach($adminRole);
+        }
+        foreach (['Flete / camión', 'Etiquetas', 'Descuento comercial', 'Aporte o rebate al cliente', 'Muestras o degustación', 'Otro'] as $name) {
+            ExpenseOption::firstOrCreate(['type' => 'concept', 'name' => $name]);
+        }
+        foreach (['Reposición', 'Personal', 'Servicios e internet', 'Arriendo', 'Marketing', 'Transporte general', 'Administración y contabilidad', 'Otros'] as $name) {
+            ExpenseOption::firstOrCreate(['type' => 'category', 'name' => $name]);
         }
 
         $operador = User::query()->firstOrCreate(['email' => 'operador@patpot.cl'], [
             'name' => 'María López',
             'password' => 'password',
         ]);
-        $operadorRole = \App\Models\Role::query()->firstOrCreate(['name' => 'operador']);
+        $operadorRole = Role::query()->firstOrCreate(['name' => 'operador']);
         if (! $operador->roles()->where('role_id', $operadorRole->id)->exists()) {
             $operador->roles()->attach($operadorRole);
         }
@@ -220,20 +232,20 @@ class DatabaseSeeder extends Seeder
                 $qtyMap = [];
                 foreach ($pData['lines'] as $lineData) {
                     $line = $purchase->lines->where('input_id', $inputs[$lineData['code']]->id)->first();
-                    if ($line) {
-                        $qtyMap[$line->id] = $lineData['qty'];
+                    if ($line && (float) $line->received_quantity < (float) $lineData['qty']) {
+                        $qtyMap[$line->id] = max(0, (float) $lineData['qty'] - (float) $line->received_quantity);
                     }
                 }
-                if (!empty($qtyMap)) {
+                if (! empty($qtyMap)) {
                     $inventoryService->receivePurchase($purchase, $qtyMap, $pData['ordered_on']);
                 }
             } else {
                 foreach ($pData['lines'] as $lineData) {
                     $rcvd = $lineData['rcvd'] ?? 0;
-                    if ($rcvd > 0) {
+                    if ($rcvd > 0 && (float) $line?->received_quantity < $rcvd) {
                         $line = $purchase->lines->where('input_id', $inputs[$lineData['code']]->id)->first();
                         if ($line) {
-                            $inventoryService->receivePurchase($purchase, [$line->id => $rcvd], $pData['ordered_on']);
+                            $inventoryService->receivePurchase($purchase, [$line->id => max(0, $rcvd - (float) $line->received_quantity)], $pData['ordered_on']);
                         }
                     }
                 }
@@ -337,7 +349,7 @@ class DatabaseSeeder extends Seeder
                 }
             }
 
-            if (!empty($quantities)) {
+            if (! empty($quantities)) {
                 $inventoryService->dispatchOrder($order, $quantities, $oData['delivery_on']);
             }
         }
@@ -362,7 +374,7 @@ class DatabaseSeeder extends Seeder
             $store = $stores[$data['store_code']] ?? null;
             $product = $products[$data['product_sku']] ?? null;
             if ($store && $product) {
-                \App\Models\Retail::query()->updateOrCreate(
+                Retail::query()->updateOrCreate(
                     ['store_id' => $store->id, 'product_id' => $product->id],
                     ['cataloged' => true, 'stock_units' => $data['stock_units'], 'transit_units' => $data['transit_units'], 'weekly_sales' => $data['weekly_sales'], 'min_stock' => $data['min_stock'], 'reorder_point' => $data['reorder_point']]
                 );

@@ -28,8 +28,8 @@ class AlertService
                 ]);
             });
 
-        // Insumos al 50% de stock de seguridad
-        Input::where('type', 'material')
+        // Insumos y servicios bajo stock de seguridad
+        Input::where('status', true)
             ->where('safety_stock', '>', 0)
             ->get()
             ->filter(fn (Input $i) => (float) $i->stock > 0 && (float) $i->stock <= (float) $i->safety_stock * 0.5 && $i->inventory_level !== 'critico')
@@ -38,8 +38,8 @@ class AlertService
                 $alerts->push([
                     'level' => 'warning',
                     'module' => 'Insumos',
-                    'title' => "{$i->name} al {$pct}% del stock de seguridad",
-                    'detail' => "Stock {$i->formattedStock()} {$i->unit}; seguridad {$i->formattedSafetyStock()} {$i->unit}.",
+                    'title' => "{$i->name} bajo el mínimo",
+                    'detail' => "Quedan {$i->formattedStock()} {$i->unit}; mínimo definido {$i->formattedSafetyStock()} {$i->unit}.",
                     'action_url' => '/insumos',
                 ]);
             });

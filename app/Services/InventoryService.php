@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Input;
 use App\Models\InventoryMovement;
 use App\Models\Order;
+use App\Models\OrderInputConsumption;
 use App\Models\OrderLine;
 use App\Models\Price;
 use App\Models\Product;
@@ -16,6 +17,72 @@ use Illuminate\Validation\ValidationException;
 
 class InventoryService
 {
+    public function syncOrderInputConsumptions(Order $order): void
+    {
+        DB::transaction(function () use ($order): void {
+            $lockedOrder = Order::query()->lockForUpdate()->findOrFail($order->id);
+            $lockedOrder->load('lines.product.recipes.input');
+            $active = OrderInputConsumption::query()->where('order_id', $lockedOrder->id)->whereNull('reversed_at')->lockForUpdate()->get();
+
+            foreach ($active->groupBy('input_id') as $inputId => $consumptions) {
+                $input = Input::query()->lockForUpdate()->findOrFail($inputId);
+                $input->increment('stock', $consumptions->sum('quantity'));
+            }
+            if ($active->isNotEmpty()) {
+                OrderInputConsumption::query()->whereKey($active->modelKeys())->update(['reversed_at' => now()]);
+            }
+
+            $newConsumptions = [];
+            foreach ($lockedOrder->lines as $line) {
+                if ($line->product?->recipes->isEmpty()) {
+                    throw ValidationException::withMessages(['order' => "El producto {$line->product?->name} no tiene una receta configurada."]);
+                }
+                foreach ($line->product?->recipes ?? [] as $recipe) {
+                    $quantity = (float) $line->boxes * (float) $recipe->qty_per_box;
+                    if ($quantity <= 0) {
+                        continue;
+                    }
+                    $input = Input::query()->lockForUpdate()->findOrFail($recipe->input_id);
+                    if ((float) $input->stock < $quantity) {
+                        throw ValidationException::withMessages(['order' => "Stock insuficiente de {$input->name} para este pedido."]);
+                    }
+                    $input->decrement('stock', $quantity);
+                    $newConsumptions[] = [
+                        'order_id' => $lockedOrder->id,
+                        'order_line_id' => $line->id,
+                        'input_id' => $input->id,
+                        'boxes' => $line->boxes,
+                        'qty_per_box' => $recipe->qty_per_box,
+                        'quantity' => $quantity,
+                        'user_id' => auth()->id(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                    InventoryMovement::query()->create(['input_id' => $input->id, 'kind' => 'Consumo de pedido', 'quantity' => -$quantity, 'reference' => $lockedOrder->number, 'user_id' => auth()->id()]);
+                }
+            }
+            if ($newConsumptions) {
+                OrderInputConsumption::query()->insert($newConsumptions);
+            }
+        });
+    }
+
+    public function reverseOrderInputConsumptions(Order $order): void
+    {
+        DB::transaction(function () use ($order): void {
+            $active = OrderInputConsumption::query()->where('order_id', $order->id)->whereNull('reversed_at')->lockForUpdate()->get();
+            foreach ($active->groupBy('input_id') as $inputId => $consumptions) {
+                $input = Input::query()->lockForUpdate()->findOrFail($inputId);
+                $quantity = $consumptions->sum('quantity');
+                $input->increment('stock', $quantity);
+                InventoryMovement::query()->create(['input_id' => $input->id, 'kind' => 'Reversión de consumo de pedido', 'quantity' => $quantity, 'reference' => $order->number, 'user_id' => auth()->id()]);
+            }
+            if ($active->isNotEmpty()) {
+                OrderInputConsumption::query()->whereKey($active->modelKeys())->update(['reversed_at' => now()]);
+            }
+        });
+    }
+
     public function receivePurchase(Purchase $purchase, array $quantities, string $receivedOn): void
     {
         DB::transaction(function () use ($purchase, $quantities, $receivedOn): void {
@@ -41,7 +108,7 @@ class InventoryService
                 if ($quantity > $remaining) {
                     throw ValidationException::withMessages(['receipt' => 'La recepción supera lo pendiente.']);
                 }
-            $input = Input::query()->where('status', true)->lockForUpdate()->findOrFail($line->input_id);
+                $input = Input::query()->where('status', true)->lockForUpdate()->findOrFail($line->input_id);
                 $input->increment('stock', $quantity);
                 $input->decrement('transit', min($quantity, (float) $input->transit));
                 $input->update(['unit_cost' => $line->unit_cost]);
@@ -202,15 +269,8 @@ class InventoryService
             if ($boxes > (float) $lockedProduction->planned_boxes) {
                 throw ValidationException::withMessages(['production' => 'Las cajas reales no pueden superar las cajas planificadas.']);
             }
-            foreach ($lockedProduction->product->recipes as $recipe) {
-                $input = Input::query()->lockForUpdate()->findOrFail($recipe->input_id);
-                $needed = $boxes * (float) $recipe->qty_per_box;
-                if ((float) $input->stock < $needed) {
-                    throw ValidationException::withMessages(['production' => "Stock insuficiente de {$input->name}."]);
-                }
-                $input->decrement('stock', $needed);
-                InventoryMovement::query()->create(['input_id' => $input->id, 'kind' => 'Consumo de producción', 'quantity' => -$needed, 'reference' => $lockedProduction->number, 'user_id' => auth()->id()]);
-            }
+            // Los insumos se descuentan al guardar el pedido. No se vuelven a
+            // descontar al cerrar producción para evitar doble consumo.
             $product = Product::query()->lockForUpdate()->findOrFail($lockedProduction->product_id);
             $product->increment('stock_boxes', $boxes);
             InventoryMovement::query()->create(['product_id' => $product->id, 'kind' => 'Ingreso producto terminado', 'quantity' => $boxes, 'reference' => $lockedProduction->number, 'user_id' => auth()->id()]);

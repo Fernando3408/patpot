@@ -83,7 +83,7 @@ class SupplierControllerTest extends TestCase
     {
         return array_merge([
             'name' => 'Proveedor de prueba',
-            'rut' => '76.123.456-7',
+            'rut' => '76.123.456-0',
             'contact_name' => 'María Pérez',
             'email' => 'contacto@proveedor.cl',
             'phone' => '+56 9 1234 5678',
