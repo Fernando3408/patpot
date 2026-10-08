@@ -51,7 +51,7 @@ class CustomerController extends Controller
         $customer->contacts()->createMany($contacts);
         AuditService::log('CREACIÓN DE CLIENTE', "Creó cliente: {$customer->business_name}", $customer);
 
-        return redirect()->route('customers.index');
+        return redirect()->route('customers.show', $customer);
     }
 
     private function nextCode(): string
@@ -67,11 +67,11 @@ class CustomerController extends Controller
         return view('customers.edit', ['customer' => $customer->load('contacts')]);
     }
 
-    public function show(Customer $customer): View
+    public function show(Request $request, Customer $customer): View
     {
-        $customer->load(['stores', 'prices.product', 'orders' => fn ($query) => $query->latest('ordered_on')->limit(10)]);
+        $customer->load(['stores', 'prices.product', 'contacts', 'orders' => fn ($query) => $query->latest('ordered_on')->limit(10)]);
 
-        return view('customers._detail', compact('customer'));
+        return $request->ajax() ? view('customers._detail', compact('customer')) : view('customers.show', compact('customer'));
     }
 
     public function update(Request $request, Customer $customer): JsonResponse|RedirectResponse
@@ -130,14 +130,16 @@ class CustomerController extends Controller
             'business_name' => [$req, 'string', 'max:255'],
             'trade_name' => ['nullable', 'string', 'max:255'],
             'rut' => ['nullable', 'string', 'max:12', Rule::unique(Customer::class)->ignore($customer), function (string $attribute, mixed $value, \Closure $fail): void {
-                if (filled($value) && ! $this->isValidRut((string) $value)) $fail('El RUT no es válido.');
+                if (filled($value) && ! $this->isValidRut((string) $value)) {
+                    $fail('El RUT no es válido.');
+                }
             }],
             'type' => ['nullable', 'string', 'max:100'],
             'channel' => ['nullable', 'string', 'max:100'],
             'contact' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'payment_terms' => ['nullable', 'string', 'max:100'],
-            'status' => [$req, 'boolean'],
+            'status' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -157,11 +159,16 @@ class CustomerController extends Controller
     private function isValidRut(string $rut): bool
     {
         $clean = strtoupper(str_replace(['.', '-'], '', $rut));
-        if (! preg_match('/^([0-9]+)([0-9K])$/', $clean, $matches)) return false;
+        if (! preg_match('/^([0-9]+)([0-9K])$/', $clean, $matches)) {
+            return false;
+        }
         $sum = 0;
-        foreach (array_values(str_split(strrev($matches[1]))) as $index => $digit) $sum += (int) $digit * [2, 3, 4, 5, 6, 7][$index % 6];
+        foreach (array_values(str_split(strrev($matches[1]))) as $index => $digit) {
+            $sum += (int) $digit * [2, 3, 4, 5, 6, 7][$index % 6];
+        }
         $remainder = 11 - ($sum % 11);
         $expected = $remainder === 11 ? '0' : ($remainder === 10 ? 'K' : (string) $remainder);
+
         return $expected === $matches[2];
     }
 }

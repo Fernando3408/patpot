@@ -337,7 +337,7 @@ class OrderController extends Controller
             ->where('product_id', $productId)
             ->first();
 
-        return (float) ($price?->effective_price ?? Product::query()->findOrFail($productId)->sale_price_box);
+        return (float) ($price?->effective_price ?? 0);
     }
 
     private function ensureOrderHasNoDispatches(Order $order): void

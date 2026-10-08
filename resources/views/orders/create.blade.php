@@ -1,17 +1,17 @@
-<x-erp-layout title="Nuevo pedido" subtitle="Puedes cargar tantos productos como necesites. Si dejas el precio vacío, se aplica el precio vigente del cliente o el precio base.">
+<x-erp-layout title="Nuevo pedido" subtitle="Puedes cargar tantos productos como necesites. Si dejas el precio vacío, se aplica el precio vigente del cliente.">
     
     <div class="form-card">
         <form method="POST" action="/pedidos" enctype="multipart/form-data">
             @csrf
 
             {{-- Sección: Datos Generales --}}
-            <div class="form-grid mb-6">
-                <div class="form-group">
+            <div class="form-grid order-header-grid mb-6">
+                <div class="form-group order-system-number">
                     <label class="form-label">Número pedido</label>
                     <input name="number" class="form-control" value="{{ old('number') }}" placeholder="PED-0001" required>
                 </div>
 
-                <div class="form-group">
+                <div class="form-group order-customer-field">
                     <label class="form-label">Cliente</label>
                     <select name="customer_id" class="form-control" required>
                         <option value="">Seleccione un cliente</option>
@@ -67,20 +67,20 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach(range(0, 2) as $index)
+                            @foreach(range(0, 0) as $index)
                                 <tr class="line-row">
                                     <td>
                                         <select name="lines[{{ $index }}][product_id]" class="form-control">
-                                            <option value="">Sin línea</option>
+                                            <option value="">Seleccionar producto</option>
                                             @foreach($products as $product)
                                                 <option value="{{ $product->id }}" data-cost="{{ $product->cost_per_box }}" @selected(old("lines.$index.product_id") == $product->id)>
-                                                    {{ $product->name }} · base ${{ number_format($product->sale_price_box, 0, ',', '.') }}
+                                                    {{ $product->name }}
                                                 </option>
                                             @endforeach
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="number" step="1" min="0" name="lines[{{ $index }}][boxes]" class="form-control" value="{{ old("lines.$index.boxes") }}" placeholder="0">
+                                        <input type="number" step="1" min="0" name="lines[{{ $index }}][boxes]" class="form-control" value="{{ old("lines.$index.boxes") }}" placeholder="Cajas">
                                     </td>
                                     <td>
                                         <input type="number" step="0.01" min="0" name="lines[{{ $index }}][price_box]" class="form-control" value="{{ old("lines.$index.price_box") }}" placeholder="Automático">
@@ -118,6 +118,7 @@
                 @endforeach
             </div>
 
+            <details class="order-secondary-details mb-4"><summary>Observaciones y archivos adjuntos</summary>
             {{-- Sección: Observaciones --}}
             <div class="form-group mb-4">
                 <label class="form-label">Observaciones</label>
@@ -136,6 +137,8 @@
                 <p class="form-help mt-1">PDF, imágenes, Word, Excel. Máx 10 MB por archivo. Se guardan al guardar el pedido.</p>
             </div>
 
+            </details>
+
             {{-- Botones de Acción --}}
             <div class="form-actions">
                 <a href="/pedidos" class="btn btn-outline-warning">
@@ -151,7 +154,7 @@
     @php
         $productOptions = '';
         foreach($products as $product) {
-            $productOptions .= '<option value="'.e($product->id).'" data-cost="'.e($product->cost_per_box).'">'.e($product->name).' · último precio $'.number_format($product->sale_price_box, 0, ',', '.').'</option>';
+            $productOptions .= '<option value="'.e($product->id).'" data-cost="'.e($product->cost_per_box).'">'.e($product->name).'</option>';
         }
         $productRecipeData = $products->mapWithKeys(function ($product) {
             return [$product->id => $product->recipes->map(function ($recipe) {
@@ -230,6 +233,16 @@
 
         var customerSelect = document.querySelector('select[name="customer_id"]');
         var storeSelect = document.querySelector('select[name="store_id"]');
+        var customerSearch = document.getElementById('customer-search');
+        customerSearch?.addEventListener('input', function() {
+            var term = this.value.toLowerCase();
+            Array.from(customerSelect.options).forEach(function(option) {
+                if (!option.value) return;
+                option.hidden = !option.textContent.toLowerCase().includes(term);
+            });
+            var match = Array.from(customerSelect.options).find(function(option) { return option.value && !option.hidden; });
+            if (match && term) { customerSelect.value = match.value; customerSelect.dispatchEvent(new Event('change')); }
+        });
         function filterStoresByCustomer() {
             if (!customerSelect || !storeSelect) return;
             var customerId = customerSelect.value;
@@ -264,7 +277,7 @@
             const table = document.getElementById('lines-table');
             const tbody = table.querySelector('tbody');
             const addBtn = document.getElementById('add-line-btn');
-            let lineIndex = {{ count(range(0, 2)) }};
+            let lineIndex = 1;
 
             addBtn.addEventListener('click', function() {
                 const row = document.createElement('tr');
@@ -272,12 +285,12 @@
                 row.innerHTML = `
                     <td>
                         <select name="lines[${lineIndex}][product_id]" class="form-control">
-                            <option value="">Sin línea</option>
+                            <option value="">Seleccionar producto</option>
                             {!! $productOptions !!}
                         </select>
                     </td>
                     <td>
-                        <input type="number" step="1" min="0" name="lines[${lineIndex}][boxes]" class="form-control" value="" placeholder="0">
+                        <input type="number" step="1" min="0" name="lines[${lineIndex}][boxes]" class="form-control" value="" placeholder="Cajas">
                     </td>
                     <td>
                         <input type="number" step="0.01" min="0" name="lines[${lineIndex}][price_box]" class="form-control" value="" placeholder="Automático">

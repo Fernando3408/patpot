@@ -4,8 +4,7 @@
             @csrf
 
             {{-- Sección: Identificación General --}}
-            <h3 class="text-sm font-semibold text-slate-700 mb-3">Información General</h3>
-            <div class="form-grid mb-6">
+            <section class="input-form-section"><div class="input-form-section__heading"><div><h3>Información general</h3><p>Identifica el insumo y define cómo se utilizará en la operación.</p></div></div><div class="form-grid">
                 <div class="form-group">
                     <label class="form-label" for="code">Código</label>
                     <input type="text" id="code" name="code" class="form-control" value="{{ old('code') }}" placeholder="Ej: INS-001" required>
@@ -53,19 +52,18 @@
                         <option value="0" @selected(old('status') == '0')>Inactivo</option>
                     </select>
                 </div>
-            </div>
+            </div></section>
 
             {{-- Sección: Stock y Costos --}}
-            <h3 class="text-sm font-semibold text-slate-700 mb-3" id="inventory-title">Inventario y Costos</h3>
-            <div class="form-grid mb-6" id="inventory-fields">
+            <section class="input-form-section"><div class="input-form-section__heading"><div><h3 id="inventory-title">Inventario y costos</h3><p>Define stock disponible, mínimo de alerta y costo unitario.</p></div></div><div class="form-grid" id="inventory-fields">
                 <div class="form-group">
                     <label class="form-label" for="stock">Stock actual</label>
                     <input type="number" step="1" id="stock" name="stock" class="form-control" value="{{ old('stock', 0) }}" min="0">
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="safety_stock">Stock de seguridad</label>
-                    <input type="number" step="1" id="safety_stock" name="safety_stock" class="form-control" value="{{ old('safety_stock', 0) }}" min="0">
+                    <label class="form-label" for="safety_stock">Avisarme cuando queden menos de <span class="text-danger">*</span></label>
+                    <input type="number" step="1" id="safety_stock" name="safety_stock" class="form-control" value="{{ old('safety_stock') }}" min="0" required>
                 </div>
 
                 <div class="form-group">
@@ -77,11 +75,10 @@
                     <label class="form-label" for="unit_cost">Costo unitario ($)</label>
                     <input type="number" step="1" id="unit_cost" name="unit_cost" class="form-control" value="{{ old('unit_cost', 0) }}" min="0">
                 </div>
-            </div>
+            </div></section>
 
             {{-- Sección: Parámetros de Reposición (solo material) --}}
-            <h3 class="text-sm font-semibold text-slate-700 mb-3" id="planning-title">Parámetros de Reposición</h3>
-            <div class="form-grid mb-6" id="planning-fields">
+            <section class="input-form-section"><div class="input-form-section__heading"><div><h3 id="planning-title">Parámetros de reposición</h3><p>Usa estos valores para calcular compras sugeridas y cobertura.</p></div></div><div class="form-grid" id="planning-fields">
                 <div class="form-group">
                     <label class="form-label" for="weekly_consumption">Consumo semanal</label>
                     <input type="number" step="1" id="weekly_consumption" name="weekly_consumption" class="form-control" value="{{ old('weekly_consumption', 0) }}" min="0">
@@ -106,7 +103,7 @@
                     <label class="form-label" for="purchase_multiple">Múltiplo de compra</label>
                     <input type="number" step="0.001" id="purchase_multiple" name="purchase_multiple" class="form-control" value="{{ old('purchase_multiple', 1) }}" min="0.001">
                 </div>
-            </div>
+            </div></section>
 
             {{-- Botones de Acción --}}
             <div class="form-actions">

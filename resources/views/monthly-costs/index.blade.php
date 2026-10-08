@@ -44,9 +44,15 @@
     </div>
     <div class="table-container"><table class="data-table"><thead><tr><th>Fecha</th><th>Concepto</th><th>Categoría</th><th>Tipo</th><th class="text-right">Monto</th><th></th></tr></thead><tbody>
         @forelse($costs as $cost)
-            <tr><form method="POST" action="{{ route('monthly-costs.update', $cost) }}">@csrf @method('PUT')<td><input type="date" name="cost_on" value="{{ $cost->cost_on->format('Y-m-d') }}" class="form-control"></td><td><input name="concept" value="{{ $cost->concept }}" class="form-control">@foreach($cost->attachments as $attachment)<a class="text-xs" href="{{ route('attachments.download', $attachment) }}">{{ $attachment->original_name }}</a>@endforeach</td><td><input name="category" value="{{ $cost->category }}" class="form-control"></td><td><select name="type" class="form-control"><option value="fixed" @selected($cost->type === 'fixed')>Fijo</option><option value="variable" @selected($cost->type === 'variable')>Variable</option></select></td><td class="text-right"><input type="number" step="1" min="1" name="amount" value="{{ $cost->amount }}" class="form-control"></td><td class="text-right"><button class="btn btn-primary btn-sm">Guardar</button></td></form></tr>
+            <tr><form method="POST" action="{{ route('monthly-costs.update', $cost) }}">@csrf @method('PUT')<td><input type="date" name="cost_on" value="{{ $cost->cost_on->format('Y-m-d') }}" class="form-control"></td><td><input name="concept" value="{{ $cost->concept }}" class="form-control"><div class="cost-file-list">@foreach($cost->attachments as $attachment)<span class="cost-file"><a href="{{ route('attachments.download', $attachment) }}" title="Descargar">&#128196; {{ $attachment->original_name }}</a><button type="button" class="btn-link-danger" data-url="{{ route('attachments.destroy', $attachment) }}" onclick="deleteMonthlyAttachment(this)" title="Eliminar">&times;</button></span>@endforeach</div></td><td><input name="category" value="{{ $cost->category }}" class="form-control"></td><td><select name="type" class="form-control"><option value="fixed" @selected($cost->type === 'fixed')>Fijo</option><option value="variable" @selected($cost->type === 'variable')>Variable</option></select><small class="cost-type-badge">{{ $cost->recurring ? 'Recurrente' : 'Manual' }}</small></td><td class="text-right"><input type="number" step="1" min="1" name="amount" value="{{ $cost->amount }}" class="form-control"></td><td class="text-right"><button class="btn btn-primary btn-sm">Guardar</button></td></form></tr>
         @empty
             <tr><td class="text-center">No hay costos registrados para este mes.</td><td></td><td></td><td></td><td></td><td></td></tr>
         @endforelse
     </tbody></table></div>
+<script>
+function deleteMonthlyAttachment(button) {
+    if (!confirm('¿Eliminar este archivo?')) return;
+    fetch(button.dataset.url, { method: 'POST', headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content, 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }, body: new URLSearchParams({ _method: 'DELETE' }) }).then(function(response) { if (response.ok) button.closest('.cost-file').remove(); });
+}
+</script>
 </x-erp-layout>

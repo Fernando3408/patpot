@@ -10,7 +10,6 @@
             <div><strong>Unidades por caja:</strong> {{ number_format($product->units_per_box, 0, ',', '.') }}</div>
             <div><strong>Stock cajas:</strong> {{ number_format($product->stock_boxes, 0, ',', '.') }}</div>
             <div><strong>Stock mínimo:</strong> {{ number_format($product->min_stock_boxes, 0, ',', '.') }}</div>
-            <div><strong>Precio venta/caja:</strong> ${{ number_format($product->sale_price_box, 0, ',', '.') }}</div>
             <div><strong>Costo piso/caja:</strong> {{ $product->production_cost !== null ? '$' . number_format($product->production_cost, 0, ',', '.') : 'Calculado por receta' }}</div>
             <div><strong>Costo/caja:</strong> ${{ number_format($product->cost_per_box, 0, ',', '.') }}</div>
             <div><strong>Capacidad producción:</strong> {{ $product->production_capacity ? number_format($product->production_capacity, 0, ',', '.') . ' cajas' : '—' }}</div>

@@ -101,7 +101,7 @@
                                         @else
                                             <select name="lines[{{ $index }}][product_id]" class="form-control" required>
                                                 @foreach($products as $product)
-                                                    <option value="{{ $product->id }}" @selected(old("lines.$index.product_id", $line->product_id) == $product->id)>{{ $product->name }} · base ${{ number_format($product->sale_price_box, 0, ',', '.') }}</option>
+                                                    <option value="{{ $product->id }}" @selected(old("lines.$index.product_id", $line->product_id) == $product->id)>{{ $product->name }}</option>
                                                 @endforeach
                                             </select>
                                         @endif
@@ -126,7 +126,7 @@
                                         <select name="lines[{{ $index }}][product_id]" class="form-control">
                                             <option value="">Sin línea</option>
                                             @foreach($products as $product)
-                                                <option value="{{ $product->id }}" @selected(old("lines.$index.product_id") == $product->id)>{{ $product->name }} · base ${{ number_format($product->sale_price_box, 0, ',', '.') }}</option>
+                                                <option value="{{ $product->id }}" @selected(old("lines.$index.product_id") == $product->id)>{{ $product->name }}</option>
                                             @endforeach
                                         </select>
                                     </td>

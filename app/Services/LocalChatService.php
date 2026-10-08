@@ -73,7 +73,6 @@ class LocalChatService
             ->sum(DB::raw('price_box * boxes'));
 
         $totalStock = $products->sum('stock_boxes');
-        $totalValue = $products->sum(fn ($p) => $p->stock_boxes * $p->sale_price_box);
 
         $criticos = $inputs->filter(fn ($i) => $i->stock <= 0);
         $bajos = $inputs->filter(fn ($i) => $i->stock > 0 && $i->stock <= $i->safety_stock);
@@ -83,7 +82,7 @@ class LocalChatService
         $txt .= "PRODUCTOS (" . $products->count() . " activos, {$totalStock} cajas, \$" . number_format($totalValue, 0, ',', '.') . " en stock):\n";
         foreach ($products as $p) {
             $estado = $p->stock_boxes < $p->min_stock_boxes ? ' ⚠ BAJO MÍNIMO' : '';
-            $txt .= "• {$p->name}: {$p->stock_boxes} cajas (\${$p->sale_price_box}/caja){$estado}\n";
+            $txt .= "• {$p->name}: {$p->stock_boxes} cajas{$estado}\n";
         }
 
         $txt .= "\nINSUMOS (" . $inputs->count() . " materiales): ";

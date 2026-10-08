@@ -41,7 +41,7 @@ class ResultsController extends Controller
         $grossProfit = $sales - $productCost - $expenses;
         $margin = $sales > 0 ? round(($grossProfit / $sales) * 100, 1) : 0;
         $monthlyCosts = (float) MonthlyCost::whereBetween('cost_on', [$from, $to])->sum('amount');
-        $closure = MonthlyClosure::where('month', $month)->first();
+        $closure = ($day || $customerId || $productId) ? null : MonthlyClosure::where('month', $month)->first();
         if ($closure) {
             $sales = (float) $closure->sales;
             $productCost = (float) $closure->product_cost;
@@ -57,16 +57,20 @@ class ResultsController extends Controller
     public function export(Request $request): StreamedResponse
     {
         $month = $request->input('month', now()->format('Y-m'));
+        $day = $request->input('day');
+        $customerId = $request->integer('customer_id') ?: null;
+        $productId = $request->integer('product_id') ?: null;
         [$year, $monthNumber] = array_pad(explode('-', $month), 2, now()->format('m'));
         $from = sprintf('%04d-%02d-01', (int) $year, (int) $monthNumber);
         $to = date('Y-m-t', strtotime($from));
-        $shipments = Shipment::with(['order.customer', 'lines.orderLine.product'])->whereBetween('shipped_on', [$from, $to])->get();
+        if ($day && checkdate((int) substr($day, 5, 2), (int) substr($day, 8, 2), (int) substr($day, 0, 4))) [$from, $to] = [$day, $day];
+        $shipments = Shipment::with(['order.customer', 'lines.orderLine.product'])->whereBetween('shipped_on', [$from, $to])->when($customerId, fn ($q) => $q->whereHas('order', fn ($order) => $order->where('customer_id', $customerId)))->get();
         $sales = (float) $shipments->sum('total');
-        $lines = ShipmentLine::with('orderLine')->whereHas('shipment', fn ($q) => $q->whereBetween('shipped_on', [$from, $to]))->get();
+        $lines = ShipmentLine::with('orderLine')->whereHas('shipment', fn ($q) => $q->whereBetween('shipped_on', [$from, $to]))->when($customerId, fn ($q) => $q->whereHas('orderLine.order', fn ($order) => $order->where('customer_id', $customerId)))->when($productId, fn ($q) => $q->whereHas('orderLine', fn ($line) => $line->where('product_id', $productId)))->get();
         $productCost = (float) $lines->sum(fn ($line) => (float) $line->boxes * ((float) $line->cost_box + (float) $line->variable_cost_box));
         $expenses = (float) $shipments->sum(fn ($shipment) => (float) $shipment->freight_cost + (float) $shipment->management_cost + (float) $shipment->other_cost);
-        $expenses += (float) OrderExpense::whereHas('order.shipments', fn ($q) => $q->whereBetween('shipped_on', [$from, $to]))->sum('amount');
-        $closure = MonthlyClosure::where('month', $month)->first();
+        $expenses += (float) OrderExpense::whereHas('order.shipments', fn ($q) => $q->whereBetween('shipped_on', [$from, $to]))->when($customerId, fn ($q) => $q->whereHas('order', fn ($order) => $order->where('customer_id', $customerId)))->when($productId, fn ($q) => $q->whereHas('order.lines', fn ($line) => $line->where('product_id', $productId)))->sum('amount');
+        $closure = ($day || $customerId || $productId) ? null : MonthlyClosure::where('month', $month)->first();
         $monthlyCosts = (float) MonthlyCost::whereBetween('cost_on', [$from, $to])->sum('amount');
         $filename = 'PatPot_Resultados_'.$month.'.csv';
 
@@ -89,16 +93,20 @@ class ResultsController extends Controller
     public function pdf(Request $request): Response
     {
         $month = $request->input('month', now()->format('Y-m'));
+        $day = $request->input('day');
+        $customerId = $request->integer('customer_id') ?: null;
+        $productId = $request->integer('product_id') ?: null;
         [$year, $monthNumber] = array_pad(explode('-', $month), 2, now()->format('m'));
         $from = sprintf('%04d-%02d-01', (int) $year, (int) $monthNumber);
         $to = date('Y-m-t', strtotime($from));
-        $shipments = Shipment::with(['order.customer', 'lines.orderLine.product'])->whereBetween('shipped_on', [$from, $to])->get();
-        $lines = ShipmentLine::with('orderLine.product')->whereHas('shipment', fn ($q) => $q->whereBetween('shipped_on', [$from, $to]))->get();
+        if ($day && checkdate((int) substr($day, 5, 2), (int) substr($day, 8, 2), (int) substr($day, 0, 4))) [$from, $to] = [$day, $day];
+        $shipments = Shipment::with(['order.customer', 'lines.orderLine.product'])->whereBetween('shipped_on', [$from, $to])->when($customerId, fn ($q) => $q->whereHas('order', fn ($order) => $order->where('customer_id', $customerId)))->get();
+        $lines = ShipmentLine::with('orderLine.product')->whereHas('shipment', fn ($q) => $q->whereBetween('shipped_on', [$from, $to]))->when($customerId, fn ($q) => $q->whereHas('orderLine.order', fn ($order) => $order->where('customer_id', $customerId)))->when($productId, fn ($q) => $q->whereHas('orderLine', fn ($line) => $line->where('product_id', $productId)))->get();
         $sales = (float) $shipments->sum('total');
         $productCost = (float) $lines->sum(fn ($line) => (float) $line->boxes * ((float) $line->cost_box + (float) $line->variable_cost_box));
-        $expenses = (float) $shipments->sum(fn ($shipment) => (float) $shipment->freight_cost + (float) $shipment->management_cost + (float) $shipment->other_cost) + (float) OrderExpense::whereHas('order.shipments', fn ($q) => $q->whereBetween('shipped_on', [$from, $to]))->sum('amount');
+        $expenses = (float) $shipments->sum(fn ($shipment) => (float) $shipment->freight_cost + (float) $shipment->management_cost + (float) $shipment->other_cost) + (float) OrderExpense::whereHas('order.shipments', fn ($q) => $q->whereBetween('shipped_on', [$from, $to]))->when($customerId, fn ($q) => $q->whereHas('order', fn ($order) => $order->where('customer_id', $customerId)))->when($productId, fn ($q) => $q->whereHas('order.lines', fn ($line) => $line->where('product_id', $productId)))->sum('amount');
         $monthlyCosts = (float) MonthlyCost::whereBetween('cost_on', [$from, $to])->sum('amount');
-        $closure = MonthlyClosure::where('month', $month)->first();
+        $closure = ($day || $customerId || $productId) ? null : MonthlyClosure::where('month', $month)->first();
         if ($closure) {
             $sales = (float) $closure->sales;
             $productCost = (float) $closure->product_cost;

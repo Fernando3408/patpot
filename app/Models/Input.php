@@ -144,6 +144,10 @@ class Input extends Model
             return 'critico';
         }
 
+        if ($this->isService() && (float) $this->stock <= (float) $this->safety_stock) {
+            return 'atencion';
+        }
+
         if ($projected <= $this->reorder_point) {
             return 'atencion';
         }

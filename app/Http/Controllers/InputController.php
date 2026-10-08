@@ -53,7 +53,7 @@ class InputController extends Controller
             'unit' => 'required|string|max:50',
 
             'stock' => 'required_if:type,material|nullable|numeric|min:0',
-            'safety_stock' => 'required_if:type,material|nullable|numeric|min:0',
+            'safety_stock' => 'required_if:type,material,service|nullable|numeric|min:0',
 
             'weekly_consumption' => 'nullable|numeric|min:0',
             'lead_time_days' => 'nullable|integer|min:0',
@@ -98,7 +98,7 @@ class InputController extends Controller
                     'name' => 'sometimes|required|string|max:255',
                     'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('inputs', 'code')->ignore($input->id)],
                     'stock' => 'sometimes|nullable|numeric|min:0',
-                    'safety_stock' => 'sometimes|nullable|numeric|min:0',
+                    'safety_stock' => 'sometimes|required_if:type,material,service|nullable|numeric|min:0',
                     'weekly_consumption' => 'sometimes|nullable|numeric|min:0',
                     'unit' => 'sometimes|required|string|max:50',
                     'status' => 'sometimes|required|boolean',
@@ -120,7 +120,7 @@ class InputController extends Controller
                     'type' => 'required|in:material,service',
                     'unit' => 'required|string|max:50',
                     'stock' => 'required_if:type,material|nullable|numeric|min:0',
-                    'safety_stock' => 'required_if:type,material|nullable|numeric|min:0',
+                    'safety_stock' => 'required_if:type,material,service|nullable|numeric|min:0',
                     'weekly_consumption' => 'nullable|numeric|min:0',
                     'lead_time_days' => 'nullable|integer|min:0',
                     'target_weeks' => 'nullable|numeric|min:0',
@@ -273,10 +273,10 @@ class InputController extends Controller
 
     private function exportProducts($handle): void
     {
-        fputcsv($handle, ['SKU', 'Nombre', 'Stock (cajas)', 'Precio/caja', 'Costo/caja', 'Estado'], ';');
+        fputcsv($handle, ['SKU', 'Nombre', 'Stock (cajas)', 'Costo/caja', 'Estado'], ';');
         foreach (Product::orderBy('name')->get() as $p) {
             fputcsv($handle, [
-                $p->sku, $p->name, $p->stock_boxes, $p->sale_price_box, $p->cost_per_box, $p->status,
+                $p->sku, $p->name, $p->stock_boxes, $p->cost_per_box, $p->status,
             ], ';');
         }
     }

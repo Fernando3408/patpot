@@ -34,7 +34,7 @@ class CustomerControllerTest extends TestCase
     {
         $response = $this->post('/clientes', $this->customerData());
 
-        $response->assertRedirect('/clientes');
+        $response->assertRedirectContains('/clientes/');
 
         $customer = Customer::query()->where('code', 'CLI-CENC')->first();
 

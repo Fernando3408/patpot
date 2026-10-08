@@ -1,4 +1,4 @@
-<x-erp-layout title="Dashboard" subtitle="Lo que requiere una decision, sin revisar hojas ni formulas.">
+<x-erp-layout title="Dashboard" subtitle="Lo que requiere una decisión, sin revisar hojas ni fórmulas.">
 
     <div class="dash-fit">
 
@@ -26,7 +26,11 @@
             </div>
             <div class="dash-urgent-card {{ $criticalAlerts->count() > 0 ? 'dash-urgent--critical' : '' }}" onclick="openCriticalAlertsModal()" style="cursor:pointer;">
                 <span class="dash-urgent-count {{ $criticalAlerts->count() > 0 ? 'text-urgent' : 'text-ok' }}">{{ $criticalAlerts->count() }}</span>
-                <span class="dash-urgent-label">Alertas criticas</span>
+                <span class="dash-urgent-label">Alertas críticas</span>
+            </div>
+            <div class="dash-urgent-card {{ $attentionAlerts->count() > 0 ? 'dash-urgent--warn' : '' }}" onclick="openAttentionAlertsModal()" style="cursor:pointer;">
+                <span class="dash-urgent-count {{ $attentionAlerts->count() > 0 ? 'text-warning-color' : 'text-ok' }}">{{ $attentionAlerts->count() }}</span>
+                <span class="dash-urgent-label">Alertas de atención</span>
             </div>
         </div>
 
@@ -70,11 +74,15 @@
 
             <div class="dash-chart-card">
                 <div class="dash-chart-header">
-                    <h3>Stock insumos vs seguridad</h3>
-                    <span class="text-xs text-muted">Proporcion real por insumo</span>
+                    <h3>Alertas de stock</h3>
+                    <span class="text-xs text-muted">Stock actual versus mínimo definido</span>
                 </div>
                 <div class="dash-chart-body" style="padding:1rem;">
-                    <div id="stockColumns" style="display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;"></div>
+                    @forelse($stockAlerts as $alert)
+                        <div class="stock-alert-list-row stock-alert-{{ $alert['level'] }}"><strong>{{ $alert['name'] }}</strong><span>{{ number_format($alert['stock'], 0, ',', '.') }} {{ $alert['unit'] }}</span><span>Mínimo: {{ number_format($alert['minimum'], 0, ',', '.') }} {{ $alert['unit'] }}</span><b>{{ $alert['level'] === 'red' ? 'Sin stock' : 'Bajo mínimo' }}</b></div>
+                    @empty
+                        <div class="data-table-empty"><p>No hay insumos ni productos bajo el mínimo.</p></div>
+                    @endforelse
                 </div>
             </div>
 
@@ -82,55 +90,10 @@
 
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            var orange = '#df6403';
-            var red = '#dc2626';
-            var green = '#16a34a';
-
-            var inputsData = {!! json_encode($chartInputsData) !!};
-
-            var container = document.getElementById('stockColumns');
-            var html = '';
-            var barH = 200;
-
-            inputsData.forEach(function(inp) {
-                var total = inp.stock + inp.safety;
-                if (total === 0) total = 1;
-                var hSafety = Math.round((inp.safety / total) * barH);
-                var hStock = barH - hSafety;
-                var pctSafety = Math.round((inp.safety / total) * 100);
-                var pctStock = 100 - pctSafety;
-
-                html += '<div style="display:flex;flex-direction:column;align-items:center;width:100px;min-width:90px;">';
-                html += '  <div style="display:flex;align-items:flex-end;gap:4px;height:' + (barH + 10) + 'px;">';
-                html += '    <div style="width:40px;height:' + barH + 'px;background:#e5e7eb;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-start;position:relative;box-shadow:0 1px 3px rgba(0,0,0,0.1);">';
-                html += '      <div style="height:' + hStock + 'px;background:linear-gradient(180deg,#34d399,#16a34a);width:100%;"></div>';
-                html += '      <div style="height:' + hSafety + 'px;background:linear-gradient(180deg,#94a3b8,#64748b);width:100%;"></div>';
-                html += '    </div>';
-                html += '    <div style="display:flex;flex-direction:column;justify-content:space-between;height:' + barH + 'px;font-size:0.7rem;font-weight:600;">';
-                html += '      <span style="color:#166534;">' + pctStock + '%</span>';
-                html += '      <span style="color:#475569;">' + pctSafety + '%</span>';
-                html += '    </div>';
-                html += '  </div>';
-                html += '  <div style="margin-top:0.6rem;font-size:0.8rem;color:#1f2937;text-align:center;line-height:1.2;font-weight:600;">' + inp.name + '</div>';
-                html += '  <div style="font-size:0.68rem;color:#6b7280;margin-top:0.2rem;">' + inp.stock.toLocaleString('es-CL') + ' / ' + inp.safety.toLocaleString('es-CL') + '</div>';
-                html += '</div>';
-            });
-
-            html += '<div style="display:flex;gap:1.5rem;justify-content:center;margin-top:1.25rem;padding-top:0.75rem;border-top:1px solid #e5e7eb;width:100%;">';
-            html += '  <span style="display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:#6b7280;"><span style="width:14px;height:14px;border-radius:3px;background:linear-gradient(135deg,#34d399,#16a34a);display:inline-block;"></span> Stock actual</span>';
-            html += '  <span style="display:flex;align-items:center;gap:0.4rem;font-size:0.75rem;color:#6b7280;"><span style="width:14px;height:14px;border-radius:3px;background:linear-gradient(135deg,#94a3b8,#64748b);display:inline-block;"></span> Stock seguridad</span>';
-            html += '</div>';
-
-            container.innerHTML = html;
-        });
-    </script>
-
     <div id="salesModal" class="sales-modal-overlay" onclick="if(event.target===this)closeSalesModal()">
         <div class="sales-modal-content">
             <div class="sales-modal-header">
-                <h3 class="sales-modal-title">Venta ultimos 6 meses</h3>
+                <h3 class="sales-modal-title">Ventas últimos 6 meses</h3>
                 <button onclick="closeSalesModal()" class="sales-modal-close">&times;</button>
             </div>
             <div class="sales-chart-area">
@@ -186,10 +149,11 @@
         </div>
     </div>
 
+    <div id="attentionAlertsModal" class="sales-modal-overlay" onclick="if(event.target===this)closeAttentionAlertsModal()"><div class="sales-modal-content" style="max-width:800px;"><div class="sales-modal-header"><h3 class="sales-modal-title">Alertas de atención ({{ $attentionAlerts->count() }})</h3><button onclick="closeAttentionAlertsModal()" class="sales-modal-close">&times;</button></div><div class="sales-chart-area" style="padding:0;overflow-y:auto;max-height:60vh;">@forelse($attentionAlerts as $alert)<div class="dash-alert-row"><div class="dash-alert-info"><strong>{{ $alert['title'] }}</strong><span class="dash-alert-module">{{ $alert['module'] }}</span><p class="dash-alert-detail">{{ $alert['detail'] }}</p></div><a href="{{ $alert['action_url'] }}" class="btn btn-outline-warning btn-sm">Ver</a></div>@empty<div class="data-table-empty"><p>No hay alertas de atención.</p></div>@endforelse</div></div></div>
     <div id="criticalAlertsModal" class="sales-modal-overlay" onclick="if(event.target===this)closeCriticalAlertsModal()">
         <div class="sales-modal-content" style="max-width:800px;">
             <div class="sales-modal-header">
-                <h3 class="sales-modal-title">Alertas criticas ({{ $criticalAlerts->count() }})</h3>
+                <h3 class="sales-modal-title">Alertas críticas ({{ $criticalAlerts->count() }})</h3>
                 <button onclick="closeCriticalAlertsModal()" class="sales-modal-close">&times;</button>
             </div>
             <div class="sales-chart-area" style="padding:0;overflow-y:auto;max-height:60vh;">
@@ -207,7 +171,7 @@
                     @endforeach
                 </div>
                 @else
-                    <div class="data-table-empty"><p>Sin alertas criticas.</p></div>
+                    <div class="data-table-empty"><p>Sin alertas críticas.</p></div>
                 @endif
             </div>
         </div>
@@ -242,7 +206,7 @@
                     </tbody>
                 </table>
                 @else
-                    <div class="data-table-empty"><p>Sin datos de produccion.</p></div>
+                    <div class="data-table-empty"><p>Sin datos de producción.</p></div>
                 @endif
             </div>
         </div>
@@ -472,6 +436,9 @@
         function closeCriticalAlertsModal() {
             document.getElementById('criticalAlertsModal').style.display = 'none';
         }
+
+        function openAttentionAlertsModal() { document.getElementById('attentionAlertsModal').style.display = 'flex'; }
+        function closeAttentionAlertsModal() { document.getElementById('attentionAlertsModal').style.display = 'none'; }
 
         function openCapacityModal() {
             document.getElementById('capacityModal').style.display = 'flex';

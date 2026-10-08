@@ -40,7 +40,7 @@
             <label class="form-label">Correo electrónico</label>
             <input type="email" name="email" class="form-control" value="{{ old('email', $customer->email) }}">
         </div>
-        <div class="form-group"><label class="form-label">Contactos adicionales</label>@foreach(range(0, 2) as $contactIndex) @php($contact = $customer->contacts[$contactIndex] ?? null)<div class="form-grid mt-1"><input name="contacts[{{ $contactIndex }}][name]" class="form-control" value="{{ old("contacts.$contactIndex.name", $contact?->name) }}" placeholder="Nombre"><input name="contacts[{{ $contactIndex }}][phone]" class="form-control" value="{{ old("contacts.$contactIndex.phone", $contact?->phone) }}" placeholder="Teléfono"><input name="contacts[{{ $contactIndex }}][email]" type="email" class="form-control" value="{{ old("contacts.$contactIndex.email", $contact?->email) }}" placeholder="Correo"></div>@endforeach</div>
+        <div class="form-group"><label class="form-label">Contactos adicionales</label><div id="customer-contacts">@foreach($customer->contacts->count() ? $customer->contacts : collect([null]) as $contactIndex => $contact)<div class="form-grid mt-1"><input name="contacts[{{ $contactIndex }}][name]" class="form-control" value="{{ old("contacts.$contactIndex.name", $contact?->name) }}" placeholder="Nombre"><input name="contacts[{{ $contactIndex }}][phone]" class="form-control" value="{{ old("contacts.$contactIndex.phone", $contact?->phone) }}" placeholder="Teléfono"><input name="contacts[{{ $contactIndex }}][email]" type="email" class="form-control" value="{{ old("contacts.$contactIndex.email", $contact?->email) }}" placeholder="Correo"></div>@endforeach</div><button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addCustomerContact()">+ Agregar otro contacto</button></div>
         <div class="form-group">
             <label class="form-label">Condición de pago</label>
             <select name="payment_terms" class="form-control">
@@ -62,3 +62,4 @@
         <button type="submit" class="btn btn-primary">Guardar cambios</button>
     </div>
 </form>
+<script>let customerContactIndex = {{ $customer->contacts->count() }}; function addCustomerContact() { const row = document.createElement('div'); row.className = 'form-grid mt-1'; row.innerHTML = '<input name="contacts[' + customerContactIndex + '][name]" class="form-control" placeholder="Nombre"><input name="contacts[' + customerContactIndex + '][phone]" class="form-control" placeholder="Teléfono"><input name="contacts[' + customerContactIndex + '][email]" type="email" class="form-control" placeholder="Correo">'; document.getElementById('customer-contacts').appendChild(row); customerContactIndex++; }</script>

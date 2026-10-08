@@ -13,9 +13,7 @@
                         <th>Nombre</th>
                         <th>SKU</th>
                         <th class="text-right">Stock</th>
-                        <th class="text-right">Precio</th>
                         <th class="text-right">Costo piso</th>
-                        <th class="text-right">Margen</th>
                         <th class="text-right">Capacidad</th>
                         <th>Estado</th>
                         <th class="text-right"></th>
@@ -27,21 +25,12 @@
                             <td class="font-bold">{{ $product->name }}</td>
                             <td class="text-xs">{{ $product->sku }}</td>
                             <td class="text-right font-bold">{{ number_format($product->stock_boxes, 0, ',', '.') }} cajas</td>
-                            <td class="text-right font-bold">${{ number_format($product->sale_price_box, 0, ',', '.') }}</td>
                             <td class="text-right font-bold">
                                 @if($product->production_cost !== null)
                                     ${{ number_format($product->production_cost, 0, ',', '.') }}
                                 @else
                                     <span class="text-muted" title="Calculado por receta">${{ number_format($product->cost_per_box, 0, ',', '.') }}*</span>
                                 @endif
-                            </td>
-                            @php
-                                $margin = $product->sale_price_box - $product->cost_per_box;
-                                $marginPct = $product->sale_price_box > 0 ? round($margin / $product->sale_price_box * 100, 1) : 0;
-                            @endphp
-                            <td class="text-right">
-                                <span class="{{ $margin >= 0 ? 'text-positive' : 'text-negative' }} fw-600">${{ number_format($margin, 0, ',', '.') }}</span>
-                                <span class="text-xs text-muted">{{ $marginPct }}%</span>
                             </td>
                             <td class="text-right">
                                 @php $cap = $product->production_capacity; @endphp

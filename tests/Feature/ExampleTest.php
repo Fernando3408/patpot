@@ -19,8 +19,6 @@ class ExampleTest extends TestCase
             ->assertSee('Productos')
             ->assertSee('Proveedores')
             ->assertSee('Insumos')
-            ->assertSee('Recetas')
-            ->assertSee('Salas')
             ->assertSee('Retail')
             ->assertSee('href="/productos"', false)
             ->assertSee('href="/proveedores"', false)

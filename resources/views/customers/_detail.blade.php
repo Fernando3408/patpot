@@ -62,6 +62,8 @@
 </div>
 @endif
 
+<div class="card mt-4"><div class="card__header"><h2 class="card__title">Contactos adicionales</h2></div><div class="card__body">@if($customer->contacts->count())<div class="customer-contacts-detail-grid">@foreach($customer->contacts as $contact)<div class="customer-contact-card"><strong>{{ $contact->name }}</strong><span>{{ $contact->phone ?: 'Sin teléfono' }}</span><span>{{ $contact->email ?: 'Sin correo' }}</span></div>@endforeach</div>@else<p class="text-muted mb-0">No hay contactos adicionales registrados.</p>@endif</div></div>
+
 @if($customer->prices->count())
 <div class="card mt-4">
     <div class="card__header">

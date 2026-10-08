@@ -106,12 +106,12 @@ class DatabaseSeeder extends Seeder
     private function seedProducts(): void
     {
         $products = [
-            ['sku' => 'PAP-150-SAL', 'name' => 'Papas Chips Sal de Mar 150 g', 'grams' => 150, 'units_per_box' => 12, 'stock_boxes' => 0, 'min_stock_boxes' => 20, 'sale_price_box' => 3990, 'status' => 'active'],
-            ['sku' => 'PAP-150-MER', 'name' => 'Papas Chips Merkén 150 g', 'grams' => 150, 'units_per_box' => 12, 'stock_boxes' => 0, 'min_stock_boxes' => 20, 'sale_price_box' => 4290, 'status' => 'active'],
-            ['sku' => 'PAP-150-ROC', 'name' => 'Papas Chips Rocoto 150 g', 'grams' => 150, 'units_per_box' => 12, 'stock_boxes' => 0, 'min_stock_boxes' => 15, 'sale_price_box' => 4290, 'status' => 'active'],
-            ['sku' => 'PAP-150-LIM', 'name' => 'Papas Chips Limón Pimienta 150 g', 'grams' => 150, 'units_per_box' => 12, 'stock_boxes' => 0, 'min_stock_boxes' => 15, 'sale_price_box' => 4190, 'status' => 'active'],
-            ['sku' => 'PAP-045-SAL', 'name' => 'Papas Chips Sal de Mar 45 g', 'grams' => 45, 'units_per_box' => 42, 'stock_boxes' => 0, 'min_stock_boxes' => 15, 'sale_price_box' => 2490, 'status' => 'active'],
-            ['sku' => 'PAP-045-MER', 'name' => 'Papas Chips Merkén 45 g', 'grams' => 45, 'units_per_box' => 42, 'stock_boxes' => 0, 'min_stock_boxes' => 15, 'sale_price_box' => 2690, 'status' => 'active'],
+            ['sku' => 'PAP-150-SAL', 'name' => 'Papas Chips Sal de Mar 150 g', 'grams' => 150, 'units_per_box' => 12, 'stock_boxes' => 0, 'min_stock_boxes' => 20, 'status' => 'active'],
+            ['sku' => 'PAP-150-MER', 'name' => 'Papas Chips Merkén 150 g', 'grams' => 150, 'units_per_box' => 12, 'stock_boxes' => 0, 'min_stock_boxes' => 20, 'status' => 'active'],
+            ['sku' => 'PAP-150-ROC', 'name' => 'Papas Chips Rocoto 150 g', 'grams' => 150, 'units_per_box' => 12, 'stock_boxes' => 0, 'min_stock_boxes' => 15, 'status' => 'active'],
+            ['sku' => 'PAP-150-LIM', 'name' => 'Papas Chips Limón Pimienta 150 g', 'grams' => 150, 'units_per_box' => 12, 'stock_boxes' => 0, 'min_stock_boxes' => 15, 'status' => 'active'],
+            ['sku' => 'PAP-045-SAL', 'name' => 'Papas Chips Sal de Mar 45 g', 'grams' => 45, 'units_per_box' => 42, 'stock_boxes' => 0, 'min_stock_boxes' => 15, 'status' => 'active'],
+            ['sku' => 'PAP-045-MER', 'name' => 'Papas Chips Merkén 45 g', 'grams' => 45, 'units_per_box' => 42, 'stock_boxes' => 0, 'min_stock_boxes' => 15, 'status' => 'active'],
         ];
         foreach ($products as $data) {
             Product::query()->firstOrCreate(['sku' => $data['sku']], $data);
@@ -175,7 +175,7 @@ class DatabaseSeeder extends Seeder
         foreach ($customers as $customer) {
             $mult = $basePrices[$customer->code] ?? 1.0;
             foreach ($products as $product) {
-                $price = round($product->sale_price_box * $mult);
+                $price = round(3000 * $mult);
                 Price::query()->updateOrCreate(
                     ['customer_id' => $customer->id, 'product_id' => $product->id],
                     ['price_box' => $price]
@@ -338,7 +338,7 @@ class DatabaseSeeder extends Seeder
             $quantities = [];
             foreach ($oData['lines'] as $lineData) {
                 $product = $allProducts[$lineData['sku']];
-                $price = $priceList->get($product->id)?->price_box ?? $product->sale_price_box;
+                    $price = $priceList->get($product->id)?->price_box ?? 0;
                 $line = $order->lines()->firstOrCreate(
                     ['product_id' => $product->id],
                     ['boxes' => $lineData['boxes'], 'price_box' => $price]

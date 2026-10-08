@@ -18,7 +18,6 @@ class Product extends Model
         'units_per_box',
         'stock_boxes',
         'min_stock_boxes',
-        'sale_price_box',
         'production_cost',
         'status',
         'deleted_by',
@@ -29,7 +28,6 @@ class Product extends Model
         'units_per_box' => 'integer',
         'stock_boxes' => 'integer',
         'min_stock_boxes' => 'integer',
-        'sale_price_box' => 'decimal:2',
         'production_cost' => 'decimal:2',
     ];
 

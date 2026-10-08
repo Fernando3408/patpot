@@ -50,10 +50,9 @@
                     <span><i data-lucide="package" class="sidebar-link-icon"></i> Inventario</span>
                     <span class="sidebar-caret">▸</span>
                 </button>
-                <div class="sidebar-group-menu">
-                    <a href="/productos" class="sidebar-link {{ request()->is('productos*') ? 'active' : '' }}">Productos</a>
-                    <a href="/insumos" class="sidebar-link {{ request()->is('insumos*') ? 'active' : '' }}">Insumos</a>
-                    <a href="/recetas" class="sidebar-link {{ request()->is('recetas*') ? 'active' : '' }}">Recetas</a>
+                 <div class="sidebar-group-menu">
+                     <a href="/productos" class="sidebar-link {{ request()->is('productos*') ? 'active' : '' }}">Productos</a>
+                     <a href="/insumos" class="sidebar-link {{ request()->is('insumos*') ? 'active' : '' }}">Insumos</a>
                 </div>
             </div>
 
@@ -70,15 +69,7 @@
             </div>
 
             {{-- Producción --}}
-            <div class="sidebar-group {{ request()->is('produccion*') ? 'open' : '' }}">
-                <button class="sidebar-group-toggle" onclick="this.parentElement.classList.toggle('open')">
-                    <span><i data-lucide="factory" class="sidebar-link-icon"></i> Producción</span>
-                    <span class="sidebar-caret">▸</span>
-                </button>
-                <div class="sidebar-group-menu">
-                    <a href="/produccion" class="sidebar-link {{ request()->is('produccion*') ? 'active' : '' }}">Producción</a>
-                </div>
-            </div>
+            <a href="/produccion" class="sidebar-link {{ request()->is('produccion*') ? 'active' : '' }}"><i data-lucide="factory" class="sidebar-link-icon"></i> Producción</a>
 
             {{-- Ventas --}}
             <div class="sidebar-group {{ request()->is(['pedidos*', 'precios*', 'clientes*', 'salas*', 'retail*']) || request()->routeIs(['customers.*', 'salas.*']) ? 'open' : '' }}">
@@ -87,9 +78,7 @@
                     <span class="sidebar-caret">▸</span>
                 </button>
                 <div class="sidebar-group-menu">
-                    <a href="/precios" class="sidebar-link {{ request()->is('precios*') ? 'active' : '' }}">Precios</a>
-                    <a href="{{ route('customers.index') }}" class="sidebar-link {{ request()->routeIs('customers.*') ? 'active' : '' }}">Clientes</a>
-                    <a href="{{ route('salas.index') }}" class="sidebar-link {{ request()->routeIs('salas.*') ? 'active' : '' }}">Salas</a>
+                     <a href="{{ route('customers.index') }}" class="sidebar-link {{ request()->routeIs('customers.*') ? 'active' : '' }}">Clientes</a>
                     <a href="/retail" class="sidebar-link {{ request()->is('retail*') ? 'active' : '' }}">Retail</a>
                 </div>
             </div>
@@ -210,6 +199,16 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <script>
+        window.addCustomerContact = window.addCustomerContact || function() {
+            var container = document.getElementById('customer-contacts');
+            if (!container) return;
+            var index = container.querySelectorAll('.form-grid, .customer-contact-row').length;
+            var row = document.createElement('div');
+            row.className = 'form-grid mt-1 customer-contact-row';
+            row.innerHTML = '<input name="contacts[' + index + '][name]" class="form-control" placeholder="Nombre"><input name="contacts[' + index + '][phone]" class="form-control" placeholder="Teléfono"><input name="contacts[' + index + '][email]" type="email" class="form-control" placeholder="Correo">';
+            container.appendChild(row);
+        };
+
         var Toast = Swal.mixin({
             toast: true,
             position: 'top-end',
@@ -269,8 +268,8 @@
             document.body.style.overflow = 'hidden';
             var pw = document.querySelector('.page-wrapper');
             if (pw) pw.style.overflow = 'hidden';
-            fetch(url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now(), { credentials: 'same-origin', cache: 'no-store' })
-            .then(function(r) { return r.text(); })
+            fetch(url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now(), { credentials: 'same-origin', cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(function(r) { return r.text(); })
             .then(function(html) {
                 body.innerHTML = html.trim();
             })
@@ -408,9 +407,12 @@
                             if (res.ok && res.data.success) {
                                 var tr = form.closest('tr');
                                 if (tr) {
-                                    tr.style.transition = 'opacity 0.3s';
-                                    tr.style.opacity = '0';
-                                    setTimeout(function() { tr.remove(); }, 300);
+                                    var table = $(tr).closest('table');
+                                    if (table.length && $.fn.DataTable.isDataTable(table[0])) {
+                                        table.DataTable().row(tr).remove().draw(false);
+                                    } else {
+                                        tr.remove();
+                                    }
                                 }
                                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Eliminado', showConfirmButton: false, timer: 2000 });
                             } else {
@@ -437,6 +439,7 @@
 
         $(document).ready(function() {
             $('.data-table').each(function() {
+                if (this.id === 'lines-table') return;
                 var hasActions = $(this).find('th:last').text().trim().toLowerCase().includes('accion');
                 $(this).DataTable({
                     language: {

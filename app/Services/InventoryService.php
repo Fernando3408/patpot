@@ -349,7 +349,7 @@ class InventoryService
             ->where('product_id', $line['product_id'])
             ->first();
 
-        return (float) ($price?->effective_price ?? Product::query()->findOrFail($line['product_id'])->sale_price_box);
+        return (float) ($price?->effective_price ?? 0);
     }
 
     private function deductPackaging(Product $product, int $boxes, string $reference): void

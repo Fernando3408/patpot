@@ -244,10 +244,11 @@
                     btn.disabled = false;
                     btn.textContent = 'Confirmar despacho';
                 } else {
-                    closeDetailModal();
                     updateOrderRow(json, orderId);
                     rebuildOrderHistory(json, orderId);
+                    openDetailModal('/pedidos/' + orderId, 'Pedido actualizado');
                     Swal.fire({ icon: 'success', title: 'Despacho registrado', timer: 1500, showConfirmButton: false });
+                    setTimeout(function() { window.location.reload(); }, 400);
                 }
             })
             .catch(function() {

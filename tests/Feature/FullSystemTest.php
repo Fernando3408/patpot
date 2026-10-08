@@ -346,7 +346,7 @@ class FullSystemTest extends TestCase
             'business_name' => 'New Customer',
             'status' => true,
         ]);
-        $response->assertRedirect('/clientes');
+        $response->assertRedirectContains('/clientes/');
         $this->assertDatabaseHas('customers', ['code' => 'CLI-NEW']);
     }
 
@@ -785,7 +785,7 @@ class FullSystemTest extends TestCase
     }
 
     // ===== EDICION PEDIDO CON NUEVA LÍNEA (bug price_box null) =====
-    public function test_order_edit_add_new_line_with_auto_price(): void
+    public function test_order_edit_add_new_line_with_negotiated_price(): void
     {
         $order = Order::where('status', 'pending')->first();
         if (! $order) {
@@ -803,7 +803,7 @@ class FullSystemTest extends TestCase
             'ordered_on' => $order->ordered_on->format('Y-m-d'),
             'lines' => [
                 ['id' => $existingLine->id, 'product_id' => $existingLine->product_id, 'boxes' => $existingLine->boxes, 'price_box' => $existingLine->price_box],
-                ['product_id' => $newProduct->id, 'boxes' => 10, 'price_box' => ''],
+                ['product_id' => $newProduct->id, 'boxes' => 10, 'price_box' => 3500],
             ],
         ]);
         $response->assertStatus(302);

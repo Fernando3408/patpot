@@ -1,6 +1,6 @@
 <x-erp-layout title="Nuevo cliente" subtitle="Registra la información comercial y de contacto del cliente.">
 
-    <div class="card">
+    <div class="card customer-create-card">
         
         <!-- Cabecera -->
         <div class="card__header">
@@ -13,7 +13,7 @@
             <form method="POST" action="{{ route('customers.store') }}">
                 @csrf
 
-                <div class="form-grid">
+                <div class="customer-form-section"><h2>Identificación</h2><div class="customer-form-grid">
 
                     <div class="form-group">
                         <label class="form-label" for="business_name">Razón social *:</label>
@@ -40,19 +40,13 @@
                         </select>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label" for="contact">Contacto:</label>
-                        <input id="contact" type="text" name="contact" class="form-input" value="{{ old('contact') }}">
+                    </div></div>
+
+                    <div class="customer-form-section"><h2>Contactos</h2><div class="customer-contact-primary"><div class="form-group"><label class="form-label" for="contact">Nombre de contacto</label><input id="contact" type="text" name="contact" class="form-input" value="{{ old('contact') }}"></div><div class="form-group"><label class="form-label" for="email">Correo electrónico</label><input id="email" type="email" name="email" class="form-input" value="{{ old('email') }}"></div></div>
+                    <div class="form-group"><label class="form-label">Contactos adicionales</label><div id="customer-contacts"><div class="customer-contact-row"><input name="contacts[0][name]" class="form-input" placeholder="Nombre"><input name="contacts[0][phone]" class="form-input" placeholder="Teléfono"><input name="contacts[0][email]" type="email" class="form-input" placeholder="Correo"></div></div><button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addCustomerContact()">+ Agregar otro contacto</button></div>
+
                     </div>
-
-                    <div class="form-group">
-                        <label class="form-label" for="email">Correo electrónico:</label>
-                        <input id="email" type="email" name="email" class="form-input" value="{{ old('email') }}">
-                    </div>
-
-                    <div class="form-group"><label class="form-label">Contactos adicionales</label>@foreach(range(0, 2) as $contactIndex)<div class="form-grid mt-1"><input name="contacts[{{ $contactIndex }}][name]" class="form-input" placeholder="Nombre"><input name="contacts[{{ $contactIndex }}][phone]" class="form-input" placeholder="Teléfono"><input name="contacts[{{ $contactIndex }}][email]" type="email" class="form-input" placeholder="Correo"></div>@endforeach</div>
-
-                    <div class="form-group">
+                    <div class="customer-form-section customer-payment-section"><h2>Condiciones comerciales</h2><div class="form-group customer-payment-field">
                         <label class="form-label" for="payment_terms">Condición de pago:</label>
                         <select id="payment_terms" name="payment_terms" class="form-input">
                             <option value="">Seleccione una condición</option>
@@ -60,9 +54,7 @@
                                 <option value="{{ $term }}" @selected(old('payment_terms') === $term)>{{ $term }}</option>
                             @endforeach
                         </select>
-                    </div>
-
-                </div>
+                    </div></div>
 
                 <div class="form-actions-end">
                     <button type="submit" class="btn btn-primary">
@@ -77,3 +69,4 @@
     </div>
 
 </x-erp-layout>
+<script>let customerContactIndex = 1; function addCustomerContact() { const row = document.createElement('div'); row.className = 'form-grid mt-1'; row.innerHTML = '<input name="contacts[' + customerContactIndex + '][name]" class="form-input" placeholder="Nombre"><input name="contacts[' + customerContactIndex + '][phone]" class="form-input" placeholder="Teléfono"><input name="contacts[' + customerContactIndex + '][email]" type="email" class="form-input" placeholder="Correo">'; document.getElementById('customer-contacts').appendChild(row); customerContactIndex++; }</script>

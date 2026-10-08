@@ -186,13 +186,13 @@ PROMPT;
         $ctx .= "_(actualizados el " . now()->format('d/m/Y H:i') . ")_\n";
 
         // Productos
-        $products = Product::where('status', 'active')->get(['id', 'name', 'sku', 'stock_boxes', 'min_stock_boxes', 'sale_price_box', 'production_cost']);
+        $products = Product::where('status', 'active')->get(['id', 'name', 'sku', 'stock_boxes', 'min_stock_boxes', 'production_cost']);
         if ($products->isNotEmpty()) {
             $ctx .= "\n### Productos terminados\n";
             foreach ($products as $p) {
                 $alert = $p->stock_boxes <= 0 ? ' ❌ SIN STOCK' : ($p->stock_boxes < $p->min_stock_boxes ? ' ⚠️ BAJO MÍNIMO' : '');
                 $costo = $p->production_cost ? " costo: \$" . number_format($p->production_cost, 0, ',', '.') : '';
-                $ctx .= "- **{$p->name}** ({$p->sku}): {$p->stock_boxes} cajas, \${$p->sale_price_box}/caja{$costo}{$alert}\n";
+                $ctx .= "- **{$p->name}** ({$p->sku}): {$p->stock_boxes} cajas{$costo}{$alert}\n";
             }
         }
 
