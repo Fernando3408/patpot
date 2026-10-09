@@ -164,7 +164,9 @@ class RecipeController extends Controller
         }
 
         DB::transaction(function () use ($product, $source): void {
-            $product->recipes()->delete();
+            // La receta usa soft deletes, pero el índice único también considera
+            // las filas eliminadas. Eliminarlas físicamente evita conflictos al copiar.
+            $product->recipes()->withTrashed()->forceDelete();
             foreach ($source->recipes as $recipe) {
                 $product->recipes()->create(['input_id' => $recipe->input_id, 'qty_per_box' => $recipe->qty_per_box]);
             }

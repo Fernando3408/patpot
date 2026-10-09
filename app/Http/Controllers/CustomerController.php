@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Store;
 use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -46,9 +47,16 @@ class CustomerController extends Controller
         $validated['status'] = true;
         $request->merge(['contacts' => array_values(array_filter($request->input('contacts', []), fn (array $contact): bool => filled($contact['name'] ?? null)))]);
         $contacts = $request->validate(['contacts' => ['nullable', 'array'], 'contacts.*.name' => ['required', 'string', 'max:255'], 'contacts.*.phone' => ['nullable', 'string', 'max:50'], 'contacts.*.email' => ['nullable', 'email', 'max:255']])['contacts'] ?? [];
+        $store = $request->validate(['store' => ['nullable', 'array'], 'store.name' => ['nullable', 'string', 'max:255'], 'store.code' => ['nullable', 'string', 'max:100'], 'store.city' => ['nullable', 'string', 'max:100'], 'store.region' => ['nullable', 'string', 'max:100']])['store'] ?? [];
 
         $customer = Customer::query()->create($validated);
         $customer->contacts()->createMany($contacts);
+        if (filled($store['name'] ?? null)) {
+            $store['code'] = filled($store['code'] ?? null) ? $store['code'] : 'SALA-'.$customer->code;
+            $store['customer_id'] = $customer->id;
+            $store['status'] = true;
+            Store::create($store);
+        }
         AuditService::log('CREACIÓN DE CLIENTE', "Creó cliente: {$customer->business_name}", $customer);
 
         return redirect()->route('customers.show', $customer);

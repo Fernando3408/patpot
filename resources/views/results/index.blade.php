@@ -7,8 +7,8 @@
             <select name="customer_id" class="form-control"><option value="">Todos los clientes</option>@foreach($customers as $customer)<option value="{{ $customer->id }}" @selected($customerId === $customer->id)>{{ $customer->trade_name ?: $customer->business_name }}</option>@endforeach</select>
             <select name="product_id" class="form-control"><option value="">Todos los productos</option>@foreach($products as $product)<option value="{{ $product->id }}" @selected($productId === $product->id)>{{ $product->name }}</option>@endforeach</select>
             <button type="submit" class="btn btn-outline-success btn-sm">Consultar</button>
-            <a href="{{ route('results.pdf', ['month' => $month]) }}" class="btn btn-outline-primary btn-sm">Descargar PDF</a>
-            <a href="{{ route('results.export', ['month' => $month]) }}" class="btn btn-outline-primary btn-sm">Exportar CSV</a>
+            <a href="{{ route('results.pdf', ['month' => $month, 'day' => $day, 'customer_id' => $customerId, 'product_id' => $productId]) }}" class="btn btn-outline-primary btn-sm">Descargar PDF</a>
+            <a href="{{ route('results.export', ['month' => $month, 'day' => $day, 'customer_id' => $customerId, 'product_id' => $productId]) }}" class="btn btn-outline-primary btn-sm">Exportar CSV</a>
             <button type="button" class="btn btn-outline-primary btn-sm" onclick="window.print()">Imprimir / PDF</button>
         </form>
     </div>

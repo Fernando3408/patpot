@@ -31,7 +31,7 @@ class ResultsController extends Controller
             $to = $day;
         }
 
-        $shipments = Shipment::whereBetween('shipped_on', [$from, $to])->when($customerId, fn ($q) => $q->whereHas('order', fn ($order) => $order->where('customer_id', $customerId)))->get();
+        $shipments = Shipment::whereBetween('shipped_on', [$from, $to])->when($customerId, fn ($q) => $q->whereHas('order', fn ($order) => $order->where('customer_id', $customerId)))->when($productId, fn ($q) => $q->whereHas('lines.orderLine', fn ($line) => $line->where('product_id', $productId)))->get();
         $lines = ShipmentLine::with('orderLine.product')->whereHas('shipment', fn ($q) => $q->whereBetween('shipped_on', [$from, $to]))->when($customerId, fn ($q) => $q->whereHas('orderLine.order', fn ($order) => $order->where('customer_id', $customerId)))->when($productId, fn ($q) => $q->whereHas('orderLine', fn ($line) => $line->where('product_id', $productId)))->get();
         $sales = (float) $shipments->sum('total');
         $productCost = (float) $lines->sum(fn ($line) => (float) $line->boxes * ((float) $line->cost_box + (float) $line->variable_cost_box));
@@ -64,7 +64,7 @@ class ResultsController extends Controller
         $from = sprintf('%04d-%02d-01', (int) $year, (int) $monthNumber);
         $to = date('Y-m-t', strtotime($from));
         if ($day && checkdate((int) substr($day, 5, 2), (int) substr($day, 8, 2), (int) substr($day, 0, 4))) [$from, $to] = [$day, $day];
-        $shipments = Shipment::with(['order.customer', 'lines.orderLine.product'])->whereBetween('shipped_on', [$from, $to])->when($customerId, fn ($q) => $q->whereHas('order', fn ($order) => $order->where('customer_id', $customerId)))->get();
+         $shipments = Shipment::with(['order.customer', 'lines.orderLine.product'])->whereBetween('shipped_on', [$from, $to])->when($customerId, fn ($q) => $q->whereHas('order', fn ($order) => $order->where('customer_id', $customerId)))->when($productId, fn ($q) => $q->whereHas('lines.orderLine', fn ($line) => $line->where('product_id', $productId)))->get();
         $sales = (float) $shipments->sum('total');
         $lines = ShipmentLine::with('orderLine')->whereHas('shipment', fn ($q) => $q->whereBetween('shipped_on', [$from, $to]))->when($customerId, fn ($q) => $q->whereHas('orderLine.order', fn ($order) => $order->where('customer_id', $customerId)))->when($productId, fn ($q) => $q->whereHas('orderLine', fn ($line) => $line->where('product_id', $productId)))->get();
         $productCost = (float) $lines->sum(fn ($line) => (float) $line->boxes * ((float) $line->cost_box + (float) $line->variable_cost_box));
@@ -74,7 +74,7 @@ class ResultsController extends Controller
         $monthlyCosts = (float) MonthlyCost::whereBetween('cost_on', [$from, $to])->sum('amount');
         $filename = 'PatPot_Resultados_'.$month.'.csv';
 
-        return response()->streamDownload(function () use ($month, $sales, $productCost, $expenses, $closure, $monthlyCosts, $shipments): void {
+         return response()->streamDownload(function () use ($month, $sales, $productCost, $expenses, $closure, $monthlyCosts, $shipments, $productId): void {
             $handle = fopen('php://output', 'w');
             fwrite($handle, "\xEF\xBB\xBF");
             $sales = (float) ($closure?->sales ?? $sales);
@@ -85,7 +85,7 @@ class ResultsController extends Controller
             fputcsv($handle, [$month, number_format($sales, 0, ',', '.'), number_format($productCost, 0, ',', '.'), number_format($expenses, 0, ',', '.'), number_format($monthlyCosts, 0, ',', '.'), number_format($sales - $productCost - $expenses - $monthlyCosts, 0, ',', '.')], ';');
             fputcsv($handle, [], ';');
             fputcsv($handle, ['Pedido', 'Cliente', 'Producto', 'Cajas', 'Venta'], ';');
-            foreach ($shipments as $shipment) foreach ($shipment->lines as $line) fputcsv($handle, [$shipment->order?->number, $shipment->order?->customer?->business_name, $line->orderLine?->product?->name, $line->boxes, number_format((float) $line->boxes * (float) ($line->orderLine?->price_box ?? 0), 0, ',', '.')], ';');
+             foreach ($shipments as $shipment) foreach ($shipment->lines as $line) if (! $productId || $line->orderLine?->product_id == $productId) fputcsv($handle, [$shipment->order?->number, $shipment->order?->customer?->business_name, $line->orderLine?->product?->name, $line->boxes, number_format((float) $line->boxes * (float) ($line->orderLine?->price_box ?? 0), 0, ',', '.')], ';');
             fclose($handle);
         }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
     }
@@ -100,7 +100,7 @@ class ResultsController extends Controller
         $from = sprintf('%04d-%02d-01', (int) $year, (int) $monthNumber);
         $to = date('Y-m-t', strtotime($from));
         if ($day && checkdate((int) substr($day, 5, 2), (int) substr($day, 8, 2), (int) substr($day, 0, 4))) [$from, $to] = [$day, $day];
-        $shipments = Shipment::with(['order.customer', 'lines.orderLine.product'])->whereBetween('shipped_on', [$from, $to])->when($customerId, fn ($q) => $q->whereHas('order', fn ($order) => $order->where('customer_id', $customerId)))->get();
+         $shipments = Shipment::with(['order.customer', 'lines.orderLine.product'])->whereBetween('shipped_on', [$from, $to])->when($customerId, fn ($q) => $q->whereHas('order', fn ($order) => $order->where('customer_id', $customerId)))->when($productId, fn ($q) => $q->whereHas('lines.orderLine', fn ($line) => $line->where('product_id', $productId)))->get();
         $lines = ShipmentLine::with('orderLine.product')->whereHas('shipment', fn ($q) => $q->whereBetween('shipped_on', [$from, $to]))->when($customerId, fn ($q) => $q->whereHas('orderLine.order', fn ($order) => $order->where('customer_id', $customerId)))->when($productId, fn ($q) => $q->whereHas('orderLine', fn ($line) => $line->where('product_id', $productId)))->get();
         $sales = (float) $shipments->sum('total');
         $productCost = (float) $lines->sum(fn ($line) => (float) $line->boxes * ((float) $line->cost_box + (float) $line->variable_cost_box));
