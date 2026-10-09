@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ExpenseOption;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\AuditService;
@@ -22,7 +23,24 @@ class AdminController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('admin.index', compact('users'));
+        $expenseOptions = ExpenseOption::orderBy('type')->orderBy('name')->get();
+
+        return view('admin.index', compact('users', 'expenseOptions'));
+    }
+
+    public function storeExpenseOption(Request $request): RedirectResponse
+    {
+        $data = $request->validate(['type' => ['required', 'in:category,concept'], 'name' => ['required', 'string', 'max:100']]);
+        ExpenseOption::firstOrCreate($data, ['active' => true]);
+
+        return back()->with('success', 'Opción agregada.');
+    }
+
+    public function toggleExpenseOption(ExpenseOption $expenseOption): RedirectResponse
+    {
+        $expenseOption->update(['active' => ! $expenseOption->active]);
+
+        return back()->with('success', 'Opción actualizada.');
     }
 
     public function edit(User $user): View
@@ -92,6 +110,7 @@ class AdminController extends Controller
             if ($request->ajax()) {
                 return response()->json(['errors' => ['error' => ['No puedes desactivar tu propio usuario.']]], 422);
             }
+
             return back()->withErrors(['error' => 'No puedes desactivar tu propio usuario.']);
         }
 

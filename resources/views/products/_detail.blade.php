@@ -10,7 +10,6 @@
             <div><strong>Unidades por caja:</strong> {{ number_format($product->units_per_box, 0, ',', '.') }}</div>
             <div><strong>Stock cajas:</strong> {{ number_format($product->stock_boxes, 0, ',', '.') }}</div>
             <div><strong>Stock mínimo:</strong> {{ number_format($product->min_stock_boxes, 0, ',', '.') }}</div>
-            <div><strong>Precio venta/caja:</strong> ${{ number_format($product->sale_price_box, 0, ',', '.') }}</div>
             <div><strong>Costo piso/caja:</strong> {{ $product->production_cost !== null ? '$' . number_format($product->production_cost, 0, ',', '.') : 'Calculado por receta' }}</div>
             <div><strong>Costo/caja:</strong> ${{ number_format($product->cost_per_box, 0, ',', '.') }}</div>
             <div><strong>Capacidad producción:</strong> {{ $product->production_capacity ? number_format($product->production_capacity, 0, ',', '.') . ' cajas' : '—' }}</div>
@@ -48,6 +47,27 @@
                 @endforeach
             </tbody>
         </table>
+    </div>
+</div>
+<div class="card mt-4">
+    <div class="card__body">
+        <form method="POST" action="{{ route('products.recipes.copy', $product) }}" class="form-grid">
+            @csrf
+            <select name="source_product_id" class="form-control" required>
+                <option value="">Copiar receta desde otro producto</option>
+                @foreach($recipeSources as $source)
+                    <option value="{{ $source->id }}">{{ $source->name }}</option>
+                @endforeach
+            </select>
+            <button class="btn btn-outline-primary">Copiar receta</button>
+        </form>
+    </div>
+</div>
+@else
+<div class="card mt-4">
+    <div class="card__body">
+        <span class="badge badge-warning">Receta incompleta</span>
+        <p class="text-muted mt-2 mb-0">Este producto no puede utilizarse en nuevos pedidos hasta configurar sus insumos y cantidades por caja.</p>
     </div>
 </div>
 @endif

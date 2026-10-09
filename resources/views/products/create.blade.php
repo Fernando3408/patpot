@@ -89,20 +89,6 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="sale_price_box" class="form-label">Precio venta por caja ($)</label>
-                    <input
-                        type="number"
-                        id="sale_price_box"
-                        name="sale_price_box"
-                        class="form-control"
-                        value="{{ old('sale_price_box') }}"
-                        placeholder="15000"
-                        step="1"
-                        min="0"
-                    >
-                </div>
-
-                <div class="form-group">
                     <label for="production_cost" class="form-label">Costo piso por caja ($)</label>
                     <input
                         type="number"

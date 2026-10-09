@@ -11,11 +11,11 @@ class OrderLine extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['order_id', 'product_id', 'boxes', 'price_box', 'dispatched_boxes'];
+    protected $fillable = ['order_id', 'product_id', 'boxes', 'price_box', 'cost_box', 'dispatched_boxes'];
 
     protected function casts(): array
     {
-        return ['boxes' => 'integer', 'price_box' => 'decimal:2', 'dispatched_boxes' => 'integer'];
+        return ['boxes' => 'integer', 'price_box' => 'decimal:2', 'cost_box' => 'decimal:2', 'dispatched_boxes' => 'integer'];
     }
 
     public function order(): BelongsTo
@@ -31,5 +31,10 @@ class OrderLine extends Model
     public function shipmentLines(): HasMany
     {
         return $this->hasMany(ShipmentLine::class);
+    }
+
+    public function inputConsumptions(): HasMany
+    {
+        return $this->hasMany(OrderInputConsumption::class);
     }
 }

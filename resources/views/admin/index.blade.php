@@ -5,7 +5,8 @@
         </div>
     </div>
 
-    <div class="table-container">
+    <div class="admin-tabs"><button type="button" class="admin-tab is-active" data-panel="usersPanel">Usuarios del sistema</button><button type="button" class="admin-tab" data-panel="optionsPanel">Conceptos y categorías</button></div>
+    <div id="usersPanel" class="table-container admin-users-table">
         <table class="data-table">
             <thead>
                 <tr>
@@ -50,6 +51,26 @@
             </tbody>
         </table>
     </div>
+
+    <div id="optionsPanel" class="form-card admin-options-panel is-hidden">
+        <h2 class="card__title">Conceptos y categorías de gastos</h2>
+        <form method="POST" action="{{ route('admin.expense-options.store') }}" class="form-grid mt-3">@csrf
+            <select name="type" class="form-control"><option value="concept">Concepto de pedido</option><option value="category">Categoría de costo mensual</option></select>
+            <input name="name" class="form-control" placeholder="Nuevo nombre" required><button class="btn btn-primary">Agregar opción</button>
+        </form>
+        <div class="admin-option-columns">@foreach(['concept' => 'Conceptos de pedidos', 'category' => 'Categorías de costos'] as $type => $label)<div class="admin-option-group"><h3>{{ $label }}</h3><div class="admin-option-list">@foreach($expenseOptions->where('type', $type) as $option)<div class="admin-option-item"><span>{{ $option->name }}</span><form method="POST" action="{{ route('admin.expense-options.toggle', $option) }}">@csrf<button class="btn btn-outline-{{ $option->active ? 'warning' : 'success' }} btn-sm">{{ $option->active ? 'Desactivar' : 'Activar' }}</button></form></div>@endforeach</div></div>@endforeach</div>
+    </div>
+
+    <script>
+        document.querySelectorAll('.admin-tab').forEach(function(tab) {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.admin-tab').forEach(function(item) { item.classList.remove('is-active'); });
+                document.querySelectorAll('#usersPanel, #optionsPanel').forEach(function(panel) { panel.classList.add('is-hidden'); });
+                tab.classList.add('is-active');
+                document.getElementById(tab.dataset.panel).classList.remove('is-hidden');
+            });
+        });
+    </script>
 
     <script>
         document.querySelectorAll('.toggle-status-form').forEach(function(form) {

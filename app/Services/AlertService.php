@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Input;
 use App\Models\Order;
 use App\Models\Purchase;
+use App\Models\Product;
 use App\Models\Retail;
 use App\Models\Task;
 use Illuminate\Support\Collection;
@@ -28,21 +29,42 @@ class AlertService
                 ]);
             });
 
-        // Insumos al 50% de stock de seguridad
-        Input::where('type', 'material')
+        // Insumos y servicios bajo stock de seguridad
+        Input::where('status', true)
             ->where('safety_stock', '>', 0)
             ->get()
-            ->filter(fn (Input $i) => (float) $i->stock > 0 && (float) $i->stock <= (float) $i->safety_stock * 0.5 && $i->inventory_level !== 'critico')
+            ->filter(fn (Input $i) => (float) $i->stock > 0 && (float) $i->stock <= (float) $i->safety_stock && $i->inventory_level !== 'critico')
             ->each(function (Input $i) use ($alerts) {
                 $pct = $i->safety_stock > 0 ? round((float) $i->stock / (float) $i->safety_stock * 100) : 0;
                 $alerts->push([
                     'level' => 'warning',
                     'module' => 'Insumos',
-                    'title' => "{$i->name} al {$pct}% del stock de seguridad",
-                    'detail' => "Stock {$i->formattedStock()} {$i->unit}; seguridad {$i->formattedSafetyStock()} {$i->unit}.",
+                    'title' => "{$i->name} bajo el mínimo",
+                    'detail' => "Quedan {$i->formattedStock()} {$this->unitLabel($i->unit, (float) $i->stock)}; mínimo definido {$i->formattedSafetyStock()} {$this->unitLabel($i->unit, (float) $i->safety_stock)}.",
                     'action_url' => '/insumos',
                 ]);
             });
+
+        Product::where('status', 'active')->whereColumn('stock_boxes', '<=', 'min_stock_boxes')->get()->each(function (Product $product) use ($alerts): void {
+            $stock = (float) $product->stock_boxes;
+            $minimum = (float) $product->min_stock_boxes;
+            $alerts->push(['level' => $stock <= 0 ? 'critical' : 'warning', 'module' => 'Productos', 'title' => $stock <= 0 ? "{$product->name} sin stock" : "{$product->name} bajo el mínimo", 'detail' => "Quedan ".number_format($stock, 0, ',', '.')." cajas; mínimo definido ".number_format($minimum, 0, ',', '.')." cajas.", 'action_url' => '/productos']);
+        });
+
+        $pendingConsumption = collect();
+        Order::whereIn('status', ['pending', 'partial'])->with('lines.product.recipes')->get()->each(function (Order $order) use ($pendingConsumption): void {
+            foreach ($order->lines as $line) {
+                foreach ($line->product?->recipes ?? [] as $recipe) {
+                    $pendingConsumption[$recipe->input_id] = ($pendingConsumption[$recipe->input_id] ?? 0) + ((float) $recipe->qty_per_box * max(0, (int) $line->boxes - (int) $line->dispatched_boxes));
+                }
+            }
+        });
+        Input::whereIn('id', $pendingConsumption->keys())->get()->each(function (Input $input) use ($pendingConsumption, $alerts): void {
+            $required = (float) $pendingConsumption[$input->id];
+            if ((float) $input->stock < $required) {
+                $alerts->push(['level' => 'critical', 'module' => 'Pedidos', 'title' => "Stock insuficiente: {$input->name}", 'detail' => "Stock actual {$input->formattedStock()} {$input->unit}; pedidos pendientes requieren ".rtrim(rtrim(number_format($required, 3, ',', '.'), '0'), ',')." {$input->unit}.", 'action_url' => '/pedidos']);
+            }
+        });
 
         // Compras atrasadas
         Purchase::where('status', '!=', 'received')
@@ -108,5 +130,10 @@ class AlertService
             });
 
         return $alerts;
+    }
+
+    private function unitLabel(string $unit, float $quantity): string
+    {
+        return strtolower($unit) === 'unidad' && $quantity != 1.0 ? 'unidades' : $unit;
     }
 }

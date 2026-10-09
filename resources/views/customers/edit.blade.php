@@ -6,7 +6,7 @@
     <div class="form-grid">
         <div class="form-group">
             <label class="form-label">Código *</label>
-            <input type="text" name="code" class="form-control" value="{{ old('code', $customer->code) }}" required>
+            <input type="text" name="code" class="form-control" value="{{ old('code', $customer->code) }}" readonly>
         </div>
         <div class="form-group">
             <label class="form-label">Razón social *</label>
@@ -22,11 +22,15 @@
         </div>
         <div class="form-group">
             <label class="form-label">Tipo</label>
-            <input type="text" name="type" class="form-control" value="{{ old('type', $customer->type) }}">
+            <input type="hidden" name="type" value="{{ old('type', $customer->type) }}">
         </div>
         <div class="form-group">
             <label class="form-label">Canal</label>
-            <input type="text" name="channel" class="form-control" value="{{ old('channel', $customer->channel) }}">
+            <select name="channel" class="form-control">
+                @foreach(['Supermercado','Distribuidor','Tienda especializada','HORECA','Exportación','Venta directa'] as $channel)
+                    <option value="{{ $channel }}" @selected(old('channel', $customer->channel) === $channel)>{{ $channel }}</option>
+                @endforeach
+            </select>
         </div>
         <div class="form-group">
             <label class="form-label">Contacto</label>
@@ -36,9 +40,14 @@
             <label class="form-label">Correo electrónico</label>
             <input type="email" name="email" class="form-control" value="{{ old('email', $customer->email) }}">
         </div>
+        <div class="form-group"><label class="form-label">Contactos adicionales</label><div id="customer-contacts">@foreach($customer->contacts->count() ? $customer->contacts : collect([null]) as $contactIndex => $contact)<div class="form-grid mt-1"><input name="contacts[{{ $contactIndex }}][name]" class="form-control" value="{{ old("contacts.$contactIndex.name", $contact?->name) }}" placeholder="Nombre"><input name="contacts[{{ $contactIndex }}][phone]" class="form-control" value="{{ old("contacts.$contactIndex.phone", $contact?->phone) }}" placeholder="Teléfono"><input name="contacts[{{ $contactIndex }}][email]" type="email" class="form-control" value="{{ old("contacts.$contactIndex.email", $contact?->email) }}" placeholder="Correo"></div>@endforeach</div><button type="button" class="btn btn-outline-primary btn-sm mt-2" onclick="addCustomerContact()">+ Agregar otro contacto</button></div>
         <div class="form-group">
             <label class="form-label">Condición de pago</label>
-            <input type="text" name="payment_terms" class="form-control" value="{{ old('payment_terms', $customer->payment_terms) }}">
+            <select name="payment_terms" class="form-control">
+                @foreach(['Contado','30 días','60 días','90 días'] as $term)
+                    <option value="{{ $term }}" @selected(old('payment_terms', $customer->payment_terms) === $term)>{{ $term }}</option>
+                @endforeach
+            </select>
         </div>
         <div class="form-group">
             <label class="form-label">Estado *</label>
@@ -53,3 +62,4 @@
         <button type="submit" class="btn btn-primary">Guardar cambios</button>
     </div>
 </form>
+<script>let customerContactIndex = {{ $customer->contacts->count() }}; function addCustomerContact() { const row = document.createElement('div'); row.className = 'form-grid mt-1'; row.innerHTML = '<input name="contacts[' + customerContactIndex + '][name]" class="form-control" placeholder="Nombre"><input name="contacts[' + customerContactIndex + '][phone]" class="form-control" placeholder="Teléfono"><input name="contacts[' + customerContactIndex + '][email]" type="email" class="form-control" placeholder="Correo">'; document.getElementById('customer-contacts').appendChild(row); customerContactIndex++; }</script>

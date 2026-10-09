@@ -98,7 +98,7 @@
     @else
         <div class="table-container">
             <div class="data-table-empty">
-                <p>No hay precios registrados.<br><span class="text-xs">Los pedidos usarán el precio base del producto.</span></p>
+                <p>No hay precios registrados.<br><span class="text-xs">Los pedidos solicitarán el precio negociado del cliente.</span></p>
             </div>
         </div>
     @endif

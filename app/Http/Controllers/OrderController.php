@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\ExpenseOption;
+use App\Models\MonthlyClosure;
 use App\Models\Order;
 use App\Models\Price;
 use App\Models\Product;
@@ -10,9 +12,12 @@ use App\Models\Store;
 use App\Services\AuditService;
 use App\Services\InventoryService;
 use App\Traits\ValidatesWithLineFormatting;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -43,21 +48,33 @@ class OrderController extends Controller
 
     public function create(): View
     {
-        return view('orders.create', ['customers' => Customer::where('status', true)->orderBy('business_name')->get(), 'stores' => Store::where('status', true)->orderBy('name')->get(), 'products' => Product::where('status', 'active')->orderBy('name')->get(), 'prices' => Price::query()->get()->keyBy(fn (Price $price): string => "{$price->customer_id}-{$price->product_id}")]);
+        return view('orders.create', ['customers' => Customer::where('status', true)->orderBy('business_name')->get(), 'stores' => Store::where('status', true)->orderBy('name')->get(), 'products' => Product::where('status', 'active')->with('recipes.input')->orderBy('name')->get(), 'prices' => Price::query()->get()->keyBy(fn (Price $price): string => "{$price->customer_id}-{$price->product_id}"), 'expenseConcepts' => ExpenseOption::where('type', 'concept')->where('active', true)->orderBy('name')->pluck('name')]);
     }
 
-    public function store(Request $request): RedirectResponse|\Illuminate\Http\JsonResponse
+    public function store(Request $request): RedirectResponse|JsonResponse
     {
         $request->merge(['lines' => array_values(array_filter($request->input('lines', []), fn (array $line): bool => filled($line['product_id'] ?? null)))]);
-        $data = $this->validateLines($request->all(), ['number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('orders', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'customer_id' => ['required', \Illuminate\Validation\Rule::exists('customers', 'id')->where('status', true)], 'store_id' => ['nullable', \Illuminate\Validation\Rule::exists('stores', 'id')->where('status', true)], 'ordered_on' => ['required', 'date'], 'delivery_on' => ['nullable', 'date'], 'notes' => ['nullable', 'string'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'distinct', \Illuminate\Validation\Rule::exists('products', 'id')->where('status', 'active')], 'lines.*.boxes' => ['required', 'integer', 'gt:0'], 'lines.*.price_box' => ['nullable', 'numeric', 'min:0']]);
+        $request->merge(['customer_order_number' => $request->input('customer_order_number')]);
+        $data = $this->validateLines($request->all(), ['number' => ['required', 'string', 'max:255', Rule::unique('orders', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'customer_id' => ['required', Rule::exists('customers', 'id')->where('status', true)], 'store_id' => ['nullable', Rule::exists('stores', 'id')->where('status', true)], 'ordered_on' => ['required', 'date'], 'delivery_on' => ['nullable', 'date'], 'notes' => ['nullable', 'string'], 'lines' => ['required', 'array', 'min:1'], 'lines.*.product_id' => ['required', 'distinct', Rule::exists('products', 'id')->where('status', 'active')], 'lines.*.boxes' => ['required', 'integer', 'gt:0'], 'lines.*.price_box' => ['nullable', 'numeric', 'min:0']]);
+        $this->guardOpenMonth($data['ordered_on']);
+        $data['customer_order_number'] = $request->input('customer_order_number');
+        $request->merge(['expenses' => array_values(array_filter($request->input('expenses', []), fn (array $expense): bool => filled($expense['concept'] ?? null)))]);
+        $data['expenses'] = $request->validate(['expenses' => ['nullable', 'array'], 'expenses.*.concept' => ['required_with:expenses', 'string', 'max:100'], 'expenses.*.kind' => ['required_with:expenses', 'in:fixed,percent'], 'expenses.*.value' => ['required_with:expenses', 'numeric', 'gt:0'], 'expenses.*.notes' => ['nullable', 'string']])['expenses'] ?? [];
         $this->ensureStoreBelongsToCustomer($data);
         foreach ($data['lines'] as &$line) {
             if (blank($line['price_box'] ?? null)) {
                 $line['price_box'] = $this->effectivePriceForCustomerProduct((int) $data['customer_id'], (int) $line['product_id']);
             }
+            $line['cost_box'] = (float) Product::with('recipes.input')->findOrFail($line['product_id'])->cost_per_box;
         } unset($line);
-        $order = Order::create(collect($data)->except('lines')->all() + ['status' => 'pending']);
-        $order->lines()->createMany($data['lines']);
+        $order = DB::transaction(function () use ($data): Order {
+            $order = Order::create(collect($data)->except(['lines', 'expenses'])->all() + ['status' => 'pending']);
+            $order->lines()->createMany($data['lines']);
+            $this->inventoryService->syncOrderInputConsumptions($order);
+            $this->syncOrderExpenses($order, $data['expenses'] ?? []);
+
+            return $order;
+        }, attempts: 5);
 
         if ($request->hasFile('files')) {
             foreach ($request->file('files') as $file) {
@@ -93,6 +110,7 @@ class OrderController extends Controller
 
     public function dispatch(Request $request, Order $pedido)
     {
+        $this->guardOpenMonth($pedido->ordered_on);
         $data = $request->validate([
             'quantities' => ['required', 'array'],
             'quantities.*' => ['nullable', 'integer', 'min:0'],
@@ -155,22 +173,24 @@ class OrderController extends Controller
 
     public function edit(Order $pedido): View
     {
-        $pedido->load('lines.product', 'attachments');
+        $pedido->load('lines.product', 'attachments', 'expenses');
         $this->ensureOrderHasNoDispatches($pedido);
+        $expenseConcepts = ExpenseOption::where('type', 'concept')->where('active', true)->orderBy('name')->pluck('name');
 
-        return view('orders.edit', ['order' => $pedido, 'customers' => Customer::where('status', true)->orderBy('business_name')->get(), 'stores' => Store::where('status', true)->orderBy('name')->get(), 'products' => Product::where('status', 'active')->orderBy('name')->get()]);
+        return view('orders.edit', ['order' => $pedido, 'customers' => Customer::where('status', true)->orderBy('business_name')->get(), 'stores' => Store::where('status', true)->orderBy('name')->get(), 'products' => Product::where('status', 'active')->orderBy('name')->get(), 'expenseConcepts' => $expenseConcepts]);
     }
 
     public function update(Request $request, Order $pedido)
     {
+        $this->guardOpenMonth($pedido->ordered_on);
         try {
             $pedido->loadMissing('lines');
             $this->ensureOrderHasNoDispatches($pedido);
 
             if ($request->ajax()) {
                 $rules = [
-                    'number' => ['sometimes', 'required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('orders', 'number')->ignore($pedido->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
-                    'customer_id' => ['sometimes', 'required', \Illuminate\Validation\Rule::exists('customers', 'id')->where('status', true)],
+                    'number' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('orders', 'number')->ignore($pedido->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
+                    'customer_id' => ['sometimes', 'required', Rule::exists('customers', 'id')->where('status', true)],
                     'store_id' => ['sometimes', 'nullable', 'exists:stores,id'],
                     'ordered_on' => ['sometimes', 'required', 'date'],
                     'delivery_on' => ['sometimes', 'nullable', 'date'],
@@ -178,8 +198,8 @@ class OrderController extends Controller
                 ];
             } else {
                 $rules = [
-                    'number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('orders', 'number')->ignore($pedido->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
-                    'customer_id' => ['required', \Illuminate\Validation\Rule::exists('customers', 'id')->where('status', true)],
+                    'number' => ['required', 'string', 'max:255', Rule::unique('orders', 'number')->ignore($pedido->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
+                    'customer_id' => ['required', Rule::exists('customers', 'id')->where('status', true)],
                     'store_id' => ['nullable', 'exists:stores,id'],
                     'ordered_on' => ['required', 'date'],
                     'delivery_on' => ['nullable', 'date'],
@@ -191,25 +211,34 @@ class OrderController extends Controller
                 $rules = array_merge($rules, [
                     'lines' => ['required', 'array', 'min:1'],
                     'lines.*.id' => ['nullable', 'integer'],
-                    'lines.*.product_id' => ['required', 'distinct', \Illuminate\Validation\Rule::exists('products', 'id')->where('status', 'active')],
+                    'lines.*.product_id' => ['required', 'distinct', Rule::exists('products', 'id')->where('status', 'active')],
                     'lines.*.boxes' => ['required', 'integer', 'gt:0'],
                     'lines.*.price_box' => ['nullable', 'numeric', 'min:0'],
                 ]);
             }
 
             $data = $this->validateLines($request->all(), $rules);
+            $this->guardOpenMonth($data['ordered_on'] ?? $pedido->ordered_on);
+            $data['customer_order_number'] = $request->input('customer_order_number');
+            $request->merge(['expenses' => array_values(array_filter($request->input('expenses', []), fn (array $expense): bool => filled($expense['concept'] ?? null)))]);
+            $data['expenses'] = $request->validate(['expenses' => ['nullable', 'array'], 'expenses.*.concept' => ['required_with:expenses', 'string', 'max:100'], 'expenses.*.kind' => ['required_with:expenses', 'in:fixed,percent'], 'expenses.*.value' => ['required_with:expenses', 'numeric', 'gt:0'], 'expenses.*.notes' => ['nullable', 'string']])['expenses'] ?? [];
             $this->ensureStoreBelongsToCustomer($data, $pedido);
             foreach ($data['lines'] ?? [] as &$line) {
                 if (blank($line['price_box'] ?? null)) {
                     $line['price_box'] = $this->effectivePriceForCustomerProduct((int) $data['customer_id'], (int) $line['product_id']);
                 }
+                if (blank($line['cost_box'] ?? null)) {
+                    $line['cost_box'] = (float) Product::with('recipes.input')->findOrFail($line['product_id'])->cost_per_box;
+                }
             } unset($line);
 
             DB::transaction(function () use ($pedido, $data): void {
-                $pedido->update(collect($data)->except('lines')->all());
+                $pedido->update(collect($data)->except(['lines', 'expenses'])->all());
                 if (isset($data['lines'])) {
                     $this->inventoryService->updateOrderLines($pedido, $data['lines']);
+                    $this->inventoryService->syncOrderInputConsumptions($pedido);
                 }
+                $this->syncOrderExpenses($pedido, $data['expenses'] ?? []);
                 AuditService::log('ACTUALIZACIÓN DE PEDIDO', "Actualizó pedido: {$pedido->number}", $pedido);
             }, attempts: 5);
 
@@ -226,11 +255,25 @@ class OrderController extends Controller
         }
     }
 
+    private function syncOrderExpenses(Order $order, array $expenses): void
+    {
+        $sales = collect($order->lines)->sum(fn ($line) => (float) $line['boxes'] * (float) ($line['price_box'] ?? 0));
+        $order->expenses()->delete();
+        foreach ($expenses as $expense) {
+            $value = (float) $expense['value'];
+            $amount = $expense['kind'] === 'percent' ? round($sales * $value / 100, 2) : $value;
+            $order->expenses()->create([...$expense, 'amount' => $amount]);
+        }
+    }
+
     public function destroy(Request $request, Order $pedido): RedirectResponse
     {
+        $this->guardOpenMonth($pedido->ordered_on);
         if ($pedido->shipments()->exists()) {
             return back()->withErrors(['delete' => 'No puedes eliminar un pedido que ya tiene despachos.']);
         }
+
+        $this->inventoryService->reverseOrderInputConsumptions($pedido);
 
         $pedido->lines()->delete();
         $pedido->delete();
@@ -241,6 +284,27 @@ class OrderController extends Controller
         }
 
         return redirect('/pedidos')->with('success', 'Pedido eliminado correctamente.');
+    }
+
+    private function guardOpenMonth(string|\DateTimeInterface $date): void
+    {
+        $month = Carbon::parse($date)->format('Y-m');
+        abort_if(MonthlyClosure::where('month', $month)->exists(), 422, 'El mes está cerrado y no admite modificaciones.');
+    }
+
+    public function cancel(Request $request, Order $pedido): RedirectResponse|JsonResponse
+    {
+        if ($pedido->shipments()->exists()) {
+            return back()->withErrors(['cancel' => 'No puedes anular un pedido con despachos registrados.']);
+        }
+        $this->inventoryService->reverseOrderInputConsumptions($pedido);
+        $pedido->update(['status' => 'cancelled']);
+        AuditService::log('ANULACIÓN DE PEDIDO', "Anuló pedido: {$pedido->number}", $pedido);
+        if ($request->ajax()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect('/pedidos')->with('success', 'Pedido anulado correctamente.');
     }
 
     /**
@@ -273,7 +337,7 @@ class OrderController extends Controller
             ->where('product_id', $productId)
             ->first();
 
-        return (float) ($price?->effective_price ?? Product::query()->findOrFail($productId)->sale_price_box);
+        return (float) ($price?->effective_price ?? 0);
     }
 
     private function ensureOrderHasNoDispatches(Order $order): void

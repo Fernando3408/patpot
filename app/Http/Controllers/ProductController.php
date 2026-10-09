@@ -44,7 +44,6 @@ class ProductController extends Controller
             'units_per_box' => 'required|integer|min:1',
             'stock_boxes' => 'required|integer|min:0',
             'min_stock_boxes' => 'required|integer|min:0',
-            'sale_price_box' => 'required|numeric|min:0',
             'production_cost' => 'nullable|numeric|min:0',
             'status' => 'required|in:active,inactive',
         ]);
@@ -63,8 +62,9 @@ class ProductController extends Controller
     public function show(Product $product): View
     {
         $product->load('recipes.input');
+        $recipeSources = Product::where('status', 'active')->where('id', '!=', $product->id)->whereHas('recipes')->orderBy('name')->get(['id', 'name']);
 
-        return view('products._detail', compact('product'));
+        return view('products._detail', compact('product', 'recipeSources'));
     }
 
     public function update(Request $request, Product $product): JsonResponse|RedirectResponse
@@ -76,7 +76,6 @@ class ProductController extends Controller
                     'sku' => ['sometimes', 'required', 'string', 'max:255', Rule::unique(Product::class)->ignore($product)],
                     'stock_boxes' => 'sometimes|integer|min:0',
                     'min_stock_boxes' => 'sometimes|integer|min:0',
-                    'sale_price_box' => 'sometimes|nullable|numeric|min:0',
                     'production_cost' => 'sometimes|nullable|numeric|min:0',
                     'status' => 'sometimes|required|in:active,inactive',
                 ];
@@ -88,7 +87,6 @@ class ProductController extends Controller
                     'units_per_box' => 'required|integer|min:1',
                     'stock_boxes' => 'required|integer|min:0',
                     'min_stock_boxes' => 'required|integer|min:0',
-                    'sale_price_box' => 'required|numeric|min:0',
                     'production_cost' => 'nullable|numeric|min:0',
                     'status' => 'required|in:active,inactive',
                 ];
@@ -100,15 +98,14 @@ class ProductController extends Controller
             AuditService::log('ACTUALIZACIÓN DE PRODUCTO', "Actualizó producto: {$product->name}", $product);
 
             if ($request->ajax()) {
-                $margin = $product->sale_price_box - $product->cost_per_box;
+                $margin = 0 - $product->cost_per_box;
 
                 return response()->json([
                     'success' => true,
-                    'sale_price_box' => $product->sale_price_box,
                     'cost_per_box' => $product->cost_per_box,
                     'production_cost' => $product->production_cost,
                     'margin' => $margin,
-                    'margin_pct' => $product->sale_price_box > 0 ? round($margin / $product->sale_price_box * 100, 1) : 0,
+                    'margin_pct' => 0,
                     'production_capacity' => $product->production_capacity,
                 ]);
             }

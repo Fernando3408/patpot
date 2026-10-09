@@ -2,8 +2,7 @@
     @csrf
     @method('PUT')
 
-    <h3 class="text-sm" style="margin-top:0;">Identificación General</h3>
-    <div class="form-grid">
+    <section class="input-form-section"><div class="input-form-section__heading"><div><h3>Identificación General</h3><p>Identifica el insumo y define cómo se utilizará en la operación.</p></div></div><div class="form-grid">
         <div class="form-group">
             <label class="form-label">Código</label>
             <input type="text" name="code" class="form-control" value="{{ old('code', $input->code) }}" required>
@@ -43,17 +42,16 @@
                 <option value="0" @selected(old('status', $input->status) == 0)>Inactivo</option>
             </select>
         </div>
-    </div>
+    </div></section>
 
-    <h3 class="text-sm" id="inventory-title">Inventario y Costos</h3>
-    <div class="form-grid" id="inventory-fields">
+    <section class="input-form-section"><div class="input-form-section__heading"><div><h3 id="inventory-title">Inventario y costos</h3><p>Define stock disponible, mínimo de alerta y costo unitario.</p></div></div><div class="form-grid" id="inventory-fields">
         <div class="form-group">
             <label class="form-label">Stock actual</label>
             <input type="number" step="1" min="0" name="stock" class="form-control" value="{{ old('stock', floatval($input->stock)) }}">
         </div>
         <div class="form-group">
-            <label class="form-label">Stock de seguridad</label>
-            <input type="number" step="1" min="0" name="safety_stock" class="form-control" value="{{ old('safety_stock', floatval($input->safety_stock)) }}">
+            <label class="form-label">Avisarme cuando queden menos de <span class="text-danger">*</span></label>
+            <input type="number" step="1" min="0" name="safety_stock" class="form-control" value="{{ old('safety_stock', floatval($input->safety_stock)) }}" required>
         </div>
         <div class="form-group">
             <label class="form-label">Stock en tránsito</label>
@@ -63,10 +61,9 @@
             <label class="form-label">Costo unitario ($)</label>
             <input type="number" step="1" min="0" name="unit_cost" class="form-control" value="{{ old('unit_cost', floatval($input->unit_cost)) }}" required>
         </div>
-    </div>
+    </div></section>
 
-    <h3 class="text-sm" id="planning-title">Parámetros de Reposición</h3>
-    <div class="form-grid" id="planning-fields">
+    <section class="input-form-section"><div class="input-form-section__heading"><div><h3 id="planning-title">Parámetros de reposición</h3><p>Usa estos valores para calcular compras sugeridas y cobertura.</p></div></div><div class="form-grid" id="planning-fields">
         <div class="form-group">
             <label class="form-label">Consumo semanal</label>
             <input type="number" step="1" min="0" id="weekly_consumption" name="weekly_consumption" class="form-control" value="{{ old('weekly_consumption', floatval($input->weekly_consumption)) }}">
@@ -93,7 +90,7 @@
             <label class="form-label">Múltiplo de compra</label>
             <input type="number" step="0.001" min="0.001" name="purchase_multiple" class="form-control" value="{{ old('purchase_multiple', floatval($input->purchase_multiple)) }}">
         </div>
-    </div>
+    </div></section>
 
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">Guardar cambios</button>

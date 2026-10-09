@@ -4,12 +4,14 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AttachmentController;
 use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\AuthenticatedSessionController;
+use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\InputController;
 use App\Http\Controllers\InventoryMovementController;
 use App\Http\Controllers\LoginLogController;
+use App\Http\Controllers\MonthlyCostController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PriceController;
 use App\Http\Controllers\ProductController;
@@ -18,10 +20,12 @@ use App\Http\Controllers\PurchaseController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RegisteredUserController;
 use App\Http\Controllers\ResetPasswordController;
+use App\Http\Controllers\ResultsController;
 use App\Http\Controllers\RetailController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\TaskController;
+use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\TrashController;
 use Illuminate\Support\Facades\Route;
 
@@ -45,6 +49,15 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 Route::middleware('auth')->group(function (): void {
     Route::get('/', [HomeController::class, 'index'])->name('dashboard');
     Route::get('/dashboard', [HomeController::class, 'index']);
+    Route::get('/resultados', [ResultsController::class, 'index'])->name('results.index');
+    Route::get('/resultados/pdf', [ResultsController::class, 'pdf'])->name('results.pdf');
+    Route::get('/resultados/exportar', [ResultsController::class, 'export'])->name('results.export');
+    Route::get('/costos-mensuales', [MonthlyCostController::class, 'index'])->name('monthly-costs.index');
+    Route::post('/costos-mensuales', [MonthlyCostController::class, 'store'])->name('monthly-costs.store');
+    Route::post('/costos-mensuales/cerrar', [MonthlyCostController::class, 'close'])->name('monthly-costs.close');
+    Route::post('/costos-mensuales/{month}/reabrir', [MonthlyCostController::class, 'reopen'])->middleware('admin')->name('monthly-costs.reopen');
+    Route::delete('/costos-mensuales/{monthlyCost}', [MonthlyCostController::class, 'destroy'])->name('monthly-costs.destroy');
+    Route::put('/costos-mensuales/{monthlyCost}', [MonthlyCostController::class, 'update'])->name('monthly-costs.update');
 
     /* Productos */
 
@@ -60,6 +73,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::delete('/productos/{product}', [ProductController::class, 'destroy'])->name('products.destroy');
     Route::get('/productos/{product}', [ProductController::class, 'show'])->name('products.show');
+    Route::post('/productos/{product}/receta/copiar', [RecipeController::class, 'copy'])->name('products.recipes.copy');
 
     /* Insumos */
 
@@ -179,15 +193,16 @@ Route::middleware('auth')->group(function (): void {
 
     /* Producción */
 
-    Route::resource('produccion', ProductionController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
-    Route::get('/produccion/{produccion}', [ProductionController::class, 'show'])->name('productions.show');
-    Route::post('/produccion/{produccion}/cerrar', [ProductionController::class, 'close'])->name('productions.close');
+    Route::resource('produccion', ProductionController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])->middleware('role:produccion');
+    Route::get('/produccion/{produccion}', [ProductionController::class, 'show'])->middleware('role:produccion')->name('productions.show');
+    Route::post('/produccion/{produccion}/cerrar', [ProductionController::class, 'close'])->middleware('role:produccion')->name('productions.close');
 
     /* Pedidos */
 
-    Route::resource('pedidos', OrderController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy']);
-    Route::get('/pedidos/{pedido}', [OrderController::class, 'show'])->name('orders.show');
+    Route::resource('pedidos', OrderController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])->middleware('role:ventas');
+    Route::get('/pedidos/{pedido}', [OrderController::class, 'show'])->middleware('role:ventas')->name('orders.show');
     Route::post('/pedidos/{pedido}/despachos', [OrderController::class, 'dispatch'])->middleware('canManage')->name('orders.dispatch');
+    Route::post('/pedidos/{pedido}/anular', [OrderController::class, 'cancel'])->middleware('role:ventas')->name('orders.cancel');
 
     /* Tareas */
 
@@ -226,6 +241,8 @@ Route::middleware('auth')->group(function (): void {
     Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [AdminController::class, 'index'])->name('index');
         Route::get('/usuarios/{user}/editar', [AdminController::class, 'edit'])->name('users.edit');
+        Route::post('/opciones-gastos', [AdminController::class, 'storeExpenseOption'])->name('expense-options.store');
+        Route::post('/opciones-gastos/{expenseOption}/estado', [AdminController::class, 'toggleExpenseOption'])->name('expense-options.toggle');
         Route::put('/usuarios/{user}', [AdminController::class, 'update'])->name('users.update');
         Route::delete('/usuarios/{user}', [AdminController::class, 'destroy'])->name('users.destroy');
         Route::post('/usuarios/{user}/toggle-status', [AdminController::class, 'toggleStatus'])->name('users.toggle-status');
@@ -238,10 +255,10 @@ Route::middleware('auth')->group(function (): void {
 
     });
 
-    Route::get('/chat', [\App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
-    Route::post('/chat/send', [\App\Http\Controllers\ChatController::class, 'send'])->name('chat.send');
+    Route::get('/chat', [ChatController::class, 'index'])->name('chat.index');
+    Route::post('/chat/send', [ChatController::class, 'send'])->name('chat.send');
 
 });
 
-Route::post('/api/telegram/webhook', [\App\Http\Controllers\TelegramController::class, 'webhook']);
-Route::get('/api/telegram/set-webhook', [\App\Http\Controllers\TelegramController::class, 'setWebhook']);
+Route::post('/api/telegram/webhook', [TelegramController::class, 'webhook']);
+Route::get('/api/telegram/set-webhook', [TelegramController::class, 'setWebhook']);

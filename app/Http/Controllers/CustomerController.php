@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Store;
 use App\Services\AuditService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -40,31 +41,57 @@ class CustomerController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge(['rut' => $this->normalizeRut($request->input('rut'))]);
         $validated = $request->validate($this->rules());
+        $validated['code'] = filled($validated['code'] ?? null) ? $validated['code'] : $this->nextCode();
+        $validated['status'] = true;
+        $request->merge(['contacts' => array_values(array_filter($request->input('contacts', []), fn (array $contact): bool => filled($contact['name'] ?? null)))]);
+        $contacts = $request->validate(['contacts' => ['nullable', 'array'], 'contacts.*.name' => ['required', 'string', 'max:255'], 'contacts.*.phone' => ['nullable', 'string', 'max:50'], 'contacts.*.email' => ['nullable', 'email', 'max:255']])['contacts'] ?? [];
+        $store = $request->validate(['store' => ['nullable', 'array'], 'store.name' => ['nullable', 'string', 'max:255'], 'store.code' => ['nullable', 'string', 'max:100'], 'store.city' => ['nullable', 'string', 'max:100'], 'store.region' => ['nullable', 'string', 'max:100']])['store'] ?? [];
 
         $customer = Customer::query()->create($validated);
+        $customer->contacts()->createMany($contacts);
+        if (filled($store['name'] ?? null)) {
+            $store['code'] = filled($store['code'] ?? null) ? $store['code'] : 'SALA-'.$customer->code;
+            $store['customer_id'] = $customer->id;
+            $store['status'] = true;
+            Store::create($store);
+        }
         AuditService::log('CREACIÓN DE CLIENTE', "Creó cliente: {$customer->business_name}", $customer);
 
-        return redirect()->route('customers.index');
+        return redirect()->route('customers.show', $customer);
+    }
+
+    private function nextCode(): string
+    {
+        $lastCode = Customer::withTrashed()->where('code', 'like', 'CLI-%')->orderByDesc('id')->value('code');
+        $number = $lastCode && preg_match('/CLI-(\d+)/', $lastCode, $matches) ? (int) $matches[1] : 0;
+
+        return 'CLI-'.str_pad((string) ($number + 1), 4, '0', STR_PAD_LEFT);
     }
 
     public function edit(Customer $customer): View
     {
-        return view('customers.edit', ['customer' => $customer]);
+        return view('customers.edit', ['customer' => $customer->load('contacts')]);
     }
 
-    public function show(Customer $customer): View
+    public function show(Request $request, Customer $customer): View
     {
-        $customer->load('stores', 'prices');
+        $customer->load(['stores', 'prices.product', 'contacts', 'orders' => fn ($query) => $query->latest('ordered_on')->limit(10)]);
 
-        return view('customers._detail', compact('customer'));
+        return $request->ajax() ? view('customers._detail', compact('customer')) : view('customers.show', compact('customer'));
     }
 
     public function update(Request $request, Customer $customer): JsonResponse|RedirectResponse
     {
         try {
+            $request->merge(['rut' => $this->normalizeRut($request->input('rut'))]);
+            $request->merge(['contacts' => array_values(array_filter($request->input('contacts', []), fn (array $contact): bool => filled($contact['name'] ?? null)))]);
             $validated = $request->validate($this->rules($customer, $request->ajax()));
+            $contacts = $request->validate(['contacts' => ['nullable', 'array'], 'contacts.*.name' => ['required', 'string', 'max:255'], 'contacts.*.phone' => ['nullable', 'string', 'max:50'], 'contacts.*.email' => ['nullable', 'email', 'max:255']])['contacts'] ?? [];
             $customer->update($validated);
+            $customer->contacts()->delete();
+            $customer->contacts()->createMany($contacts);
             AuditService::log('ACTUALIZACIÓN DE CLIENTE', "Actualizó cliente: {$customer->business_name}", $customer);
 
             if ($request->ajax()) {
@@ -107,16 +134,49 @@ class CustomerController extends Controller
         $req = $isAjax ? 'sometimes' : 'required';
 
         return [
-            'code' => [$req, 'string', 'max:100', Rule::unique(Customer::class)->ignore($customer)],
+            'code' => [$isAjax ? 'sometimes' : 'nullable', 'string', 'max:100', Rule::unique(Customer::class)->ignore($customer)],
             'business_name' => [$req, 'string', 'max:255'],
             'trade_name' => ['nullable', 'string', 'max:255'],
-            'rut' => ['nullable', 'string', 'max:20', Rule::unique(Customer::class)->ignore($customer)],
+            'rut' => ['nullable', 'string', 'max:12', Rule::unique(Customer::class)->ignore($customer), function (string $attribute, mixed $value, \Closure $fail): void {
+                if (filled($value) && ! $this->isValidRut((string) $value)) {
+                    $fail('El RUT no es válido.');
+                }
+            }],
             'type' => ['nullable', 'string', 'max:100'],
             'channel' => ['nullable', 'string', 'max:100'],
             'contact' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:255'],
             'payment_terms' => ['nullable', 'string', 'max:100'],
-            'status' => [$req, 'boolean'],
+            'status' => ['sometimes', 'boolean'],
         ];
+    }
+
+    private function normalizeRut(?string $rut): ?string
+    {
+        if (blank($rut)) {
+            return null;
+        }
+        $clean = strtoupper(preg_replace('/[^0-9Kk]/', '', $rut));
+        if (strlen($clean) < 2) {
+            return $clean;
+        }
+
+        return number_format((int) substr($clean, 0, -1), 0, '', '.').'-'.substr($clean, -1);
+    }
+
+    private function isValidRut(string $rut): bool
+    {
+        $clean = strtoupper(str_replace(['.', '-'], '', $rut));
+        if (! preg_match('/^([0-9]+)([0-9K])$/', $clean, $matches)) {
+            return false;
+        }
+        $sum = 0;
+        foreach (array_values(str_split(strrev($matches[1]))) as $index => $digit) {
+            $sum += (int) $digit * [2, 3, 4, 5, 6, 7][$index % 6];
+        }
+        $remainder = 11 - ($sum % 11);
+        $expected = $remainder === 11 ? '0' : ($remainder === 10 ? 'K' : (string) $remainder);
+
+        return $expected === $matches[2];
     }
 }

@@ -1,6 +1,7 @@
 <x-erp-layout title="Clientes" subtitle="Gestiona los clientes y sus condiciones comerciales.">
     <div class="page-header">
         <div class="page-header-actions">
+            <a href="{{ route('salas.create') }}" class="btn btn-outline-primary btn-sm">+ Nueva sala</a>
             <a href="{{ route('customers.create') }}" class="btn btn-outline-primary btn-sm">+ Nuevo cliente</a>
         </div>
     </div>

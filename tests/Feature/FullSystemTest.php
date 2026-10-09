@@ -7,12 +7,14 @@ use App\Models\Input;
 use App\Models\Order;
 use App\Models\Price;
 use App\Models\Product;
-use App\Models\Purchase;
 use App\Models\Production;
+use App\Models\Purchase;
 use App\Models\Recipe;
+use App\Models\Retail;
 use App\Models\Role;
 use App\Models\Store;
 use App\Models\Supplier;
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -22,11 +24,17 @@ class FullSystemTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private Supplier $supplier;
+
     private Input $input;
+
     private Product $product;
+
     private Customer $customer;
+
     private Store $store;
+
     private Price $price;
 
     protected function setUp(): void
@@ -82,19 +90,19 @@ class FullSystemTest extends TestCase
 
     public function test_products_show(): void
     {
-        $response = $this->get('/productos/' . $this->product->id);
+        $response = $this->get('/productos/'.$this->product->id);
         $response->assertStatus(200);
     }
 
     public function test_products_edit(): void
     {
-        $response = $this->get('/productos/' . $this->product->id . '/edit');
+        $response = $this->get('/productos/'.$this->product->id.'/edit');
         $response->assertStatus(200);
     }
 
     public function test_products_update(): void
     {
-        $response = $this->put('/productos/' . $this->product->id, [
+        $response = $this->put('/productos/'.$this->product->id, [
             'name' => 'Updated Product',
             'sku' => $this->product->sku,
             'grams' => 150,
@@ -117,14 +125,14 @@ class FullSystemTest extends TestCase
             'sale_price_box' => 3000,
             'status' => 'active',
         ]);
-        $response = $this->delete('/productos/' . $newProduct->id);
+        $response = $this->delete('/productos/'.$newProduct->id);
         $response->assertRedirect('/productos');
         $this->assertSoftDeleted('products', ['id' => $newProduct->id]);
     }
 
     public function test_products_destroy_blocked_with_recipes(): void
     {
-        $response = $this->delete('/productos/' . $this->product->id);
+        $response = $this->delete('/productos/'.$this->product->id);
         $response->assertRedirect();
         $this->assertDatabaseHas('products', ['id' => $this->product->id, 'deleted_at' => null]);
     }
@@ -189,19 +197,19 @@ class FullSystemTest extends TestCase
 
     public function test_inputs_show(): void
     {
-        $response = $this->get('/insumos/' . $this->input->id);
+        $response = $this->get('/insumos/'.$this->input->id);
         $response->assertStatus(200);
     }
 
     public function test_inputs_edit(): void
     {
-        $response = $this->get('/insumos/' . $this->input->id . '/edit');
+        $response = $this->get('/insumos/'.$this->input->id.'/edit');
         $response->assertStatus(200);
     }
 
     public function test_inputs_update(): void
     {
-        $response = $this->put('/insumos/' . $this->input->id, [
+        $response = $this->put('/insumos/'.$this->input->id, [
             'code' => $this->input->code,
             'name' => 'Updated Input',
             'type' => 'material',
@@ -223,19 +231,19 @@ class FullSystemTest extends TestCase
     public function test_inputs_adjust(): void
     {
         $stockBefore = $this->input->stock;
-        $response = $this->post('/insumos/' . $this->input->id . '/adjust', [
+        $response = $this->post('/insumos/'.$this->input->id.'/adjust', [
             'type' => 'add',
             'qty' => 50,
             'reason' => 'Test adjustment',
         ]);
         $response->assertStatus(200);
         $this->input->refresh();
-        $this->assertEquals((float)$stockBefore + 50, (float)$this->input->stock);
+        $this->assertEquals((float) $stockBefore + 50, (float) $this->input->stock);
     }
 
     public function test_inputs_destroy_blocked(): void
     {
-        $response = $this->delete('/insumos/' . $this->input->id);
+        $response = $this->delete('/insumos/'.$this->input->id);
         $response->assertRedirect();
         $this->assertDatabaseHas('inputs', ['id' => $this->input->id, 'deleted_at' => null]);
     }
@@ -255,13 +263,13 @@ class FullSystemTest extends TestCase
 
     public function test_recipes_edit(): void
     {
-        $response = $this->get('/recetas/' . $this->product->id . '/edit');
+        $response = $this->get('/recetas/'.$this->product->id.'/edit');
         $response->assertStatus(200);
     }
 
     public function test_recipes_show(): void
     {
-        $response = $this->get('/recetas/' . $this->product->id);
+        $response = $this->get('/recetas/'.$this->product->id);
         $response->assertStatus(200);
     }
 
@@ -292,19 +300,19 @@ class FullSystemTest extends TestCase
 
     public function test_suppliers_edit(): void
     {
-        $response = $this->get('/proveedores/' . $this->supplier->id . '/edit');
+        $response = $this->get('/proveedores/'.$this->supplier->id.'/edit');
         $response->assertStatus(200);
     }
 
     public function test_suppliers_show(): void
     {
-        $response = $this->get('/proveedores/' . $this->supplier->id);
+        $response = $this->get('/proveedores/'.$this->supplier->id);
         $response->assertStatus(200);
     }
 
     public function test_suppliers_destroy_blocked(): void
     {
-        $response = $this->delete('/proveedores/' . $this->supplier->id);
+        $response = $this->delete('/proveedores/'.$this->supplier->id);
         $response->assertRedirect();
         $this->assertDatabaseHas('suppliers', ['id' => $this->supplier->id, 'deleted_at' => null]);
     }
@@ -312,7 +320,7 @@ class FullSystemTest extends TestCase
     public function test_suppliers_destroy_without_dependencies(): void
     {
         $sup = Supplier::create(['name' => 'Empty Supplier', 'lead_time_days' => 3, 'status' => true]);
-        $response = $this->delete('/proveedores/' . $sup->id);
+        $response = $this->delete('/proveedores/'.$sup->id);
         $response->assertRedirect('/proveedores');
         $this->assertSoftDeleted('suppliers', ['id' => $sup->id]);
     }
@@ -338,25 +346,25 @@ class FullSystemTest extends TestCase
             'business_name' => 'New Customer',
             'status' => true,
         ]);
-        $response->assertRedirect('/clientes');
+        $response->assertRedirectContains('/clientes/');
         $this->assertDatabaseHas('customers', ['code' => 'CLI-NEW']);
     }
 
     public function test_customers_edit(): void
     {
-        $response = $this->get('/clientes/' . $this->customer->id . '/edit');
+        $response = $this->get('/clientes/'.$this->customer->id.'/edit');
         $response->assertStatus(200);
     }
 
     public function test_customers_show(): void
     {
-        $response = $this->get('/clientes/' . $this->customer->id);
+        $response = $this->get('/clientes/'.$this->customer->id);
         $response->assertStatus(200);
     }
 
     public function test_customers_destroy_blocked(): void
     {
-        $response = $this->delete('/clientes/' . $this->customer->id);
+        $response = $this->delete('/clientes/'.$this->customer->id);
         $response->assertRedirect();
     }
 
@@ -386,13 +394,13 @@ class FullSystemTest extends TestCase
 
     public function test_stores_edit(): void
     {
-        $response = $this->get('/salas/' . $this->store->id . '/edit');
+        $response = $this->get('/salas/'.$this->store->id.'/edit');
         $response->assertStatus(200);
     }
 
     public function test_stores_show(): void
     {
-        $response = $this->get('/salas/' . $this->store->id);
+        $response = $this->get('/salas/'.$this->store->id);
         $response->assertStatus(200);
     }
 
@@ -422,13 +430,13 @@ class FullSystemTest extends TestCase
 
     public function test_prices_edit(): void
     {
-        $response = $this->get('/precios/' . $this->price->id . '/edit');
+        $response = $this->get('/precios/'.$this->price->id.'/edit');
         $response->assertStatus(200);
     }
 
     public function test_prices_show(): void
     {
-        $response = $this->get('/precios/' . $this->price->id);
+        $response = $this->get('/precios/'.$this->price->id);
         $response->assertStatus(200);
     }
 
@@ -462,7 +470,7 @@ class FullSystemTest extends TestCase
     public function test_purchases_show(): void
     {
         $purchase = Purchase::first();
-        $response = $this->get('/compras/' . $purchase->id);
+        $response = $this->get('/compras/'.$purchase->id);
         $response->assertStatus(200);
     }
 
@@ -470,7 +478,7 @@ class FullSystemTest extends TestCase
     {
         $purchase = Purchase::where('status', 'pending')->first();
         if ($purchase) {
-            $response = $this->get('/compras/' . $purchase->id . '/edit');
+            $response = $this->get('/compras/'.$purchase->id.'/edit');
             $response->assertStatus(200);
         }
         $this->assertTrue(true);
@@ -504,7 +512,7 @@ class FullSystemTest extends TestCase
     public function test_productions_show(): void
     {
         $production = Production::first();
-        $response = $this->get('/produccion/' . $production->id);
+        $response = $this->get('/produccion/'.$production->id);
         $response->assertStatus(200);
     }
 
@@ -512,7 +520,7 @@ class FullSystemTest extends TestCase
     {
         $production = Production::where('status', 'closed')->first();
         if ($production) {
-            $response = $this->get('/produccion/' . $production->id . '/edit');
+            $response = $this->get('/produccion/'.$production->id.'/edit');
             $response->assertStatus(200);
         }
         $this->assertTrue(true);
@@ -547,13 +555,13 @@ class FullSystemTest extends TestCase
         $this->assertDatabaseHas('orders', ['number' => 'PED-TEST-001']);
         $order = Order::where('number', 'PED-TEST-001')->first();
         $this->assertNotEmpty($order->lines);
-        $this->assertGreaterThan(0, (float)$order->lines->first()->price_box);
+        $this->assertGreaterThan(0, (float) $order->lines->first()->price_box);
     }
 
     public function test_orders_show(): void
     {
         $order = Order::first();
-        $response = $this->get('/pedidos/' . $order->id);
+        $response = $this->get('/pedidos/'.$order->id);
         $response->assertStatus(200);
     }
 
@@ -561,7 +569,7 @@ class FullSystemTest extends TestCase
     {
         $order = Order::where('status', 'pending')->first();
         if ($order) {
-            $response = $this->get('/pedidos/' . $order->id . '/edit');
+            $response = $this->get('/pedidos/'.$order->id.'/edit');
             $response->assertStatus(200);
         }
         $this->assertTrue(true);
@@ -570,22 +578,24 @@ class FullSystemTest extends TestCase
     public function test_orders_dispatch(): void
     {
         $order = Order::where('status', 'pending')->first();
-        if (!$order) {
+        if (! $order) {
             $this->assertTrue(true);
+
             return;
         }
         $line = $order->lines->first();
-        if (!$line) {
+        if (! $line) {
             $this->assertTrue(true);
+
             return;
         }
-        $response = $this->post('/pedidos/' . $order->id . '/despachos', [
+        $response = $this->post('/pedidos/'.$order->id.'/despachos', [
             'quantities' => [$line->id => 5],
             'shipped_on' => '2026-09-07',
         ]);
         $response->assertStatus(302);
         $line->refresh();
-        $this->assertGreaterThan(0, (int)$line->dispatched_boxes);
+        $this->assertGreaterThan(0, (int) $line->dispatched_boxes);
     }
 
     // ===== RETAIL =====
@@ -618,9 +628,9 @@ class FullSystemTest extends TestCase
 
     public function test_retail_edit(): void
     {
-        $retail = \App\Models\Retail::first();
+        $retail = Retail::first();
         if ($retail) {
-            $response = $this->get('/retail/' . $retail->id . '/edit');
+            $response = $this->get('/retail/'.$retail->id.'/edit');
             $response->assertStatus(200);
         }
         $this->assertTrue(true);
@@ -628,9 +638,9 @@ class FullSystemTest extends TestCase
 
     public function test_retail_show(): void
     {
-        $retail = \App\Models\Retail::first();
+        $retail = Retail::first();
         if ($retail) {
-            $response = $this->get('/retail/' . $retail->id);
+            $response = $this->get('/retail/'.$retail->id);
             $response->assertStatus(200);
         }
         $this->assertTrue(true);
@@ -663,13 +673,13 @@ class FullSystemTest extends TestCase
 
     public function test_tasks_complete(): void
     {
-        $task = \App\Models\Task::create([
+        $task = Task::create([
             'title' => 'To Complete',
             'due_on' => '2026-09-15',
             'priority' => 'low',
             'status' => 'pending',
         ]);
-        $response = $this->post('/tareas/' . $task->id . '/completar');
+        $response = $this->post('/tareas/'.$task->id.'/completar');
         $response->assertRedirect('/tareas');
         $task->refresh();
         $this->assertEquals('completed', $task->status);
@@ -678,9 +688,9 @@ class FullSystemTest extends TestCase
 
     public function test_tasks_edit(): void
     {
-        $task = \App\Models\Task::first();
+        $task = Task::first();
         if ($task) {
-            $response = $this->get('/tareas/' . $task->id . '/edit');
+            $response = $this->get('/tareas/'.$task->id.'/edit');
             $response->assertStatus(200);
         }
         $this->assertTrue(true);
@@ -724,7 +734,7 @@ class FullSystemTest extends TestCase
 
     public function test_admin_edit_user(): void
     {
-        $response = $this->get('/admin/usuarios/' . $this->admin->id . '/editar');
+        $response = $this->get('/admin/usuarios/'.$this->admin->id.'/editar');
         $response->assertStatus(200);
     }
 
@@ -733,7 +743,7 @@ class FullSystemTest extends TestCase
         $user = User::create(['name' => 'Test User', 'email' => 'test@test.com', 'password' => bcrypt('password'), 'status' => true]);
         $operadorRole = Role::where('name', 'operador')->first();
 
-        $response = $this->put('/admin/usuarios/' . $user->id, [
+        $response = $this->put('/admin/usuarios/'.$user->id, [
             'name' => 'Test User Updated',
             'email' => 'test@test.com',
             'roles' => [$operadorRole->id],
@@ -746,7 +756,7 @@ class FullSystemTest extends TestCase
     public function test_admin_toggle_status(): void
     {
         $newUser = User::create(['name' => 'Toggle Test', 'email' => 'toggle@test.com', 'password' => bcrypt('password'), 'status' => true]);
-        $response = $this->post('/admin/usuarios/' . $newUser->id . '/toggle-status');
+        $response = $this->post('/admin/usuarios/'.$newUser->id.'/toggle-status');
         $response->assertRedirect();
         $newUser->refresh();
         $this->assertFalse($newUser->status);
@@ -770,34 +780,36 @@ class FullSystemTest extends TestCase
     public function test_attachments_list(): void
     {
         $order = Order::first();
-        $response = $this->get('/adjuntos/lista?model_class=App\Models\Order&model_id=' . $order->id);
+        $response = $this->get('/adjuntos/lista?model_class=App\Models\Order&model_id='.$order->id);
         $response->assertStatus(200);
     }
 
     // ===== EDICION PEDIDO CON NUEVA LÍNEA (bug price_box null) =====
-    public function test_order_edit_add_new_line_with_auto_price(): void
+    public function test_order_edit_add_new_line_with_negotiated_price(): void
     {
         $order = Order::where('status', 'pending')->first();
-        if (!$order) {
+        if (! $order) {
             $this->assertTrue(true);
+
             return;
         }
         $existingLine = $order->lines->first();
         $newProduct = Product::create(['sku' => 'NEW-LINE', 'name' => 'New Line Product', 'grams' => 100, 'units_per_box' => 12, 'sale_price_box' => 3500, 'status' => 'active']);
+        Recipe::create(['product_id' => $newProduct->id, 'input_id' => $this->input->id, 'qty_per_box' => 1]);
 
-        $response = $this->put('/pedidos/' . $order->id, [
+        $response = $this->put('/pedidos/'.$order->id, [
             'number' => $order->number,
             'customer_id' => $order->customer_id,
             'ordered_on' => $order->ordered_on->format('Y-m-d'),
             'lines' => [
                 ['id' => $existingLine->id, 'product_id' => $existingLine->product_id, 'boxes' => $existingLine->boxes, 'price_box' => $existingLine->price_box],
-                ['product_id' => $newProduct->id, 'boxes' => 10, 'price_box' => ''],
+                ['product_id' => $newProduct->id, 'boxes' => 10, 'price_box' => 3500],
             ],
         ]);
         $response->assertStatus(302);
         $order->refresh()->load('lines');
         $newLine = $order->lines->where('product_id', $newProduct->id)->first();
         $this->assertNotNull($newLine);
-        $this->assertGreaterThan(0, (float)$newLine->price_box);
+        $this->assertGreaterThan(0, (float) $newLine->price_box);
     }
 }

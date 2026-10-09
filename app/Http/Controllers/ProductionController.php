@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MonthlyClosure;
 use App\Models\Product;
 use App\Models\Production;
 use App\Services\AuditService;
 use App\Services\InventoryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
@@ -41,7 +43,8 @@ class ProductionController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $data = $request->validate(['number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('productions', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'product_id' => ['required', \Illuminate\Validation\Rule::exists('products', 'id')->where('status', 'active')], 'planned_boxes' => ['required', 'integer', 'gt:0'], 'planned_on' => ['required', 'date'], 'notes' => ['nullable', 'string']]);
+        $data = $request->validate(['number' => ['required', 'string', 'max:255', Rule::unique('productions', 'number')->where(fn ($q) => $q->whereNull('deleted_at'))], 'product_id' => ['required', Rule::exists('products', 'id')->where('status', 'active')], 'planned_boxes' => ['required', 'integer', 'gt:0'], 'planned_on' => ['required', 'date'], 'notes' => ['nullable', 'string']]);
+        abort_if(MonthlyClosure::where('month', substr($data['planned_on'], 0, 7))->exists(), 422, 'El mes está cerrado y no admite modificaciones.');
         $production = Production::create($data);
         AuditService::log('CREACIÓN DE PRODUCCIÓN', "Creó producción: {$production->number}", $production);
 
@@ -57,11 +60,13 @@ class ProductionController extends Controller
 
     public function close(Request $request, Production $produccion)
     {
-        $data = $request->validate(['actual_boxes' => ['required', 'integer', 'gt:0', 'lte:' . $produccion->planned_boxes], 'completed_on' => ['required', 'date']], ['actual_boxes.lte' => 'Las cajas reales no pueden superar las cajas planificadas.']);
+        $data = $request->validate(['actual_boxes' => ['required', 'integer', 'gt:0', 'lte:'.$produccion->planned_boxes], 'completed_on' => ['required', 'date']], ['actual_boxes.lte' => 'Las cajas reales no pueden superar las cajas planificadas.']);
+        abort_if(MonthlyClosure::where('month', substr($data['completed_on'], 0, 7))->exists(), 422, 'El mes está cerrado y no admite modificaciones.');
         $this->inventoryService->closeProduction($produccion, (float) $data['actual_boxes'], $data['completed_on']);
 
         if ($request->ajax()) {
             $produccion->refresh();
+
             return response()->json([
                 'success' => true,
                 'id' => $produccion->id,
@@ -94,7 +99,7 @@ class ProductionController extends Controller
 
             if ($request->ajax()) {
                 $rules = [
-                    'number' => ['sometimes', 'required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('productions', 'number')->ignore($produccion->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
+                    'number' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('productions', 'number')->ignore($produccion->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
                     'product_id' => ['sometimes', 'required', 'exists:products,id'],
                     'planned_boxes' => ['sometimes', 'required', 'integer', 'gt:0'],
                     'planned_on' => ['sometimes', 'required', 'date'],
@@ -103,7 +108,7 @@ class ProductionController extends Controller
                 ];
             } else {
                 $rules = [
-                    'number' => ['required', 'string', 'max:255', \Illuminate\Validation\Rule::unique('productions', 'number')->ignore($produccion->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
+                    'number' => ['required', 'string', 'max:255', Rule::unique('productions', 'number')->ignore($produccion->id)->where(fn ($q) => $q->whereNull('deleted_at'))],
                     'product_id' => ['required', 'exists:products,id'],
                     'planned_boxes' => ['required', 'integer', 'gt:0'],
                     'planned_on' => ['required', 'date'],

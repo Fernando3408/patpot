@@ -155,6 +155,27 @@ class RecipeController extends Controller
         return redirect('/recetas');
     }
 
+    public function copy(Request $request, Product $product): RedirectResponse
+    {
+        $sourceId = $request->validate(['source_product_id' => ['required', 'exists:products,id']])['source_product_id'];
+        $source = Product::with('recipes')->findOrFail($sourceId);
+        if ($source->id === $product->id || $source->recipes->isEmpty()) {
+            return back()->withErrors(['source_product_id' => 'El producto origen no tiene una receta utilizable.']);
+        }
+
+        DB::transaction(function () use ($product, $source): void {
+            // La receta usa soft deletes, pero el índice único también considera
+            // las filas eliminadas. Eliminarlas físicamente evita conflictos al copiar.
+            $product->recipes()->withTrashed()->forceDelete();
+            foreach ($source->recipes as $recipe) {
+                $product->recipes()->create(['input_id' => $recipe->input_id, 'qty_per_box' => $recipe->qty_per_box]);
+            }
+        });
+        AuditService::log('COPIA DE RECETA', "Copió receta desde {$source->name} a {$product->name}", $product);
+
+        return back()->with('success', 'Receta copiada correctamente.');
+    }
+
     public function destroy(Request $request, Recipe $recipe): JsonResponse|RedirectResponse
     {
         $recipe->delete();

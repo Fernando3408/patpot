@@ -84,6 +84,7 @@ class HomeController extends Controller
         // Alertas
         $alerts = app(AlertService::class)->getAlerts();
         $criticalAlerts = $alerts->where('level', 'critical');
+        $attentionAlerts = $alerts->where('level', 'warning');
 
         // ---- CHART DATA ----
 
@@ -165,6 +166,8 @@ class HomeController extends Controller
             'stock' => (float) $input->stock,
             'safety' => (float) $input->safety_stock,
         ])->values()->toArray();
+        $stockAlerts = collect($allInputs->filter(fn ($input) => (float) $input->stock <= (float) $input->safety_stock)->map(fn ($input) => ['name' => $input->name, 'unit' => strtolower($input->unit) === 'unidad' && (float) $input->stock != 1.0 ? 'unidades' : $input->unit, 'stock' => (float) $input->stock, 'minimum' => (float) $input->safety_stock, 'level' => (float) $input->stock <= 0 ? 'red' : 'yellow'])->values()->all());
+        $stockAlerts = $stockAlerts->merge(Product::where('status', 'active')->whereColumn('stock_boxes', '<=', 'min_stock_boxes')->get()->map(fn ($product) => ['name' => $product->name, 'unit' => 'cajas', 'stock' => (float) $product->stock_boxes, 'minimum' => (float) $product->min_stock_boxes, 'level' => (float) $product->stock_boxes <= 0 ? 'red' : 'yellow']))->values();
 
         // 9. Tareas urgentes: por prioridad
         $chartTaskLabels = ['Urgente', 'Alta', 'Media', 'Baja'];
@@ -178,14 +181,14 @@ class HomeController extends Controller
         return view('welcome', compact(
             'salesMonth', 'marginMonth', 'pendingOrders', 'pendingOrdersList', 'overdueOrders', 'overdueOrdersList',
             'overduePurchases', 'overduePurchasesList', 'pendingProductions', 'pendingProductionsList', 'stockPT', 'stockInputs',
-            'urgentTasks', 'urgentTasksList', 'alerts', 'criticalAlerts',
+            'urgentTasks', 'urgentTasksList', 'alerts', 'criticalAlerts', 'attentionAlerts',
             'salesMonths', 'marginMonths',
             'chartOrderLabels', 'chartOrderCounts',
             'chartOverdueLabels', 'chartOverdueCounts',
             'chartPurchLabels', 'chartPurchCounts',
             'chartProdLabels', 'chartProdCounts',
             'chartPTLabels', 'chartPTValues',
-            'chartInputsData',
+            'chartInputsData', 'stockAlerts',
             'chartTaskLabels', 'chartTaskCounts',
             'productionCapacities',
         ));

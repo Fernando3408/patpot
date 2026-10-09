@@ -6,7 +6,7 @@
         <div class="form-grid">
             <div><strong>Cliente:</strong> {{ $price->customer?->business_name ?? '—' }}</div>
             <div><strong>Producto:</strong> {{ $price->product?->name ?? '—' }}</div>
-            <div><strong>Precio base:</strong> ${{ number_format($price->price_box, 0, ',', '.') }}</div>
+            <div><strong>Precio negociado:</strong> ${{ number_format($price->price_box, 0, ',', '.') }}</div>
             <div>
                 <strong>Precio oferta:</strong>
                 @if($price->offer_price)

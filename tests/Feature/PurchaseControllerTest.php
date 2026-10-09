@@ -50,7 +50,7 @@ class PurchaseControllerTest extends TestCase
     {
         return array_merge([
             'name' => 'Proveedor Envases',
-            'rut' => '76.111.111-1',
+            'rut' => '76.111.111-6',
             'lead_time_days' => 7,
             'status' => true,
         ], $overrides);

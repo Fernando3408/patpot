@@ -51,6 +51,19 @@
 </div>
 @endif
 
+@if($customer->orders->count())
+<div class="card mt-4">
+    <div class="card__header"><h2 class="card__title">Últimos pedidos</h2></div>
+    <div class="card__body"><table class="data-table"><thead><tr><th>Pedido</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>
+        @foreach($customer->orders as $order)
+            <tr><td>{{ $order->number }}</td><td>{{ $order->ordered_on?->format('d/m/Y') }}</td><td>{{ ucfirst($order->status) }}</td></tr>
+        @endforeach
+    </tbody></table></div>
+</div>
+@endif
+
+<div class="card mt-4"><div class="card__header"><h2 class="card__title">Contactos adicionales</h2></div><div class="card__body">@if($customer->contacts->count())<div class="customer-contacts-detail-grid">@foreach($customer->contacts as $contact)<div class="customer-contact-card"><strong>{{ $contact->name }}</strong><span>{{ $contact->phone ?: 'Sin teléfono' }}</span><span>{{ $contact->email ?: 'Sin correo' }}</span></div>@endforeach</div>@else<p class="text-muted mb-0">No hay contactos adicionales registrados.</p>@endif</div></div>
+
 @if($customer->prices->count())
 <div class="card mt-4">
     <div class="card__header">
