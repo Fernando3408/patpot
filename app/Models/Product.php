@@ -62,7 +62,12 @@ class Product extends Model
             return (float) $this->production_cost;
         }
 
-        return round($this->recipes->sum(fn (Recipe $recipe): float => $recipe->input ? (float) $recipe->qty_per_box * (float) $recipe->input->unit_cost : 0), 2);
+        return round($this->recipes->sum(function (Recipe $recipe): float {
+            if (! $recipe->input) return 0;
+            return $recipe->input->isService() && $recipe->fixed_cost !== null
+                ? (float) $recipe->fixed_cost
+                : (float) $recipe->qty_per_box * (float) $recipe->input->unit_cost;
+        }), 2);
     }
 
     public function getProductionCapacityAttribute(): ?float
@@ -71,7 +76,7 @@ class Product extends Model
             return null;
         }
 
-        $filtered = $this->recipes->filter(fn (Recipe $recipe) => $recipe->input && $recipe->qty_per_box > 0);
+        $filtered = $this->recipes->filter(fn (Recipe $recipe) => $recipe->input?->isMaterial() && $recipe->qty_per_box > 0);
         if ($filtered->isEmpty()) {
             return null;
         }

@@ -19,8 +19,8 @@
             max-width:80%; padding:0.6rem 1rem; border-radius:12px;
             font-size:0.9rem; line-height:1.4; white-space:normal;
         }
-        .user-bubble { background:#df6403; color:#fff; border-bottom-right-radius:4px; }
-        .bot-bubble { background:#2c2e39; color:#e0e0e0; border-bottom-left-radius:4px; }
+        .user-bubble { background:#B47A87; color:#fff; border-bottom-right-radius:4px; }
+        .bot-bubble { background:#26384A; color:#e0e0e0; border-bottom-left-radius:4px; }
         .bot-bubble p { margin:0 0 .65rem; }
         .bot-bubble p:last-child { margin-bottom:0; }
         .bot-bubble strong { color:#fff; font-weight:700; }

@@ -4,10 +4,10 @@
 @if(!$isPartial)
 <x-erp-layout title="Editar receta / BOM" subtitle="Configura la lista de materiales (BOM) y cantidades consumidas por cada caja terminada.">
 @endif
-    <div class="form-card">
+    <div class="form-card recipe-editor-card">
         
         {{-- Ficha Informativa del Producto --}}
-        <div class="mb-4 p-4 section-alt-bg">
+        <div class="mb-4 p-4 section-alt-bg recipe-product-summary">
             <div class="form-grid">
                 <div>
                     <span class="text-xs text-muted">Producto:</span>
@@ -38,7 +38,7 @@
                 @csrf
                 @method('PUT')
 
-                <div class="table-container mb-4">
+                <div class="table-container mb-4 recipe-components-table">
                     <table class="data-table">
                         <thead>
                             <tr>
@@ -56,9 +56,10 @@
                                 @php
                                     $rawQuantity = old("ingredients.{$input->id}.qty_per_box", $recipeQuantities->get($input->id));
                                     $isSelected = old("ingredients.{$input->id}.selected", $recipeQuantities->has($input->id));
+                                    $fixedCost = old("ingredients.{$input->id}.fixed_cost", $product->recipes->firstWhere('input_id', $input->id)?->fixed_cost);
                                     
                                     $quantity = is_numeric($rawQuantity) ? (float) $rawQuantity : null;
-                                    $lineCost = $isSelected && $quantity ? $quantity * (float) $input->unit_cost : 0;
+                                    $lineCost = $isSelected ? ($input->isService() ? (float) ($fixedCost ?: 0) : ($quantity ? $quantity * (float) $input->unit_cost : 0)) : 0;
                                     $totalCost += $lineCost;
                                 @endphp
 
@@ -79,7 +80,13 @@
                                     <td class="font-bold">{{ $input->name }}</td>
                                     <td class="text-xs">{{ $input->code }}</td>
                                     <td class="text-center text-xs">{{ $input->unit }}</td>
-                                    <td class="text-right">${{ number_format((float) $input->unit_cost, 0, ',', '.') }}</td>
+                                    <td class="text-right">
+                                        @if($input->isService())
+                                            <input type="number" step="0.01" min="0" name="ingredients[{{ $input->id }}][fixed_cost]" class="form-control text-right" value="{{ $fixedCost !== null ? round((float) $fixedCost, 2) : '' }}" placeholder="$ por caja">
+                                        @else
+                                            ${{ number_format((float) $input->unit_cost, 0, ',', '.') }}
+                                        @endif
+                                    </td>
                                     <td class="text-right">
                                         <input
                                             type="number"
@@ -109,7 +116,7 @@
                 </div>
 
                 {{-- Botones de Accion --}}
-                <div class="form-actions">
+                <div class="form-actions recipe-actions">
                     <button type="submit" class="btn btn-primary">
                         Guardar receta
                     </button>

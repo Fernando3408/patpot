@@ -17,7 +17,7 @@ class AlertService
         $alerts = collect();
 
         // Insumos críticos
-        Input::with(['recipes.product.productions'])->get()
+        Input::where('type', 'material')->with(['recipes.product.productions'])->get()
             ->filter(fn (Input $i) => $i->inventory_level === 'critico')
             ->each(function (Input $i) use ($alerts) {
                 $alerts->push([
@@ -31,6 +31,7 @@ class AlertService
 
         // Insumos y servicios bajo stock de seguridad
         Input::where('status', true)
+            ->where('type', 'material')
             ->where('safety_stock', '>', 0)
             ->get()
             ->filter(fn (Input $i) => (float) $i->stock > 0 && (float) $i->stock <= (float) $i->safety_stock && $i->inventory_level !== 'critico')
@@ -51,6 +52,12 @@ class AlertService
             $alerts->push(['level' => $stock <= 0 ? 'critical' : 'warning', 'module' => 'Productos', 'title' => $stock <= 0 ? "{$product->name} sin stock" : "{$product->name} bajo el mínimo", 'detail' => "Quedan ".number_format($stock, 0, ',', '.')." cajas; mínimo definido ".number_format($minimum, 0, ',', '.')." cajas.", 'action_url' => '/productos']);
         });
 
+        Product::where('status', 'active')->whereColumn('stock_boxes', '<=', 'min_stock_boxes')->get()->each(function (Product $product) use ($alerts): void {
+            $stock = (float) $product->stock_boxes;
+            $minimum = (float) $product->min_stock_boxes;
+            $alerts->push(['level' => $stock <= 0 ? 'critical' : 'warning', 'module' => 'Productos', 'title' => $stock <= 0 ? "{$product->name} sin stock" : "{$product->name} bajo el mínimo", 'detail' => "Quedan ".number_format($stock, 0, ',', '.')." cajas; mínimo definido ".number_format($minimum, 0, ',', '.')." cajas.", 'action_url' => '/productos']);
+        });
+
         $pendingConsumption = collect();
         Order::whereIn('status', ['pending', 'partial'])->with('lines.product.recipes')->get()->each(function (Order $order) use ($pendingConsumption): void {
             foreach ($order->lines as $line) {
@@ -59,7 +66,7 @@ class AlertService
                 }
             }
         });
-        Input::whereIn('id', $pendingConsumption->keys())->get()->each(function (Input $input) use ($pendingConsumption, $alerts): void {
+        Input::where('type', 'material')->whereIn('id', $pendingConsumption->keys())->get()->each(function (Input $input) use ($pendingConsumption, $alerts): void {
             $required = (float) $pendingConsumption[$input->id];
             if ((float) $input->stock < $required) {
                 $alerts->push(['level' => 'critical', 'module' => 'Pedidos', 'title' => "Stock insuficiente: {$input->name}", 'detail' => "Stock actual {$input->formattedStock()} {$input->unit}; pedidos pendientes requieren ".rtrim(rtrim(number_format($required, 3, ',', '.'), '0'), ',')." {$input->unit}.", 'action_url' => '/pedidos']);

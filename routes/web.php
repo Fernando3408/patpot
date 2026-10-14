@@ -48,6 +48,8 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 
 Route::middleware('auth')->group(function (): void {
     Route::get('/', [HomeController::class, 'index'])->name('dashboard');
+    Route::get('/brand/logo', fn () => response()->file(base_path('docs/Logo.png')))->name('brand.logo');
+    Route::get('/brand/bot', fn () => response()->file(base_path('docs/bot (1).png')))->name('brand.bot');
     Route::get('/dashboard', [HomeController::class, 'index']);
     Route::get('/resultados', [ResultsController::class, 'index'])->name('results.index');
     Route::get('/resultados/pdf', [ResultsController::class, 'pdf'])->name('results.pdf');

@@ -71,15 +71,18 @@ class HomeController extends Controller
             ->get();
 
         // Capacidad producible por producto
-        $productionCapacities = $allProductsWithRecipes->map(fn ($p) => [
-            'name' => $p->name,
-            'capacity' => $p->production_capacity,
-            'stock' => $p->stock_boxes,
-            'limiting' => $p->recipes->isEmpty() ? 'Sin receta' : $p->recipes->map(fn ($r) => [
-                'name' => $r->input?->name ?? '—',
-                'available' => $r->input ? floor((float) $r->input->stock / (float) $r->qty_per_box) : 0,
-            ])->sortBy('available')->first()['name'] ?? '—',
-        ])->filter(fn ($p) => $p['capacity'] !== null)->sortBy('capacity')->values()->toArray();
+        $productionCapacities = $allProductsWithRecipes->map(function ($p): array {
+            $materialRecipes = $p->recipes->filter(fn ($recipe) => $recipe->input?->isMaterial());
+            return [
+                'name' => $p->name,
+                'capacity' => $p->production_capacity,
+                'stock' => $p->stock_boxes,
+                'limiting' => $materialRecipes->isEmpty() ? 'Sin insumo material' : $materialRecipes->map(fn ($r) => [
+                    'name' => $r->input?->name ?? '—',
+                    'available' => $r->input ? floor((float) $r->input->stock / (float) $r->qty_per_box) : 0,
+                ])->sortBy('available')->first()['name'] ?? '—',
+            ];
+        })->filter(fn ($p) => $p['capacity'] !== null)->sortBy('capacity')->values()->toArray();
 
         // Alertas
         $alerts = app(AlertService::class)->getAlerts();
@@ -158,7 +161,7 @@ class HomeController extends Controller
         $chartPTValues = $allProductsWithRecipes->pluck('stock_boxes')->map(fn ($v) => (int) $v)->toArray();
 
         // 8. Stock insumos: datos para selector
-        $allInputs = Input::select('id', 'name', 'unit', 'stock', 'safety_stock')->get();
+        $allInputs = Input::where('type', 'material')->select('id', 'name', 'unit', 'stock', 'safety_stock')->get();
         $chartInputsData = $allInputs->map(fn ($input) => [
             'id' => $input->id,
             'name' => $input->name,

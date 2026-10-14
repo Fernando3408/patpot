@@ -15,14 +15,14 @@
     'retail' => ['items' => $deletedRetails, 'label' => 'Retail'],
     ]; @endphp
 
-    @foreach($modules as $key => $module)
-    @if($module['items']->isNotEmpty())
-    <h3 class="mt-6">{{ $module['label'] }}</h3>
-    <div class="table-container">
+    @php $trashRows = collect(); foreach($modules as $key => $module) { foreach($module['items'] as $item) { $trashRows->push(['key' => $key, 'label' => $module['label'], 'item' => $item]); } } @endphp
+    @if($trashRows->isNotEmpty())
+    <div class="table-container trash-table-container">
         <table class="data-table">
             <thead>
                 <tr>
                     <th class="th-narrow"><input type="checkbox" class="group-check" data-group="{{ $key }}"></th>
+                    <th>Categoría</th>
                     <th>Nombre</th>
                     <th>Eliminado el</th>
                     <th>Eliminado por</th>
@@ -30,9 +30,12 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($module['items'] as $item)
+                @foreach($trashRows as $row)
+                @php $key = $row['key']; @endphp
+                @php $item = $row['item']; @endphp
                 <tr>
                     <td><input type="checkbox" class="trash-check" name="ids[]" value="{{ $key }}_{{ $item->id }}"></td>
+                    <td><span class="badge badge-secondary">{{ $row['label'] }}</span></td>
                     <td class="font-bold">{{ $item->name ?? $item->trade_name ?? '—' }}</td>
                     <td class="text-xs text-muted">{{ $item->deleted_at?->format('d/m/Y H:i') ?? '—' }}</td>
                     <td class="text-xs text-muted">{{ $item->deleted_by ? \App\Models\User::withTrashed()->find($item->deleted_by)?->name ?? '—' : '—' }}</td>
@@ -54,7 +57,6 @@
         </table>
     </div>
     @endif
-    @endforeach
 
     @php
     $hasAny = $deletedProducts->count() || $deletedInputs->count() || $deletedCustomers->count() || $deletedSuppliers->count() || $deletedStores->count() || $deletedRetails->count();

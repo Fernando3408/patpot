@@ -121,22 +121,26 @@
             var planFields = document.getElementById('planning-fields');
             var invTitle = document.getElementById('inventory-title');
             var planTitle = document.getElementById('planning-title');
+            var invSection = invFields.closest('.input-form-section');
+            var planSection = planFields.closest('.input-form-section');
 
             if (isService) {
                 invTitle.textContent = 'Costo del Servicio';
-                invFields.querySelectorAll('input[type=number]').forEach(function(el) {
-                    if (el.id === 'unit_cost') return;
-                    // Always show stock, safety_stock, transit, weekly_consumption for both types
-                    el.closest('.form-group').style.display = '';
+                invSection.style.display = '';
+                invFields.querySelectorAll('.form-group').forEach(function(el) {
+                    var visible = Boolean(el.querySelector('#unit_cost'));
+                    el.style.display = visible ? '' : 'none';
+                    el.querySelectorAll('input').forEach(function(input) { input.required = visible && input.id === 'unit_cost'; });
                 });
-                // Show planning params for services too
-                planFields.style.display = '';
-                planTitle.style.display = '';
+                planSection.style.display = 'none';
             } else {
                 invTitle.textContent = 'Inventario y Costos';
+                invSection.style.display = '';
                 invFields.querySelectorAll('.form-group').forEach(function(el) {
                     el.style.display = '';
+                    el.querySelectorAll('input').forEach(function(input) { input.required = input.id === 'safety_stock' || input.id === 'unit_cost'; });
                 });
+                planSection.style.display = '';
                 planFields.style.display = '';
                 planTitle.style.display = '';
             }

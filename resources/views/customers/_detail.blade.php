@@ -1,4 +1,4 @@
-<div class="card">
+<div class="card customer-detail-card customer-detail-main">
     <div class="card__header">
         <h2 class="card__title">Cliente</h2>
     </div>
@@ -24,7 +24,7 @@
 </div>
 
 @if($customer->stores->count())
-<div class="card mt-4">
+<div class="card mt-4 customer-detail-card">
     <div class="card__header">
         <h2 class="card__title">Salas ({{ $customer->stores->count() }})</h2>
     </div>
@@ -52,11 +52,11 @@
 @endif
 
 @if($customer->orders->count())
-<div class="card mt-4">
+<div class="card mt-4 customer-detail-card">
     <div class="card__header"><h2 class="card__title">Últimos pedidos</h2></div>
     <div class="card__body"><table class="data-table"><thead><tr><th>Pedido</th><th>Fecha</th><th>Estado</th></tr></thead><tbody>
         @foreach($customer->orders as $order)
-            <tr><td>{{ $order->number }}</td><td>{{ $order->ordered_on?->format('d/m/Y') }}</td><td>{{ ucfirst($order->status) }}</td></tr>
+            <tr><td>{{ $order->number }}</td><td>{{ $order->ordered_on?->format('d/m/Y') }}</td><td>{{ ['pending' => 'Pendiente', 'partial' => 'Parcial', 'completed' => 'Completado', 'cancelled' => 'Anulado'][$order->status] ?? 'Pendiente' }}</td></tr>
         @endforeach
     </tbody></table></div>
 </div>

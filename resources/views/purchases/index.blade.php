@@ -22,7 +22,7 @@
     </div>
 
     @if($purchases->count() > 0)
-        <div class="table-container">
+        <div class="table-container purchases-list-table">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -80,7 +80,7 @@
                                 <span class="text-xs text-muted">{{ number_format($totalReceived, 0, ',', '.') }} / {{ number_format($totalOrdered, 0, ',', '.') }}</span>
                             </td>
                             <td class="text-right">
-                                <div class="actions-cell">
+                                <details class="table-actions-menu"><summary>Acciones</summary><div class="table-actions-menu__items">
                                     <button type="button" class="btn btn-outline-info btn-sm" onclick="openDetailModal('{{ route('purchases.show', $purchase) }}', 'Detalle: {{ $purchase->number }}')">Ver detalle</button>
                                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openAttachmentModal('App\\Models\\Purchase', {{ $purchase->id }}, 'Adjuntos: {{ $purchase->number }}')" title="Adjuntos"><i data-lucide="paperclip" class="icon-sm"></i></button>
                                     @if(!$purchase->lines->contains(fn($line) => $line->received_quantity > 0))
@@ -96,7 +96,7 @@
                                     @if($purchase->status !== 'received')
                                         <button type="button" class="btn btn-primary btn-sm" onclick='openReceiveModal({!! json_encode($purchase->lines->map(fn($line) => ["id" => $line->id, "name" => $line->input->name ?? "—", "ordered" => $line->ordered_quantity, "received" => $line->received_quantity]), JSON_HEX_APOS | JSON_HEX_TAG) !!}, "{{ route('purchases.receive', $purchase) }}")'>Recibir</button>
                                     @endif
-                                </div>
+                                </div></details>
                             </td>
                         </tr>
                     @endforeach

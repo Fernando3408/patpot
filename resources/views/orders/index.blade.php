@@ -22,7 +22,7 @@
     </div>
 
     @if($orders->isNotEmpty())
-        <div class="table-container">
+        <div class="table-container orders-list-table">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -100,7 +100,9 @@
                                 <span class="text-xs text-muted">{{ number_format($totalDispatched, 0, ',', '.') }} / {{ number_format($totalBoxes, 0, ',', '.') }}</span>
                             </td>
                             <td class="text-right">
-                                <div class="actions-cell">
+                                <details class="table-actions-menu">
+                                    <summary>Acciones</summary>
+                                    <div class="table-actions-menu__items">
                                     <button type="button" class="btn btn-outline-info btn-sm" onclick="openDetailModal('{{ route('orders.show', $order) }}', 'Detalle: {{ $order->number }}')">Ver detalle</button>
                                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openAttachmentModal('App\\Models\\Order', {{ $order->id }}, 'Adjuntos: {{ $order->number }}')" title="Adjuntos"><i data-lucide="paperclip" class="icon-sm"></i></button>
                                     @if(!$order->lines->contains(fn($line) => $line->dispatched_boxes > 0))
@@ -115,7 +117,8 @@
                                     @if(!in_array($order->status, ['completed', 'cancelled']))
                                         <button type="button" class="btn btn-primary btn-sm" onclick='openDispatchModal({!! json_encode($order->lines->map(fn($line) => ["id" => $line->id, "name" => $line->product->name ?? "—", "stock" => (int)$line->product->stock_boxes, "boxes" => $line->boxes, "dispatched" => $line->dispatched_boxes]), JSON_HEX_APOS | JSON_HEX_TAG) !!}, "{{ route('orders.dispatch', $order) }}")'>Despachar</button>
                                     @endif
-                                </div>
+                                    </div>
+                                </details>
                             </td>
                         </tr>
                     @endforeach

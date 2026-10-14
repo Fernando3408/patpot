@@ -6,7 +6,7 @@
     </div>
 
     @if($suppliers->count() > 0)
-        <div class="table-container">
+        <div class="table-container suppliers-list-table">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -36,7 +36,9 @@
                                 </span>
                             </td>
                             <td class="text-right">
-                                <div class="actions-cell">
+                                <details class="table-actions-menu">
+                                    <summary>Acciones</summary>
+                                    <div class="table-actions-menu__items">
                                     <button type="button" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="{{ route('proveedores.edit', $supplier) }}" data-title="Editar: {{ $supplier->name }}">Editar</button>
                                     <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('proveedores.show', $supplier) }}" data-title="Detalle: {{ $supplier->name }}">Ver detalle</button>
                                     @if(auth()->user()->canManage())
@@ -46,7 +48,8 @@
                                             <button type="submit" class="btn btn-danger btn-sm btn-delete">Eliminar</button>
                                         </form>
                                     @endif
-                                </div>
+                                    </div>
+                                </details>
                             </td>
                         </tr>
                     @endforeach

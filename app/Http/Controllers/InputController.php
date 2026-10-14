@@ -20,7 +20,7 @@ class InputController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Input::with(['supplier', 'recipes.product.productions']);
+        $query = Input::where('type', 'material')->with(['supplier', 'recipes.product.productions']);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -53,7 +53,7 @@ class InputController extends Controller
             'unit' => 'required|string|max:50',
 
             'stock' => 'required_if:type,material|nullable|numeric|min:0',
-            'safety_stock' => 'required_if:type,material,service|nullable|numeric|min:0',
+            'safety_stock' => 'required_if:type,material|nullable|numeric|min:0',
 
             'weekly_consumption' => 'nullable|numeric|min:0',
             'lead_time_days' => 'nullable|integer|min:0',
@@ -70,6 +70,18 @@ class InputController extends Controller
             'status' => 'required|boolean',
         ]);
 
+        if ($validated['type'] === 'service') {
+            $validated = array_merge($validated, [
+                'stock' => 0,
+                'safety_stock' => 0,
+                'weekly_consumption' => 0,
+                'lead_time_days' => 0,
+                'target_weeks' => 0,
+                'min_purchase' => 0,
+                'purchase_multiple' => 1,
+                'transit' => 0,
+            ]);
+        }
         $input = Input::create($validated);
         AuditService::log('CREACIÓN DE INSUMO', "Creó insumo: {$input->name}", $input);
 
@@ -98,7 +110,7 @@ class InputController extends Controller
                     'name' => 'sometimes|required|string|max:255',
                     'code' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('inputs', 'code')->ignore($input->id)],
                     'stock' => 'sometimes|nullable|numeric|min:0',
-                    'safety_stock' => 'sometimes|required_if:type,material,service|nullable|numeric|min:0',
+                    'safety_stock' => 'sometimes|required_if:type,material|nullable|numeric|min:0',
                     'weekly_consumption' => 'sometimes|nullable|numeric|min:0',
                     'unit' => 'sometimes|required|string|max:50',
                     'status' => 'sometimes|required|boolean',
@@ -120,7 +132,7 @@ class InputController extends Controller
                     'type' => 'required|in:material,service',
                     'unit' => 'required|string|max:50',
                     'stock' => 'required_if:type,material|nullable|numeric|min:0',
-                    'safety_stock' => 'required_if:type,material,service|nullable|numeric|min:0',
+                    'safety_stock' => 'required_if:type,material|nullable|numeric|min:0',
                     'weekly_consumption' => 'nullable|numeric|min:0',
                     'lead_time_days' => 'nullable|integer|min:0',
                     'target_weeks' => 'nullable|numeric|min:0',
@@ -133,6 +145,19 @@ class InputController extends Controller
                 ];
             }
             $validated = $request->validate($rules);
+
+            if (($validated['type'] ?? $input->type) === 'service') {
+                $validated = array_merge($validated, [
+                    'stock' => 0,
+                    'safety_stock' => 0,
+                    'weekly_consumption' => 0,
+                    'lead_time_days' => 0,
+                    'target_weeks' => 0,
+                    'min_purchase' => 0,
+                    'purchase_multiple' => 1,
+                    'transit' => 0,
+                ]);
+            }
 
             $input->update($validated);
             AuditService::log('ACTUALIZACIÓN DE INSUMO', "Actualizó insumo: {$input->name}", $input);

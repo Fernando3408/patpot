@@ -399,7 +399,7 @@
                         datasets: [{
                             label: 'Ventas',
                             data: values,
-                            backgroundColor: '#df6403',
+                            backgroundColor: '#26384A',
                             borderRadius: 6,
                             barPercentage: 0.55
                         }]
