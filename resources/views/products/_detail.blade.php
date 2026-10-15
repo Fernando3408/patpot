@@ -1,4 +1,4 @@
-<div class="card">
+<div class="card product-detail-summary">
     <div class="card__header">
         <h2 class="card__title">Producto</h2>
     </div>
@@ -24,7 +24,7 @@
 </div>
 
 @if($product->recipes->count())
-<div class="card mt-4">
+<div class="card mt-4 product-recipe-card">
     <div class="card__header">
         <h2 class="card__title">Receta ({{ $product->recipes->count() }} insumos)</h2>
     </div>
@@ -42,7 +42,7 @@
                     <tr>
                         <td>{{ $recipe->input?->name ?? '—' }}</td>
                         <td class="text-right">{{ rtrim(rtrim(rtrim(number_format($recipe->qty_per_box, 3, ',', '.'), '0'), '.'), ',') }}</td>
-                        <td class="text-right">${{ number_format($recipe->qty_per_box * (float) ($recipe->input?->unit_cost ?? 0), 0, ',', '.') }}</td>
+                        <td class="text-right">${{ number_format($recipe->input?->isService() && $recipe->fixed_cost !== null ? $recipe->fixed_cost : $recipe->qty_per_box * (float) ($recipe->input?->unit_cost ?? 0), 0, ',', '.') }}</td>
                     </tr>
                 @endforeach
             </tbody>

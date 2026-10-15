@@ -22,7 +22,7 @@
     </div>
 
     @if($productions->count() > 0)
-        <div class="table-container">
+        <div class="table-container productions-list-table">
             <table class="data-table">
                 <thead>
                     <tr>

@@ -14,10 +14,12 @@ class Recipe extends Model
         'product_id',
         'input_id',
         'qty_per_box',
+        'fixed_cost',
     ];
 
     protected $casts = [
         'qty_per_box' => 'decimal:4',
+        'fixed_cost' => 'decimal:2',
     ];
 
     public function product(): BelongsTo

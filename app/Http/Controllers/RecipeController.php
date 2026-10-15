@@ -104,6 +104,7 @@ class RecipeController extends Controller
             'ingredients.*.input_id' => ['required', 'integer', 'exists:inputs,id', 'distinct:strict'],
             'ingredients.*.selected' => ['nullable', 'boolean'],
             'ingredients.*.qty_per_box' => ['nullable', 'numeric', 'min:0.0001'],
+            'ingredients.*.fixed_cost' => ['nullable', 'numeric', 'min:0'],
         ]);
 
         $validator->after(function ($validator) use ($request): void {
@@ -128,6 +129,7 @@ class RecipeController extends Controller
             ->map(fn (array $ingredient): array => [
                 'input_id' => $ingredient['input_id'],
                 'qty_per_box' => $ingredient['qty_per_box'],
+                'fixed_cost' => $ingredient['fixed_cost'] ?? null,
             ]);
 
         DB::transaction(function () use ($product, $ingredients): void {
@@ -142,7 +144,7 @@ class RecipeController extends Controller
                         'product_id' => $product->id,
                         'input_id' => $ingredient['input_id'],
                     ],
-                    ['qty_per_box' => $ingredient['qty_per_box']],
+                    ['qty_per_box' => $ingredient['qty_per_box'], 'fixed_cost' => $ingredient['fixed_cost']],
                 );
 
                 if ($recipe->trashed()) {
@@ -168,7 +170,7 @@ class RecipeController extends Controller
             // las filas eliminadas. Eliminarlas físicamente evita conflictos al copiar.
             $product->recipes()->withTrashed()->forceDelete();
             foreach ($source->recipes as $recipe) {
-                $product->recipes()->create(['input_id' => $recipe->input_id, 'qty_per_box' => $recipe->qty_per_box]);
+                $product->recipes()->create(['input_id' => $recipe->input_id, 'qty_per_box' => $recipe->qty_per_box, 'fixed_cost' => $recipe->fixed_cost]);
             }
         });
         AuditService::log('COPIA DE RECETA', "Copió receta desde {$source->name} a {$product->name}", $product);

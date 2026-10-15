@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 text: 'Si elimina el registro no podrá volver atrás.',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#df6403',
+                confirmButtonColor: '#26384A',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: 'Sí, eliminar',
                 cancelButtonText: 'Cancelar',

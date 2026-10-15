@@ -31,7 +31,7 @@
                                 </span>
                             </td>
                             <td class="text-right">
-                                <div class="actions-cell">
+                                <details class="table-actions-menu"><summary>Acciones</summary><div class="table-actions-menu__items">
                                     <button type="button" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="{{ route('salas.edit', $store) }}" data-title="Editar: {{ $store->name }}">Editar</button>
                                     <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('salas.show', $store) }}" data-title="Detalle: {{ $store->name }}">Ver detalle</button>
                                     @if(auth()->user()->canManage())
@@ -41,7 +41,7 @@
                                             <button type="submit" class="btn btn-danger btn-sm btn-delete">Eliminar</button>
                                         </form>
                                     @endif
-                                </div>
+                                </div></details>
                             </td>
                         </tr>
                     @endforeach

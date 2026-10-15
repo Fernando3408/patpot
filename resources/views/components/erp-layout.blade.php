@@ -25,7 +25,7 @@
     <aside class="app-sidebar">
         <div class="sidebar-brand">
             <a href="{{ route('dashboard') }}" class="sidebar-brand-link">
-                <span class="sidebar-brand-mark">PP</span>
+                <span class="sidebar-brand-mark sidebar-brand-logo"><img src="{{ route('brand.logo') }}" alt="PatPot Chips"></span>
                 <div class="sidebar-brand-text">
                     <strong>PatPot</strong>
                     <small>ERP operativo</small>
@@ -214,7 +214,7 @@
             position: 'top-end',
             showConfirmButton: true,
             confirmButtonText: 'Cerrar',
-            confirmButtonColor: '#df6403',
+            confirmButtonColor: '#26384A',
             timer: 6000,
             timerProgressBar: true,
             didOpen: function(toast) {
@@ -390,7 +390,7 @@
                     text: 'Esta acción no se puede deshacer.',
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#df6403',
+                    confirmButtonColor: '#26384A',
                     cancelButtonColor: '#6c757d',
                     confirmButtonText: 'Sí, eliminar',
                     cancelButtonText: 'Cancelar'
@@ -562,7 +562,7 @@
                 text: '¿Seguro que deseas eliminar este archivo?',
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#df6403',
+                confirmButtonColor: '#26384A',
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: 'Sí, eliminar',
                 cancelButtonText: 'Cancelar'
@@ -619,19 +619,22 @@
     <style>
         .chat-fab {
             position: fixed; bottom: 20px; right: 20px; z-index: 9999;
-            width: 48px; height: 48px; border-radius: 50%;
-            background: #df6403; color: #fff; border: none; cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            width: 82px; height: 82px; border-radius: 0;
+            background: transparent; color: #fff; border: none; cursor: pointer;
+            box-shadow: none;
             display: flex; align-items: center; justify-content: center;
-            transition: transform 0.2s, background 0.2s;
+            transition: transform 0.2s;
+            animation: chatBotFloat 3.2s ease-in-out infinite;
         }
-        .chat-fab:hover { background: #c55800; transform: scale(1.08); }
-        .chat-fab.open { background: #666; }
+        .chat-fab:hover { transform: translateY(-4px) scale(1.04); }
+        .chat-fab.open { background: transparent; }
         .chat-fab svg { width: 24px; height: 24px; }
+        .chat-fab img { width: 100%; height: 100%; object-fit: contain; border-radius: 0; display: block; }
+        @keyframes chatBotFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
         .chat-popup {
-             display: none; position: fixed; bottom: 78px; right: 20px; z-index: 9999;
-             width: 360px; height: 480px; background: #1a1d29; border-radius: 12px;
+             display: none; position: fixed; bottom: 112px; right: 20px; z-index: 9999;
+             width: 360px; height: 480px; background: #FFFFFF; border-radius: 12px;
              box-shadow: 0 8px 32px rgba(0,0,0,0.4); flex-direction: column; overflow: hidden;
              border: 1px solid #333; resize: both; min-width: 300px; min-height: 360px;
              max-width: min(720px, calc(100vw - 40px)); max-height: calc(100vh - 110px);
@@ -640,7 +643,7 @@
         .chat-popup.visible { display: flex; }
 
         .chat-popup-header {
-            background: #2c2e39; padding: 12px 14px; display: flex; align-items: center;
+             background: #1C1B1A; padding: 12px 14px; display: flex; align-items: center;
             justify-content: space-between; border-bottom: 1px solid #444;
         }
         .chat-popup-header .chat-header-title {
@@ -665,17 +668,17 @@
 
         .chat-popup-input {
             padding: 10px; border-top: 1px solid #333; display: flex; gap: 8px;
-            background: #2c2e39;
+             background: #F6F4F1;
         }
         .chat-popup-input input {
-            flex: 1; background: #1a1d29; border: 1px solid #444; border-radius: 20px;
-            padding: 8px 14px; color: #fff; font-size: 13px; outline: none;
+             flex: 1; background: #FFFFFF; border: 1px solid #8A847D; border-radius: 20px;
+             padding: 8px 14px; color: #1C1B1A; font-size: 13px; outline: none;
         }
         .chat-popup-input input::placeholder { color: #777; }
-        .chat-popup-input input:focus { border-color: #df6403; }
+         .chat-popup-input input:focus { border-color: #C9A181; }
         .chat-popup-input button {
             width: 34px; height: 34px; border-radius: 50%; border: none;
-            background: #df6403; color: #fff; cursor: pointer; display: flex;
+             background: #E3C3A8; color: #1C1B1A; cursor: pointer; display: flex;
             align-items: center; justify-content: center; flex-shrink: 0;
         }
          .chat-popup-input button:hover { background: #c55800; }
@@ -685,14 +688,14 @@
          }
 
         .chat-msg-widget { display: flex; }
-        .chat-msg-widget.user { justify-content: flex-end; }
+         .chat-msg-widget.user { justify-content: flex-end; }
         .chat-msg-widget.bot { justify-content: flex-start; }
         .chat-bubble-widget {
             max-width: 82%; padding: 8px 12px; border-radius: 12px;
             font-size: 13px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word;
         }
-        .user-bubble-widget { background: #df6403; color: #fff; border-bottom-right-radius: 4px; }
-        .bot-bubble-widget { background: #2c2e39; color: #e0e0e0; border-bottom-left-radius: 4px; border: 1px solid #444; }
+         .user-bubble-widget { background: #F3E4D6; color: #1C1B1A; border-bottom-right-radius: 4px; }
+         .bot-bubble-widget { background: #F6F4F1; color: #1C1B1A; border-bottom-left-radius: 4px; border: 1px solid #E2DDD7; }
 
         .chat-typing-widget { display: flex; gap: 4px; padding: 8px 12px; }
         .chat-typing-widget span {
@@ -705,7 +708,7 @@
     </style>
 
     <button class="chat-fab" id="chatFab" title="Asistente IA">
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22z"/></svg>
+        <img src="{{ route('brand.bot') }}" alt="Asistente PatPot">
     </button>
 
     <div class="chat-popup" id="chatPopup">
@@ -838,6 +841,21 @@
             .finally(function() { input.disabled = false; input.focus(); });
         });
     })();
+    </script>
+    <script>
+        document.addEventListener('toggle', function(event) {
+            if (!event.target.matches('details.table-actions-menu') || !event.target.open) return;
+            document.querySelectorAll('details.table-actions-menu[open]').forEach(function(menu) {
+                if (menu !== event.target) menu.removeAttribute('open');
+            });
+        }, true);
+
+        document.addEventListener('click', function(event) {
+            if (event.target.closest('details.table-actions-menu')) return;
+            document.querySelectorAll('details.table-actions-menu[open]').forEach(function(menu) {
+                menu.removeAttribute('open');
+            });
+        });
     </script>
     @endauth
 </body>

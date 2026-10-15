@@ -31,7 +31,7 @@
                             <td class="text-right font-bold">${{ number_format($recipe->qty_per_box * (float) $recipe->input->unit_cost, 0, ',', '.') }}</td>
                             <td class="text-xs">{{ $recipe->product->production_capacity ? number_format($recipe->product->production_capacity, 0, ',', '.') . ' cajas' : '—' }}</td>
                             <td class="text-right">
-                                <div class="actions-cell">
+                                <details class="table-actions-menu"><summary>Acciones</summary><div class="table-actions-menu__items">
                                     @if(auth()->user()->canManage())
                                         <form method="POST" action="/recetas/{{ $recipe->id }}" style="display: inline;">
                                             @csrf
@@ -39,7 +39,7 @@
                                             <button type="submit" class="btn btn-danger btn-sm btn-delete">Eliminar</button>
                                         </form>
                                     @endif
-                                </div>
+                                </div></details>
                             </td>
                         </tr>
                     @endforeach

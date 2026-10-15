@@ -7,7 +7,7 @@
 
     @if($inputs->count() > 0)
         <div class="table-container">
-            <table class="data-table">
+            <table class="data-table inputs-stock-table">
                 <thead>
                     <tr>
                         <th>Código</th>
@@ -80,7 +80,9 @@
                                 @endif
                             </td>
                             <td class="text-right">
-                                <div class="actions-cell">
+                                <details class="table-actions-menu">
+                                    <summary>Acciones</summary>
+                                    <div class="table-actions-menu__items">
                                     @if($input->type === 'material')
                                         <button type="button" class="btn btn-outline-warning btn-sm" onclick="openAdjustModal({{ $input->id }}, '{{ addslashes($input->name) }}', {{ $input->stock }}, '{{ $input->unit }}')">Ajustar</button>
                                     @endif
@@ -93,7 +95,8 @@
                                             <button type="submit" class="btn btn-danger btn-sm btn-delete">Eliminar</button>
                                         </form>
                                     @endif
-                                </div>
+                                    </div>
+                                </details>
                             </td>
                         </tr>
                     @endforeach

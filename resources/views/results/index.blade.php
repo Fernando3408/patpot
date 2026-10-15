@@ -1,6 +1,6 @@
 <x-erp-layout title="Resultados" subtitle="Ventas, costos y utilidad del período seleccionado.">
     <h2 class="results-print-title">PatPot — Resultados {{ $month }}</h2>
-    <div class="results-toolbar">
+    <div class="results-toolbar results-reference-toolbar">
         <form method="GET" action="{{ route('results.index') }}" class="search-form">
             <input type="month" name="month" class="form-control" value="{{ $month }}">
             <input type="date" name="day" class="form-control" value="{{ $day }}" title="Opcional: consultar un día">
@@ -14,7 +14,7 @@
     </div>
 
     <div class="results-section-heading"><span>Resumen financiero</span><small>Período {{ $month }}</small></div>
-    <div class="kpi-grid">
+    <div class="kpi-grid results-reference-kpis">
         <div class="kpi-card kpi-card--sales"><span>Ventas</span><strong>${{ number_format($sales, 0, ',', '.') }}</strong><small>Ingresos despachados</small></div>
         <div class="kpi-card"><span>Costo productos</span><strong>${{ number_format($productCost, 0, ',', '.') }}</strong><small>Materia prima y producción</small></div>
         <div class="kpi-card"><span>Gastos asociados</span><strong>${{ number_format($expenses, 0, ',', '.') }}</strong><small>Despachos y pedidos</small></div>

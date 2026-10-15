@@ -46,7 +46,7 @@
                                 </span>
                             </td>
                             <td class="text-right">
-                                <div class="actions-cell">
+                                <details class="table-actions-menu"><summary>Acciones</summary><div class="table-actions-menu__items">
                                     <a href="/recetas/{{ $product->id }}/edit" class="btn btn-outline-success btn-sm">Receta</a>
                                     <button type="button" class="btn btn-outline-success btn-sm btn-edit-modal" data-url="{{ route('products.edit', $product) }}" data-title="Editar: {{ $product->name }}">Editar</button>
                                     <button type="button" class="btn btn-outline-info btn-sm btn-detail-modal" data-url="{{ route('products.show', $product) }}" data-title="Detalle: {{ $product->name }}">Ver detalle</button>
@@ -57,7 +57,7 @@
                                             <button type="submit" class="btn btn-danger btn-sm btn-delete">Eliminar</button>
                                         </form>
                                     @endif
-                                </div>
+                                </div></details>
                             </td>
                         </tr>
                     @endforeach

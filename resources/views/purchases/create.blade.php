@@ -1,10 +1,10 @@
 <x-erp-layout title="Nueva compra" subtitle="Las líneas vacías se ignoran; puedes agregar tantos insumos como necesites.">
-    <div class="form-card">
+    <div class="form-card purchase-create-card">
         <form method="POST" action="/compras" enctype="multipart/form-data">
             @csrf
 
             {{-- Datos Generales de la Orden de Compra --}}
-            <div class="form-grid mb-4">
+            <div class="form-grid mb-4 purchase-header-section">
                 <div class="form-group">
                     <label class="form-label">Número OC</label>
                     <input name="number" class="form-control" value="{{ old('number') }}" placeholder="OC-0001" required>
@@ -34,7 +34,7 @@
             </div>
 
             {{-- Tabla de Insumos (Líneas de Compra) --}}
-            <div class="table-container mb-4">
+            <div class="table-container mb-4 purchase-lines-section">
                 <table class="data-table" id="lines-table">
                     <thead>
                         <tr>
@@ -74,13 +74,13 @@
             </div>
 
             {{-- Observaciones --}}
-            <div class="form-group mb-4">
+            <div class="form-group mb-4 purchase-notes-section">
                 <label class="form-label">Observaciones</label>
                 <textarea name="notes" class="form-control" rows="3">{{ old('notes') }}</textarea>
             </div>
 
             {{-- Adjuntos --}}
-            <div class="form-group mb-4">
+            <div class="form-group mb-4 purchase-attachments-section">
                 <label class="form-label">Archivos adjuntos</label>
                 <div id="attachments-preview" style="margin-top:8px;"></div>
                 <input type="file" name="files[]" id="attachments-input" multiple class="form-control" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx,.csv" style="display:none;">

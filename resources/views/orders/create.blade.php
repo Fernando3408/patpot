@@ -5,7 +5,7 @@
             @csrf
 
             {{-- Sección: Datos Generales --}}
-            <div class="form-grid order-header-grid mb-6">
+            <div class="form-grid order-header-grid mb-6 order-customer-section">
                 <div class="form-group order-system-number">
                     <label class="form-label">Número pedido</label>
                     <input name="number" class="form-control" value="{{ old('number') }}" placeholder="PED-0001" required>
@@ -52,7 +52,7 @@
             </div>
 
             {{-- Sección: Líneas de Pedido (Productos) --}}
-            <div class="mb-6">
+            <div class="mb-6 order-products-section">
                 <h3 class="text-sm font-semibold text-slate-700 mb-3">Productos del pedido</h3>
                 <div class="table-container">
                     <table class="data-table" id="lines-table">
@@ -97,7 +97,7 @@
                 <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="add-line-btn">+ Agregar línea</button>
             </div>
 
-            <div class="card p-4 mb-6" id="order-consumption-panel" style="display:none;">
+            <div class="card p-4 mb-6 order-consumption-section" id="order-consumption-panel" style="display:none;">
                 <h3 class="text-sm font-semibold text-slate-700 mb-3">Consumo estimado del pedido</h3>
                 <div id="order-consumption-content" class="text-sm text-muted">Selecciona productos y cantidades para ver el impacto en los insumos.</div>
             </div>
@@ -106,7 +106,7 @@
                 <div><span>Venta</span><strong id="order-sale-total">$0</strong></div><div><span>Costo productos</span><strong id="order-cost-total">$0</strong></div><div><span>Gastos asociados</span><strong id="order-expense-total">$0</strong></div><div><span>Utilidad estimada</span><strong id="order-profit-total">$0</strong></div><div><span>Margen</span><strong id="order-margin-total">0%</strong></div>
             </div>
 
-            <div class="card p-4 mb-6">
+            <div class="card p-4 mb-6 order-expenses-section">
                 <h3 class="text-sm font-semibold text-slate-700 mb-3">Gastos asociados al pedido</h3>
                 @foreach(range(0, 2) as $expenseIndex)
                     <div class="form-grid mb-2">

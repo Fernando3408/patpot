@@ -62,7 +62,7 @@
                                 <span class="badge {{ $statusBadge }}">{{ $statusLabel }}</span>
                             </td>
                             <td class="text-right">
-                                <div class="actions-cell">
+                                <details class="table-actions-menu"><summary>Acciones</summary><div class="table-actions-menu__items">
                                     @if($task->status !== 'completed')
                                         <form method="POST" action="{{ route('tasks.complete', $task) }}" class="complete-task-form" style="display:inline;">
                                             @csrf
@@ -77,7 +77,7 @@
                                             <button type="submit" class="btn btn-danger btn-sm btn-delete">Eliminar</button>
                                         </form>
                                     @endif
-                                </div>
+                                </div></details>
                             </td>
                         </tr>
                     @endforeach

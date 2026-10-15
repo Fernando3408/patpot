@@ -107,11 +107,14 @@
         var invFields = document.getElementById('inventory-fields');
         var planTitle = document.getElementById('planning-title');
         var planFields = document.getElementById('planning-fields');
+        var invSection = invFields?.closest('.input-form-section');
+        var planSection = planFields?.closest('.input-form-section');
         if (invTitle) invTitle.textContent = isService ? 'Costo del Servicio' : 'Inventario y Costos';
+        if (invSection) invSection.style.display = '';
+        if (planSection) planSection.style.display = isService ? 'none' : '';
         if (invFields) invFields.querySelectorAll('input[type=number]').forEach(function(inp) {
-            if (inp.name === 'unit_cost') return;
-            // Always show stock, safety_stock, transit, weekly_consumption for both types
-            inp.closest('.form-group').style.display = '';
+            inp.closest('.form-group').style.display = isService && inp.name !== 'unit_cost' ? 'none' : '';
+            inp.required = !isService && (inp.name === 'safety_stock' || inp.name === 'unit_cost');
         });
         // Planning params visible for both types
         if (planFields) planFields.style.display = '';
