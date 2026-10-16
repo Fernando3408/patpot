@@ -858,6 +858,10 @@ body { background: var(--bg); color: var(--text); }
 .recipe-components-table .data-table th { background: #F6F4F1; }
 .recipe-components-table input[type="number"] { max-width: 130px; margin-left: auto; }
 .recipe-actions { border-top: 1px solid #E2DDD7; padding-top: 1rem; }
+.recipe-cost-reference { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; padding: 1rem; background: #F8EEE6; border: 1px solid #E2DDD7; border-radius: 10px; }
+.recipe-cost-reference div { display: flex; flex-direction: column; gap: .25rem; }
+.recipe-cost-reference span { color: #5E5853; font-size: .85rem; }
+.recipe-cost-reference strong { color: #1C1B1A; font-size: 1.05rem; }
 .product-detail-summary, .product-recipe-card { border-color: #E2DDD7; box-shadow: none; }
 .product-detail-summary .card__title, .product-recipe-card .card__title { font-size: 1.3125rem; }
 .results-reference-toolbar { padding: 1rem; background: #fff; border: 1px solid #E2DDD7; }

@@ -41,8 +41,13 @@
                                     <span class="badge badge-secondary">Material</span>
                                 @endif
                             </td>
-                            <td class="text-right font-bold">{{ number_format((int) $input->stock, 0, ',', '.') }}</td>
-                            <td class="text-right text-xs">{{ number_format((int) $input->safety_stock, 0, ',', '.') }}</td>
+                            @php
+                                $formatQuantity = static fn ($value): string => (float) $value == (int) $value
+                                    ? number_format((float) $value, 0, ',', '.')
+                                    : rtrim(rtrim(number_format((float) $value, 2, ',', '.'), '0'), ',');
+                            @endphp
+                            <td class="text-right font-bold">{{ $formatQuantity($input->stock) }}</td>
+                            <td class="text-right text-xs">{{ $formatQuantity($input->safety_stock) }}</td>
                             <td class="text-xs font-bold">{{ $input->unit }}</td>
                             <td class="text-right text-xs font-bold">${{ number_format($input->unit_cost, 0, ',', '.') }}</td>
                             <td class="text-center text-xs">
