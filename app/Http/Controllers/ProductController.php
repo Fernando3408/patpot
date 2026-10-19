@@ -32,7 +32,64 @@ class ProductController extends Controller
 
     public function create(): View
     {
-        return view('products.create');
+        return view('products.create', ['referenceImages' => $this->referenceImages()]);
+    }
+
+    private function referenceImages(): array
+    {
+        $directory = base_path('docs/Productos img');
+        return is_dir($directory) ? array_values(array_filter(scandir($directory), fn ($file) => in_array(strtolower(pathinfo($file, PATHINFO_EXTENSION)), ['jpg', 'jpeg', 'png', 'webp']))) : [];
+    }
+
+    public function referenceImage(string $filename)
+    {
+        abort_if(str_contains($filename, '..'), 404);
+        $path = str_starts_with($filename, 'product-reference/')
+            ? storage_path('app/public/' . $filename)
+            : base_path('docs/Productos img/' . basename($filename));
+        abort_unless(is_file($path), 404);
+        return response()->file($path);
+    }
+
+    public function deleteReferenceImage(Request $request)
+    {
+        $filename = $request->validate(['filename' => 'required|string|max:255'])['filename'];
+        abort_if(str_contains($filename, '..') || basename($filename) !== $filename && ! str_starts_with($filename, 'product-reference/'), 404);
+        $path = str_starts_with($filename, 'product-reference/')
+            ? storage_path('app/public/' . $filename)
+            : base_path('docs/Productos img/' . $filename);
+        abort_unless(is_file($path), 404);
+        unlink($path);
+        Product::where('reference_image', $filename)->update(['reference_image' => null]);
+        return response()->json(['success' => true]);
+    }
+
+    private function saveReferenceImage(Request $request, array &$validated): void
+    {
+        if ($request->hasFile('reference_image_file')) {
+            $file = $request->file('reference_image_file');
+            $directory = base_path('docs/Productos img');
+            if (! is_dir($directory)) mkdir($directory, 0755, true);
+
+            $extension = strtolower($file->getClientOriginalExtension());
+            $name = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $name = preg_replace('/[^A-Za-z0-9_-]+/', '-', $name) ?: 'imagen-referencial';
+            $filename = $name . '.' . $extension;
+            $counter = 1;
+            while (is_file($directory . '/' . $filename)) {
+                $filename = $name . '-' . $counter++ . '.' . $extension;
+            }
+            $file->move($directory, $filename);
+            $validated['reference_image'] = $filename;
+        }
+    }
+
+    public function uploadReferenceImage(Request $request)
+    {
+        $request->validate(['reference_image_file' => 'required|image|mimes:jpg,jpeg,png,webp|max:5120']);
+        $validated = [];
+        $this->saveReferenceImage($request, $validated);
+        return response()->json(['filename' => $validated['reference_image']]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -46,7 +103,10 @@ class ProductController extends Controller
             'min_stock_boxes' => 'required|integer|min:0',
             'production_cost' => 'nullable|numeric|min:0',
             'status' => 'required|in:active,inactive',
+            'reference_image' => 'nullable|string|max:255',
+            'reference_image_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
         ]);
+        $this->saveReferenceImage($request, $validated);
 
         $product = Product::create($validated);
         AuditService::log('CREACIÓN DE PRODUCTO', "Creó producto: {$validated['name']}", $product);
@@ -56,7 +116,7 @@ class ProductController extends Controller
 
     public function edit(Product $product): View
     {
-        return view('products.edit', compact('product'));
+        return view('products.edit', ['product' => $product, 'referenceImages' => $this->referenceImages()]);
     }
 
     public function show(Product $product): View
@@ -77,7 +137,9 @@ class ProductController extends Controller
                     'stock_boxes' => 'sometimes|integer|min:0',
                     'min_stock_boxes' => 'sometimes|integer|min:0',
                     'production_cost' => 'sometimes|nullable|numeric|min:0',
-                    'status' => 'sometimes|required|in:active,inactive',
+                     'status' => 'sometimes|required|in:active,inactive',
+                     'reference_image' => 'sometimes|nullable|string|max:255',
+                     'reference_image_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
                 ];
             } else {
                 $rules = [
@@ -89,9 +151,12 @@ class ProductController extends Controller
                     'min_stock_boxes' => 'required|integer|min:0',
                     'production_cost' => 'nullable|numeric|min:0',
                     'status' => 'required|in:active,inactive',
+                    'reference_image' => 'nullable|string|max:255',
+                    'reference_image_file' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
                 ];
             }
             $validated = $request->validate($rules);
+            $this->saveReferenceImage($request, $validated);
 
             $product->update($validated);
             $product->load('recipes.input');

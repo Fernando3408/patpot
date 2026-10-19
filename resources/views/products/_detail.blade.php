@@ -3,6 +3,12 @@
         <h2 class="card__title">Producto</h2>
     </div>
     <div class="card__body">
+        @if($product->reference_image)
+            <div class="mb-4">
+                <strong>Imagen referencial</strong>
+                <div><img src="{{ route('products.reference-image', ['filename' => $product->reference_image]) }}" alt="Imagen referencial de {{ $product->name }}" style="max-width:220px;max-height:180px;object-fit:contain;margin-top:8px;border-radius:12px"></div>
+            </div>
+        @endif
         <div class="form-grid">
             <div><strong>Nombre:</strong> {{ $product->name }}</div>
             <div><strong>SKU:</strong> {{ $product->sku }}</div>
@@ -12,9 +18,9 @@
             <div><strong>Stock mínimo:</strong> {{ number_format($product->min_stock_boxes, 0, ',', '.') }}</div>
             <div><strong>Costo piso/caja:</strong> {{ $product->production_cost !== null ? '$' . number_format($product->production_cost, 0, ',', '.') : 'Calculado por receta' }}</div>
             <div><strong>Costo/caja:</strong> ${{ number_format($product->cost_per_box, 0, ',', '.') }}</div>
-            <div><strong>Costo/caja con IVA:</strong> ${{ number_format($product->cost_per_box_with_vat, 2, ',', '.') }}</div>
-            <div><strong>Costo unitario referencial:</strong> {{ $product->cost_per_unit !== null ? '$'.number_format($product->cost_per_unit, 2, ',', '.') : '—' }}</div>
-            <div><strong>Costo unitario con IVA:</strong> {{ $product->cost_per_unit_with_vat !== null ? '$'.number_format($product->cost_per_unit_with_vat, 2, ',', '.') : '—' }}</div>
+            <div><strong>Costo/caja con IVA:</strong> ${{ number_format($product->cost_per_box_with_vat, 0, ',', '.') }}</div>
+            <div><strong>Costo unitario referencial:</strong> {{ $product->cost_per_unit !== null ? '$'.number_format($product->cost_per_unit, 0, ',', '.') : '—' }}</div>
+            <div><strong>Costo unitario con IVA:</strong> {{ $product->cost_per_unit_with_vat !== null ? '$'.number_format($product->cost_per_unit_with_vat, 0, ',', '.') : '—' }}</div>
             <div><strong>Capacidad producción:</strong> {{ $product->production_capacity ? number_format($product->production_capacity, 0, ',', '.') . ' cajas' : '—' }}</div>
             <div>
                 <strong>Estado:</strong>

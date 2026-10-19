@@ -2602,3 +2602,16 @@ body { font-size: 15px; }
 .form-control, select.form-control { min-height: 42px; font-size: .95rem; }
 .data-table th { font-size: .88rem; text-transform: none; }
 .data-table td { font-size: .92rem; }
+.reference-picker { position: relative; width: 100%; }
+.reference-picker > button { width: 100%; text-align: left; }
+.reference-picker > summary { list-style: none; cursor: pointer; }
+.reference-picker > summary::-webkit-details-marker { display: none; }
+.reference-picker[open] > summary { border-color: #d19b70; }
+.reference-picker-menu { display: none; position: absolute; z-index: 20; width: 100%; background: #fff; border: 1px solid #b8ada0; border-radius: 8px; box-shadow: 0 8px 20px #0002; padding: 4px; }
+.reference-picker.open .reference-picker-menu { display: block; }
+.reference-picker[open] .reference-picker-menu { display: block; }
+.reference-picker:focus-within .reference-picker-menu { display: block; }
+.reference-picker-menu > button, .reference-picker-option > button:first-child { display: block; width: 100%; text-align: left; border: 0; background: transparent; padding: 8px; cursor: pointer; }
+.reference-picker-option { display: flex; align-items: center; gap: 6px; }
+.reference-picker-option img { width: 34px; height: 34px; object-fit: contain; margin-left: auto; }
+.reference-picker-option > button:last-child { border: 0; background: transparent; color: #b33; font-size: 20px; cursor: pointer; padding: 4px 8px; }

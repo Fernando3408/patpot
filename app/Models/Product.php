@@ -21,6 +21,7 @@ class Product extends Model
         'min_stock_boxes',
         'production_cost',
         'status',
+        'reference_image',
         'deleted_by',
     ];
 

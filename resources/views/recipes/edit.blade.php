@@ -63,7 +63,7 @@
                                     $totalCost += $lineCost;
                                 @endphp
 
-                                <tr>
+                                <tr data-unit-cost="{{ (float) $input->unit_cost }}" data-service="{{ $input->isService() ? '1' : '0' }}">
                                     <td class="text-center">
                                         <input
                                             type="hidden"
@@ -98,7 +98,7 @@
                                             placeholder="0.000"
                                         >
                                     </td>
-                                    <td class="text-right font-bold">
+                                    <td class="text-right font-bold recipe-line-cost">
                                         ${{ number_format($lineCost, 0, ',', '.') }}
                                     </td>
                                 </tr>
@@ -107,7 +107,7 @@
                         <tfoot>
                             <tr class="row-alt-bg">
                                 <th colspan="6" class="text-right font-bold">Costo estimado por caja:</th>
-                        <th class="text-right font-bold text-lg text-primary-brand"><span id="recipe-cost-net">${{ number_format($totalCost, 2, ',', '.') }}</span></th>
+                        <th class="text-right font-bold text-lg text-primary-brand"><span id="recipe-cost-net">${{ number_format($totalCost, 0, ',', '.') }}</span></th>
                             </tr>
                         </tfoot>
                     </table>
@@ -133,15 +133,19 @@
         (function () {
             const vat = 0.19;
             const units = {{ (int) $product->units_per_box }};
-            const money = value => '$' + value.toLocaleString('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const money = value => '$' + Math.round(value).toLocaleString('es-CL');
             function updateRecipeReference() {
                 let total = 0;
                 document.querySelectorAll('.recipe-components-table tbody tr').forEach(function (row) {
                     const checkbox = row.querySelector('input[type="checkbox"]');
                     const qty = parseFloat(row.querySelector('input[name*="[qty_per_box]"]')?.value || 0);
                     const fixed = parseFloat(row.querySelector('input[name*="[fixed_cost]"]')?.value || 0);
-                    const unit = parseFloat(row.children[4]?.textContent.replace(/[^0-9,.-]/g, '').replace('.', '').replace(',', '.') || 0);
-                    if (checkbox?.checked) total += fixed || qty * unit;
+                    const unit = parseFloat(row.dataset.unitCost || 0);
+                    const isActive = Boolean(checkbox?.checked || qty > 0 || fixed > 0);
+                    const lineTotal = isActive ? (row.dataset.service === '1' ? fixed : qty * unit) : 0;
+                    const lineCell = row.querySelector('.recipe-line-cost');
+                    if (lineCell) lineCell.textContent = money(lineTotal);
+                    if (isActive) total += lineTotal;
                 });
                 document.getElementById('recipe-cost-net').textContent = money(total);
                 document.getElementById('recipe-cost-net-reference').textContent = money(total);
@@ -149,7 +153,14 @@
                 document.getElementById('recipe-cost-gross').textContent = money(total * (1 + vat));
                 document.getElementById('recipe-cost-unit').textContent = money(units > 0 ? total / units : 0);
             }
-            document.querySelectorAll('.recipe-components-table input').forEach(input => input.addEventListener('input', updateRecipeReference));
+            document.querySelectorAll('.recipe-components-table input').forEach(input => input.addEventListener('input', function () {
+                const row = input.closest('tr');
+                const quantity = parseFloat(row?.querySelector('input[name*="[qty_per_box]"]')?.value || 0);
+                const fixed = parseFloat(row?.querySelector('input[name*="[fixed_cost]"]')?.value || 0);
+                const checkbox = row?.querySelector('input[type="checkbox"]');
+                if (checkbox && (quantity > 0 || fixed > 0)) checkbox.checked = true;
+                updateRecipeReference();
+            }));
             updateRecipeReference();
         })();
     </script>
