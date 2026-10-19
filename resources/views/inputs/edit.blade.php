@@ -47,15 +47,15 @@
     <section class="input-form-section"><div class="input-form-section__heading"><div><h3 id="inventory-title">Inventario y costos</h3><p>Define stock disponible, mínimo de alerta y costo unitario.</p></div></div><div class="form-grid" id="inventory-fields">
         <div class="form-group">
             <label class="form-label">Stock actual</label>
-            <input type="number" step="1" min="0" name="stock" class="form-control" value="{{ old('stock', floatval($input->stock)) }}">
+            <input type="number" step="0.01" min="0" name="stock" class="form-control" value="{{ old('stock', floatval($input->stock)) }}">
         </div>
         <div class="form-group">
             <label class="form-label">Avisarme cuando queden menos de <span class="text-danger">*</span></label>
-            <input type="number" step="1" min="0" name="safety_stock" class="form-control" value="{{ old('safety_stock', floatval($input->safety_stock)) }}" required>
+            <input type="number" step="0.01" min="0" name="safety_stock" class="form-control" value="{{ old('safety_stock', floatval($input->safety_stock)) }}" required>
         </div>
         <div class="form-group">
             <label class="form-label">Stock en tránsito</label>
-            <input type="number" step="1" min="0" name="transit" class="form-control" value="{{ old('transit', floatval($input->transit)) }}">
+            <input type="number" step="0.01" min="0" name="transit" class="form-control" value="{{ old('transit', floatval($input->transit)) }}">
         </div>
         <div class="form-group">
             <label class="form-label">Costo unitario ($)</label>

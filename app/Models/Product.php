@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Product extends Model
 {
+    public const VAT_RATE = 0.19;
     use SoftDeletes;
 
     protected $fillable = [
@@ -20,6 +21,7 @@ class Product extends Model
         'min_stock_boxes',
         'production_cost',
         'status',
+        'reference_image',
         'deleted_by',
     ];
 
@@ -68,6 +70,21 @@ class Product extends Model
                 ? (float) $recipe->fixed_cost
                 : (float) $recipe->qty_per_box * (float) $recipe->input->unit_cost;
         }), 2);
+    }
+
+    public function getCostPerBoxWithVatAttribute(): float
+    {
+        return round($this->cost_per_box * (1 + self::VAT_RATE), 2);
+    }
+
+    public function getCostPerUnitAttribute(): ?float
+    {
+        return $this->units_per_box > 0 ? round($this->cost_per_box / $this->units_per_box, 2) : null;
+    }
+
+    public function getCostPerUnitWithVatAttribute(): ?float
+    {
+        return $this->cost_per_unit !== null ? round($this->cost_per_unit * (1 + self::VAT_RATE), 2) : null;
     }
 
     public function getProductionCapacityAttribute(): ?float

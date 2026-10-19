@@ -66,6 +66,9 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/productos', [ProductController::class, 'index'])->name('products.index');
 
     Route::get('/productos/create', [ProductController::class, 'create'])->name('products.create');
+    Route::get('/productos/imagen-referencial/{filename}', [ProductController::class, 'referenceImage'])->where('filename', '.*')->name('products.reference-image');
+    Route::delete('/productos/imagen-referencial', [ProductController::class, 'deleteReferenceImage'])->name('products.delete-reference-image');
+    Route::post('/productos/imagen-referencial', [ProductController::class, 'uploadReferenceImage'])->name('products.upload-reference-image');
 
     Route::post('/productos', [ProductController::class, 'store'])->name('products.store');
 

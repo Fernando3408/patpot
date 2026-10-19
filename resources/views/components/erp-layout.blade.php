@@ -850,6 +850,54 @@
             });
         }, true);
 
+        window.toggleReferencePicker = function() {
+            var picker = document.getElementById('reference-picker');
+            if (picker) picker.classList.toggle('open');
+        };
+        window.chooseReferenceImage = function(value, label) {
+            var select = document.getElementById('reference_image');
+            var picker = document.getElementById('reference-picker');
+            var button = document.getElementById('reference-picker-label');
+            if (!select || !button) return;
+            select.value = value;
+            button.textContent = label;
+            if (picker) { picker.classList.remove('open'); picker.open = false; }
+            var preview = document.getElementById('reference-image-preview');
+            var placeholder = document.getElementById('reference-image-placeholder');
+            if (!value) { preview.style.display = 'none'; placeholder.style.display = 'block'; return; }
+            preview.src = '{{ url('/productos/imagen-referencial') }}/' + encodeURIComponent(value);
+            preview.style.display = 'block';
+            placeholder.style.display = 'none';
+        };
+        window.deleteCatalogReferenceImage = async function(filename) {
+            if (!confirm('¿Eliminar esta imagen del catálogo?')) return;
+            var response = await fetch('{{ route('products.delete-reference-image') }}', { method: 'DELETE', headers: {'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json', 'Content-Type': 'application/json'}, body: JSON.stringify({filename: filename}) });
+            if (response.ok) location.reload();
+        };
+        window.uploadReferenceImage = async function(input) {
+            if (!input.files[0]) return;
+            var data = new FormData();
+            data.append('reference_image_file', input.files[0]);
+            var response = await fetch('{{ route('products.upload-reference-image') }}', {method:'POST', headers:{'X-CSRF-TOKEN':'{{ csrf_token() }}','Accept':'application/json'}, body:data});
+            if (!response.ok) return;
+            var result = await response.json();
+            var select = document.getElementById('reference_image');
+            var option = new Option(result.filename.replace(/\.[^.]+$/, ''), result.filename, true, true);
+            select.add(option);
+            window.chooseReferenceImage(result.filename, option.text);
+        };
+        document.addEventListener('click', function(event) {
+            var pickerButton = event.target.closest('#reference-picker-label');
+            if (pickerButton) {
+                event.preventDefault();
+                window.toggleReferencePicker();
+            }
+            if (!event.target.closest('#reference-picker')) {
+                var picker = document.getElementById('reference-picker');
+                if (picker) { picker.classList.remove('open'); picker.open = false; }
+            }
+        });
+
         document.addEventListener('click', function(event) {
             if (event.target.closest('details.table-actions-menu')) return;
             document.querySelectorAll('details.table-actions-menu[open]').forEach(function(menu) {
