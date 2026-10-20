@@ -330,9 +330,22 @@
             });
 
             var form = fileInput.closest('form');
-            form.addEventListener('submit', function(e) {
+            form.addEventListener('submit', async function(e) {
                 e.preventDefault();
-                if (document.querySelector('#order-consumption-content .text-danger') && !window.confirm('Este pedido dejará uno o más insumos sin stock. ¿Deseas guardarlo de todas formas?')) return;
+                var shortage = document.querySelector('#order-consumption-content .text-danger');
+                if (shortage) {
+                    var confirmation = await Swal.fire({
+                        icon: 'warning',
+                        title: 'Stock insuficiente',
+                        html: '<div style="text-align:left">' + shortage.innerHTML + '<br><br>¿Deseas guardar el pedido de todas formas?</div>',
+                        showCancelButton: true,
+                        confirmButtonText: 'Guardar pedido',
+                        cancelButtonText: 'Cancelar',
+                        reverseButtons: true,
+                        focusCancel: true
+                    });
+                    if (!confirmation.isConfirmed) return;
+                }
                 var formData = new FormData(form);
                 formData.delete('files[]');
                 selectedFiles.forEach(function(f) { formData.append('files[]', f); });

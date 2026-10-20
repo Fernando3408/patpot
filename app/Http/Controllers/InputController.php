@@ -70,6 +70,10 @@ class InputController extends Controller
             'status' => 'required|boolean',
         ]);
 
+        $validated['stock'] = $validated['stock'] ?? 0;
+        $validated['safety_stock'] = $validated['safety_stock'] ?? 0;
+        $validated['transit'] = $validated['transit'] ?? 0;
+
         if ($validated['type'] === 'service') {
             $validated = array_merge($validated, [
                 'stock' => 0,
@@ -145,6 +149,9 @@ class InputController extends Controller
                 ];
             }
             $validated = $request->validate($rules);
+            $validated['stock'] = $validated['stock'] ?? 0;
+            $validated['safety_stock'] = $validated['safety_stock'] ?? 0;
+            $validated['transit'] = $validated['transit'] ?? 0;
 
             if (($validated['type'] ?? $input->type) === 'service') {
                 $validated = array_merge($validated, [

@@ -14,12 +14,10 @@
                         <th>Nombre</th>
                         <th>Tipo</th>
                         <th class="text-right">Stock</th>
-                        <th class="text-right">Seguridad</th>
+                        <th class="text-right">Stock mínimo</th>
                         <th>Unidad</th>
-                        <th class="text-right">Costo</th>
-                        <th class="text-center">Consumo sem.</th>
-                        <th class="text-right">Reposición</th>
-                        <th class="text-center">Cobertura</th>
+                        <th class="text-right">Costo sin IVA</th>
+                        <th class="text-right">Costo con IVA</th>
                         <th>Nivel</th>
                         <th class="text-right"></th>
                     </tr>
@@ -50,30 +48,7 @@
                             <td class="text-right text-xs">{{ $formatQuantity($input->safety_stock) }}</td>
                             <td class="text-xs font-bold">{{ $input->unit }}</td>
                             <td class="text-right text-xs font-bold">${{ number_format($input->unit_cost, 0, ',', '.') }}</td>
-                            <td class="text-center text-xs">
-                                <div class="fw-600">{{ number_format($input->weekly_consumption, 0, ',', '.') }}</div>
-                                @php $auto = $input->auto_weekly_consumption; @endphp
-                                @if($auto > 0 && $auto != $input->weekly_consumption)
-                                    <div class="text-muted" style="font-size:0.7rem;">Real: {{ number_format($auto, 0, ',', '.') }}</div>
-                                    <button type="button" class="btn btn-outline-primary btn-sm" style="font-size:0.65rem;padding:0.1rem 0.3rem;margin-top:2px;" onclick="useAverage(this, {{ $input->id }}, {{ $auto }})">Usar promedio</button>
-                                @endif
-                            </td>
-                            <td class="text-right text-xs">{{ number_format($input->reorder_point, 0, ',', '.') }}</td>
-                            <td class="text-xs text-center">
-                                @if($input->coverage_days !== null)
-                                    <div class="fw-600 mb-1">{{ $input->coverage_days }} días</div>
-                                    @php
-                                        $maxDays = 90;
-                                        $pct = min(($input->coverage_days / $maxDays) * 100, 100);
-                                        $color = $input->coverage_days <= 7 ? '#dc2626' : ($input->coverage_days <= 21 ? '#f59e0b' : '#16a34a');
-                                    @endphp
-                                    <div class="coverage-bar-bg">
-                                        <div class="coverage-bar-fill" style="width:{{ $pct }}%;background:{{ $color }};"></div>
-                                    </div>
-                                @else
-                                    —
-                                @endif
-                            </td>
+                            <td class="text-right text-xs font-bold">${{ number_format($input->unit_cost_with_vat, 0, ',', '.') }}</td>
                             <td>
                                 @php $level = $input->inventory_level; @endphp
                                 @if($level === 'ok')

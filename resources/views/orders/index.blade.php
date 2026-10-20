@@ -240,7 +240,7 @@
                 body: formData,
                 headers: { 'X-Requested-With': 'XMLHttpRequest' }
             })
-            .then(function(r) { return r.json(); })
+            .then(function(r) { return r.json().then(function(json) { if (!r.ok) throw json; return json; }); })
             .then(function(json) {
                 if (json.errors) {
                     Swal.fire('Error', Object.values(json.errors).flat().join('\n'), 'error');
@@ -254,8 +254,9 @@
                     setTimeout(function() { window.location.reload(); }, 400);
                 }
             })
-            .catch(function() {
-                Swal.fire('Error', 'No se pudo procesar.', 'error');
+            .catch(function(err) {
+                var message = err && err.errors ? Object.values(err.errors).flat().join('\n') : 'No se pudo procesar el despacho.';
+                Swal.fire('Stock insuficiente', message, 'warning');
                 btn.disabled = false;
                 btn.textContent = 'Confirmar despacho';
             });

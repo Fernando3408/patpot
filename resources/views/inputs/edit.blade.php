@@ -50,7 +50,7 @@
             <input type="number" step="0.01" min="0" name="stock" class="form-control" value="{{ old('stock', floatval($input->stock)) }}">
         </div>
         <div class="form-group">
-            <label class="form-label">Avisarme cuando queden menos de <span class="text-danger">*</span></label>
+            <label class="form-label">Stock mínimo <span class="text-danger">*</span></label>
             <input type="number" step="0.01" min="0" name="safety_stock" class="form-control" value="{{ old('safety_stock', floatval($input->safety_stock)) }}" required>
         </div>
         <div class="form-group">
@@ -63,32 +63,10 @@
         </div>
     </div></section>
 
-    <section class="input-form-section"><div class="input-form-section__heading"><div><h3 id="planning-title">Parámetros de reposición</h3><p>Usa estos valores para calcular compras sugeridas y cobertura.</p></div></div><div class="form-grid" id="planning-fields">
-        <div class="form-group">
-            <label class="form-label">Consumo semanal</label>
-            <input type="number" step="1" min="0" id="weekly_consumption" name="weekly_consumption" class="form-control" value="{{ old('weekly_consumption', floatval($input->weekly_consumption)) }}">
-            @php $auto = $input->auto_weekly_consumption; @endphp
-            @if($auto > 0)
-                <p class="form-hint">Promedio real: <strong>{{ number_format($auto, 0, ',', '.') }}</strong>
-                    <button type="button" class="btn btn-outline-primary btn-xs" onclick="document.getElementById('weekly_consumption').value = Math.round({{ $auto }});">Usar promedio</button>
-                </p>
-            @endif
-        </div>
+    <section class="input-form-section"><div class="input-form-section__heading"><div><h3 id="planning-title">Abastecimiento</h3><p>Define el tiempo estimado de reposición del insumo.</p></div></div><div class="form-grid" id="planning-fields">
         <div class="form-group">
             <label class="form-label">Lead time (días)</label>
             <input type="number" step="1" min="0" name="lead_time_days" class="form-control" value="{{ old('lead_time_days', $input->lead_time_days) }}">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Cobertura objetivo (semanas)</label>
-            <input type="number" step="1" min="0" name="target_weeks" class="form-control" value="{{ old('target_weeks', $input->target_weeks) }}">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Compra mínima</label>
-            <input type="number" step="0.001" min="0" name="min_purchase" class="form-control" value="{{ old('min_purchase', floatval($input->min_purchase)) }}">
-        </div>
-        <div class="form-group">
-            <label class="form-label">Múltiplo de compra</label>
-            <input type="number" step="0.001" min="0.001" name="purchase_multiple" class="form-control" value="{{ old('purchase_multiple', floatval($input->purchase_multiple)) }}">
         </div>
     </div></section>
 
