@@ -66,9 +66,10 @@ class Product extends Model
 
         return round($this->recipes->sum(function (Recipe $recipe): float {
             if (! $recipe->input) return 0;
-            return $recipe->input->isService() && $recipe->fixed_cost !== null
+            $unitCost = $recipe->input->isService() && $recipe->fixed_cost !== null
                 ? (float) $recipe->fixed_cost
-                : (float) $recipe->qty_per_box * (float) $recipe->input->unit_cost;
+                : (float) $recipe->input->unit_cost;
+            return (float) $recipe->qty_per_box * $unitCost;
         }), 2);
     }
 

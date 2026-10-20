@@ -62,8 +62,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label" for="safety_stock">Avisarme cuando queden menos de <span class="text-danger">*</span></label>
-                    <input type="number" step="0.01" id="safety_stock" name="safety_stock" class="form-control" value="{{ old('safety_stock') }}" min="0" required>
+                    <label class="form-label" for="safety_stock">Stock mínimo <span class="text-danger">*</span></label>
+                    <input type="number" step="0.01" id="safety_stock" name="safety_stock" class="form-control" value="{{ old('safety_stock', 0) }}" min="0" required>
                 </div>
 
                 <div class="form-group">
@@ -78,31 +78,12 @@
             </div></section>
 
             {{-- Sección: Parámetros de Reposición (solo material) --}}
-            <section class="input-form-section"><div class="input-form-section__heading"><div><h3 id="planning-title">Parámetros de reposición</h3><p>Usa estos valores para calcular compras sugeridas y cobertura.</p></div></div><div class="form-grid" id="planning-fields">
-                <div class="form-group">
-                    <label class="form-label" for="weekly_consumption">Consumo semanal</label>
-                    <input type="number" step="1" id="weekly_consumption" name="weekly_consumption" class="form-control" value="{{ old('weekly_consumption', 0) }}" min="0">
-                </div>
-
+             <section class="input-form-section"><div class="input-form-section__heading"><div><h3 id="planning-title">Abastecimiento</h3><p>Define el tiempo estimado de reposición del insumo.</p></div></div><div class="form-grid" id="planning-fields">
                 <div class="form-group">
                     <label class="form-label" for="lead_time_days">Lead time (días)</label>
                     <input type="number" step="1" id="lead_time_days" name="lead_time_days" class="form-control" value="{{ old('lead_time_days', 0) }}" min="0">
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label" for="target_weeks">Cobertura objetivo (semanas)</label>
-                    <input type="number" step="1" id="target_weeks" name="target_weeks" class="form-control" value="{{ old('target_weeks', 0) }}" min="0">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="min_purchase">Compra mínima</label>
-                    <input type="number" step="0.001" id="min_purchase" name="min_purchase" class="form-control" value="{{ old('min_purchase', 0) }}" min="0">
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label" for="purchase_multiple">Múltiplo de compra</label>
-                    <input type="number" step="0.001" id="purchase_multiple" name="purchase_multiple" class="form-control" value="{{ old('purchase_multiple', 1) }}" min="0.001">
-                </div>
             </div></section>
 
             {{-- Botones de Acción --}}

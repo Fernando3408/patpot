@@ -24,7 +24,7 @@ class AlertService
                     'level' => 'critical',
                     'module' => 'Insumos',
                     'title' => $i->name,
-                    'detail' => "Stock {$i->formattedStock()} {$i->unit}; cobertura {$i->coverage_weeks} semanas; compra sugerida {$i->suggested_purchase} {$i->unit}.",
+                    'detail' => "Stock {$i->formattedStock()} {$i->unit}; mínimo configurado {$i->formattedSafetyStock()} {$i->unit}.",
                     'action_url' => '/insumos',
                 ]);
             });

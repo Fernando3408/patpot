@@ -899,6 +899,12 @@
         });
 
         document.addEventListener('click', function(event) {
+            var openedActions = event.target.closest('details.table-actions-menu');
+            if (openedActions) {
+                document.querySelectorAll('details.table-actions-menu[open]').forEach(function(menu) {
+                    if (menu !== openedActions) menu.removeAttribute('open');
+                });
+            }
             if (event.target.closest('details.table-actions-menu')) return;
             document.querySelectorAll('details.table-actions-menu[open]').forEach(function(menu) {
                 menu.removeAttribute('open');

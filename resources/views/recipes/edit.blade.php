@@ -46,9 +46,11 @@
                                 <th>Insumo</th>
                                 <th>Codigo</th>
                                 <th class="text-center">Unidad</th>
-                                <th class="text-right">Costo unitario</th>
+                                <th class="text-right">Costo unitario<br>sin IVA</th>
                                 <th class="text-right th-progreso">Cantidad por caja</th>
-                                <th class="text-right">Costo por caja</th>
+                                <th class="text-right">Costo por caja<br>sin IVA</th>
+                                <th class="text-right">Costo por caja<br>con IVA</th>
+                                <th class="text-right">Costo por<br>bolsa</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -59,7 +61,8 @@
                                     $fixedCost = old("ingredients.{$input->id}.fixed_cost", $product->recipes->firstWhere('input_id', $input->id)?->fixed_cost);
                                     
                                     $quantity = is_numeric($rawQuantity) ? (float) $rawQuantity : null;
-                                    $lineCost = $isSelected ? ($input->isService() ? (float) ($fixedCost ?: 0) : ($quantity ? $quantity * (float) $input->unit_cost : 0)) : 0;
+                                    $unitCost = $input->isService() && $fixedCost !== null ? (float) $fixedCost : (float) $input->unit_cost;
+                                    $lineCost = $isSelected ? ($quantity ? $quantity * $unitCost : 0) : 0;
                                     $totalCost += $lineCost;
                                 @endphp
 
@@ -82,7 +85,7 @@
                                     <td class="text-center text-xs">{{ $input->unit }}</td>
                                     <td class="text-right">
                                         @if($input->isService())
-                                            <input type="number" step="0.01" min="0" name="ingredients[{{ $input->id }}][fixed_cost]" class="form-control text-right" value="{{ $fixedCost !== null ? round((float) $fixedCost, 2) : '' }}" placeholder="$ por caja">
+                                            <input type="number" step="1" min="0" name="ingredients[{{ $input->id }}][fixed_cost]" class="form-control text-right" value="{{ $fixedCost !== null ? round((float) $fixedCost, 0) : '' }}" placeholder="Costo maquila">
                                         @else
                                             ${{ number_format((float) $input->unit_cost, 0, ',', '.') }}
                                         @endif
@@ -101,18 +104,23 @@
                                     <td class="text-right font-bold recipe-line-cost">
                                         ${{ number_format($lineCost, 0, ',', '.') }}
                                     </td>
+                                    <td class="text-right recipe-line-cost-vat">${{ number_format($lineCost * 1.19, 0, ',', '.') }}</td>
+                                    <td class="text-right recipe-line-cost-unit">${{ number_format($lineCost / max(1, $product->units_per_box), 0, ',', '.') }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
                         <tfoot>
                             <tr class="row-alt-bg">
-                                <th colspan="6" class="text-right font-bold">Costo estimado por caja:</th>
+                                <th colspan="5" class="text-right font-bold">Costo estimado por caja:</th>
+                                <th></th>
                         <th class="text-right font-bold text-lg text-primary-brand"><span id="recipe-cost-net">${{ number_format($totalCost, 0, ',', '.') }}</span></th>
+                        <th class="text-right font-bold"><span id="recipe-cost-gross-table">${{ number_format($totalCost * 1.19, 0, ',', '.') }}</span></th>
+                        <th class="text-right font-bold"><span id="recipe-cost-bag-table">${{ number_format($totalCost / max(1, $product->units_per_box), 0, ',', '.') }}</span></th>
                             </tr>
                         </tfoot>
                     </table>
                 </div>
-                <div class="recipe-cost-reference"><div><span>Costo sin IVA</span><strong id="recipe-cost-net-reference">$0,00</strong></div><div><span>IVA 19%</span><strong id="recipe-cost-vat">$0,00</strong></div><div><span>Costo con IVA</span><strong id="recipe-cost-gross">$0,00</strong></div><div><span>Costo unitario referencial</span><strong id="recipe-cost-unit">$0,00</strong></div></div>
+                <div class="recipe-cost-reference"><div><span>Costo sin IVA</span><strong id="recipe-cost-net-reference">$0</strong></div><div><span>IVA 19%</span><strong id="recipe-cost-vat">$0</strong></div><div><span>Costo con IVA</span><strong id="recipe-cost-gross">$0</strong></div><div><span>Costo por bolsa</span><strong id="recipe-cost-unit">$0</strong></div></div>
 
                 {{-- Botones de Accion --}}
                 <div class="form-actions recipe-actions">
@@ -139,12 +147,16 @@
                 document.querySelectorAll('.recipe-components-table tbody tr').forEach(function (row) {
                     const checkbox = row.querySelector('input[type="checkbox"]');
                     const qty = parseFloat(row.querySelector('input[name*="[qty_per_box]"]')?.value || 0);
-                    const fixed = parseFloat(row.querySelector('input[name*="[fixed_cost]"]')?.value || 0);
                     const unit = parseFloat(row.dataset.unitCost || 0);
-                    const isActive = Boolean(checkbox?.checked || qty > 0 || fixed > 0);
-                    const lineTotal = isActive ? (row.dataset.service === '1' ? fixed : qty * unit) : 0;
+                    const fixed = parseFloat(row.querySelector('input[name*="[fixed_cost]"]')?.value || 0);
+                    const isActive = Boolean(checkbox?.checked || qty > 0);
+                    const lineTotal = isActive ? qty * (row.dataset.service === '1' && fixed > 0 ? fixed : unit) : 0;
                     const lineCell = row.querySelector('.recipe-line-cost');
                     if (lineCell) lineCell.textContent = money(lineTotal);
+                    const vatCell = row.querySelector('.recipe-line-cost-vat');
+                    if (vatCell) vatCell.textContent = money(lineTotal * (1 + vat));
+                    const unitCell = row.querySelector('.recipe-line-cost-unit');
+                    if (unitCell) unitCell.textContent = money(units > 0 ? lineTotal / units : 0);
                     if (isActive) total += lineTotal;
                 });
                 document.getElementById('recipe-cost-net').textContent = money(total);
@@ -152,6 +164,8 @@
                 document.getElementById('recipe-cost-vat').textContent = money(total * vat);
                 document.getElementById('recipe-cost-gross').textContent = money(total * (1 + vat));
                 document.getElementById('recipe-cost-unit').textContent = money(units > 0 ? total / units : 0);
+                document.getElementById('recipe-cost-gross-table').textContent = money(total * (1 + vat));
+                document.getElementById('recipe-cost-bag-table').textContent = money(units > 0 ? total / units : 0);
             }
             document.querySelectorAll('.recipe-components-table input').forEach(input => input.addEventListener('input', function () {
                 const row = input.closest('tr');

@@ -13,7 +13,10 @@
                         <th>Nombre</th>
                         <th>SKU</th>
                         <th class="text-right">Stock</th>
-                        <th class="text-right">Costo piso</th>
+                        <th class="text-right">Costo/caja sin IVA</th>
+                        <th class="text-right">Costo/caja con IVA</th>
+                        <th class="text-right">Costo/bolsa</th>
+                        <th class="text-right">Bolsa con IVA</th>
                         <th class="text-right">Capacidad</th>
                         <th>Estado</th>
                         <th class="text-right"></th>
@@ -32,6 +35,9 @@
                                     <span class="text-muted" title="Calculado por receta">${{ number_format($product->cost_per_box, 0, ',', '.') }}*</span>
                                 @endif
                             </td>
+                            <td class="text-right font-bold">${{ number_format($product->cost_per_box_with_vat, 0, ',', '.') }}</td>
+                            <td class="text-right font-bold">{{ $product->cost_per_unit !== null ? '$'.number_format($product->cost_per_unit, 0, ',', '.') : '—' }}</td>
+                            <td class="text-right font-bold">{{ $product->cost_per_unit_with_vat !== null ? '$'.number_format($product->cost_per_unit_with_vat, 0, ',', '.') : '—' }}</td>
                             <td class="text-right">
                                 @php $cap = $product->production_capacity; @endphp
                                 @if($cap !== null)

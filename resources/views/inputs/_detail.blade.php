@@ -9,21 +9,11 @@
             <div><strong>Categoría:</strong> {{ $input->category ?? '—' }}</div>
             <div><strong>Unidad:</strong> {{ $input->unit }}</div>
             <div><strong>Stock:</strong> {{ number_format($input->stock, 0, ',', '.') }}</div>
-            <div><strong>Stock seguridad:</strong> {{ number_format($input->safety_stock, 0, ',', '.') }}</div>
+            <div><strong>Stock mínimo:</strong> {{ number_format($input->safety_stock, 0, ',', '.') }}</div>
             <div><strong>Tránsito:</strong> {{ number_format($input->transit ?? 0, 0, ',', '.') }}</div>
-            <div><strong>Costo unitario:</strong> ${{ number_format($input->unit_cost, 0, ',', '.') }}</div>
-            <div><strong>Consumo semanal:</strong> {{ number_format($input->weekly_consumption, 0, ',', '.') }}
-                @php $auto = $input->auto_weekly_consumption; @endphp
-                @if($auto > 0)
-                    <span class="text-muted text-xs">(Real: {{ number_format($auto, 0, ',', '.') }})</span>
-                @endif
-            </div>
+            <div><strong>Costo sin IVA:</strong> ${{ number_format($input->unit_cost, 0, ',', '.') }}</div>
+            <div><strong>Costo con IVA:</strong> ${{ number_format($input->unit_cost_with_vat, 0, ',', '.') }}</div>
             <div><strong>Lead time:</strong> {{ $input->lead_time_days }} días</div>
-            <div><strong>Stock proyectado:</strong> {{ number_format($input->projected_stock, 0, ',', '.') }}</div>
-            <div><strong>Punto reposición:</strong> {{ number_format($input->reorder_point, 0, ',', '.') }}</div>
-            <div><strong>Semanas objetivo:</strong> {{ $input->target_weeks ?? '—' }}</div>
-            <div><strong>Compra mínima:</strong> {{ number_format($input->min_purchase ?? 0, 0, ',', '.') }}</div>
-            <div><strong>Múltiplo compra:</strong> {{ number_format($input->purchase_multiple ?? 0, 0, ',', '.') }}</div>
             <div>
                 <strong>Estado:</strong>
                 <span class="badge {{ $input->status ? 'badge-success' : 'badge-danger' }}">

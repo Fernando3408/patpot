@@ -44,7 +44,9 @@ class InventoryService
                     }
                     $input = Input::query()->lockForUpdate()->findOrFail($recipe->input_id);
                     if ((float) $input->stock < $quantity) {
-                        throw ValidationException::withMessages(['order' => "Stock insuficiente de {$input->name} para este pedido."]);
+                        // Keep the pending order so the dashboard can alert about the shortage.
+                        // The missing quantity is not reserved or deducted until stock exists.
+                        continue;
                     }
                     $input->decrement('stock', $quantity);
                     $newConsumptions[] = [

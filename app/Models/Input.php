@@ -72,6 +72,11 @@ class Input extends Model
         return round((float) $this->projected_stock / (float) $this->weekly_consumption, 2);
     }
 
+    public function getUnitCostWithVatAttribute(): float
+    {
+        return round((float) $this->unit_cost * 1.19, 2);
+    }
+
     public function getCoverageDaysAttribute(): ?float
     {
         $daily = (float) $this->weekly_consumption / 7;

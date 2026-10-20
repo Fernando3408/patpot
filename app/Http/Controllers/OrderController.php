@@ -39,6 +39,8 @@ class OrderController extends Controller
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);
+        } else {
+            $query->where('status', '!=', 'cancelled');
         }
 
         $orders = $query->latest('ordered_on')->get();
@@ -119,7 +121,15 @@ class OrderController extends Controller
             'management_cost' => ['nullable', 'numeric', 'min:0'],
             'other_cost' => ['nullable', 'numeric', 'min:0'],
         ]);
-        $this->inventoryService->dispatchOrder($pedido, $data['quantities'], $data['shipped_on'], $data);
+        try {
+            $this->inventoryService->dispatchOrder($pedido, $data['quantities'], $data['shipped_on'], $data);
+        } catch (ValidationException $e) {
+            if ($request->ajax()) {
+                return response()->json(['errors' => $e->errors()], 422);
+            }
+
+            throw $e;
+        }
 
         if ($request->ajax()) {
             $pedido->refresh()->load('lines', 'shipments.lines.orderLine.product');
