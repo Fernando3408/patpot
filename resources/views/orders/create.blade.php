@@ -73,7 +73,7 @@
                                         <select name="lines[{{ $index }}][product_id]" class="form-control">
                                             <option value="">Seleccionar producto</option>
                                             @foreach($products as $product)
-                                                <option value="{{ $product->id }}" data-cost="{{ $product->cost_per_box }}" @selected(old("lines.$index.product_id") == $product->id)>
+                                                <option value="{{ $product->id }}" data-cost="{{ $product->cost_per_box }}" data-stock="{{ $product->stock_boxes }}" @selected(old("lines.$index.product_id") == $product->id)>
                                                     {{ $product->name }}
                                                 </option>
                                             @endforeach
@@ -154,11 +154,11 @@
     @php
         $productOptions = '';
         foreach($products as $product) {
-            $productOptions .= '<option value="'.e($product->id).'" data-cost="'.e($product->cost_per_box).'">'.e($product->name).'</option>';
+            $productOptions .= '<option value="'.e($product->id).'" data-cost="'.e($product->cost_per_box).'" data-stock="'.e($product->stock_boxes).'">'.e($product->name).'</option>';
         }
         $productRecipeData = $products->mapWithKeys(function ($product) {
             return [$product->id => $product->recipes->map(function ($recipe) {
-                return ['input_id' => $recipe->input_id, 'name' => $recipe->input?->name, 'unit' => $recipe->input?->unit, 'stock' => (float) $recipe->input?->stock, 'safety' => (float) $recipe->input?->safety_stock, 'qty' => (float) $recipe->qty_per_box];
+                return ['input_id' => $recipe->input_id, 'name' => $recipe->input?->name, 'unit' => $recipe->input?->unit, 'type' => $recipe->input?->type, 'stock' => (float) $recipe->input?->stock, 'safety' => (float) $recipe->input?->safety_stock, 'qty' => (float) $recipe->qty_per_box];
             })->values()->toArray()];
         })->toArray();
     @endphp
@@ -200,23 +200,23 @@
         function updateConsumptionPanel() {
             var totals = {};
             document.querySelectorAll('#lines-table .line-row').forEach(function(row) {
-                var productId = row.querySelector('[name*="[product_id]"]')?.value;
+                var productSelect = row.querySelector('[name*="[product_id]"]');
+                var productId = productSelect?.value;
                 var boxes = parseFloat(row.querySelector('[name*="[boxes]"]')?.value || 0);
-                if (!productId || boxes <= 0 || !productRecipeData[productId]) return;
-                productRecipeData[productId].forEach(function(recipe) {
-                    if (!totals[recipe.input_id]) totals[recipe.input_id] = { name: recipe.name, unit: recipe.unit, stock: recipe.stock, safety: recipe.safety, quantity: 0 };
-                    totals[recipe.input_id].quantity += boxes * recipe.qty;
-                });
+                if (!productId || boxes <= 0) return;
+                var option = productSelect.selectedOptions[0];
+                if (!totals[productId]) totals[productId] = { name: option?.textContent.trim() || 'Producto', stock: parseFloat(option?.dataset.stock || 0), boxes: 0 };
+                totals[productId].boxes += boxes;
             });
             var panel = document.getElementById('order-consumption-panel');
             var content = document.getElementById('order-consumption-content');
             var rows = Object.values(totals);
             if (!rows.length) { panel.style.display = 'none'; return; }
             panel.style.display = '';
-            content.innerHTML = '<div class="data-table-container"><table class="data-table"><thead><tr><th>Insumo</th><th>Stock actual</th><th>Consume</th><th>Queda</th></tr></thead><tbody>' + rows.map(function(item) {
-                var remaining = item.stock - item.quantity;
-                var state = remaining < 0 ? 'text-danger' : (remaining < item.safety ? 'text-warning' : 'text-success');
-                return '<tr><td>' + item.name + ' <span class="text-muted">(' + item.unit + ')</span></td><td>' + item.stock.toLocaleString('es-CL') + '</td><td>' + item.quantity.toLocaleString('es-CL') + '</td><td class="' + state + '"><strong>' + remaining.toLocaleString('es-CL') + '</strong></td></tr>';
+            content.innerHTML = '<div class="data-table-container"><table class="data-table"><thead><tr><th>Producto</th><th>Stock cajas</th><th>Cajas del pedido</th><th>Saldo</th></tr></thead><tbody>' + rows.map(function(item) {
+                var remaining = item.stock - item.boxes;
+                var state = remaining < 0 ? 'text-danger' : 'text-success';
+                return '<tr><td>' + item.name + '</td><td>' + item.stock.toLocaleString('es-CL') + '</td><td>' + item.boxes.toLocaleString('es-CL') + '</td><td class="' + state + '"><strong>' + remaining.toLocaleString('es-CL') + '</strong></td></tr>';
             }).join('') + '</tbody></table></div>';
         }
 

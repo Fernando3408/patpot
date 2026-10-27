@@ -872,9 +872,14 @@ body { background: var(--bg); color: var(--text); }
 .product-detail-summary, .product-recipe-card { border-color: #E2DDD7; box-shadow: none; }
 .product-detail-summary .card__title, .product-recipe-card .card__title { font-size: 1.3125rem; }
 .results-reference-toolbar { padding: 1rem; background: #fff; border: 1px solid #E2DDD7; }
-.results-reference-toolbar .search-form { display: grid; grid-template-columns: 150px 150px minmax(170px, 1fr) minmax(170px, 1fr) auto auto auto auto; gap: .6rem; align-items: center; }
+.results-reference-toolbar .search-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .6rem; align-items: center; }
+.results-reference-toolbar .search-form { justify-content: end; }
+.results-reference-toolbar { justify-content: flex-start; }
+.results-reference-toolbar .search-form { justify-content: start; }
 .results-reference-toolbar .form-control { min-height: 42px; }
-.results-reference-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .75rem; }
+.results-reference-toolbar .search-form .btn { width: auto; min-width: 125px; justify-self: start; white-space: nowrap; min-height: 36px; padding: .3rem .55rem; font-size: .75rem; }
+.results-reference-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.results-reference-kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; }
 .results-reference-kpis .kpi-card { min-height: 112px; border: 1px solid #E2DDD7; border-top: 3px solid #C9A181; border-radius: 10px; box-shadow: none; }
 .results-reference-kpis .kpi-card--profit, .results-reference-kpis .kpi-card--net { border-top-color: #1E5B2D; background: #fff; }
 .results-reference-kpis .kpi-card span { text-transform: none; letter-spacing: 0; font-size: .875rem; color: #5E5853; }
@@ -2631,6 +2636,17 @@ body { font-size: 15px; }
 .recipe-components-table .data-table tfoot th { vertical-align: middle; }
 .recipe-components-table .data-table tfoot th { text-align: right !important; }
 .recipe-components-table .data-table tfoot th span { display: block; text-align: right; }
+.order-consumption-section .data-table { width: 100%; table-layout: fixed; font-size: .78rem; }
+.order-consumption-section .data-table th,
+.order-consumption-section .data-table td { padding: .45rem .4rem; overflow: hidden; }
+.order-consumption-section .data-table th:nth-child(1),
+.order-consumption-section .data-table td:nth-child(1) { width: 35%; }
+.order-consumption-section .data-table th:nth-child(2),
+.order-consumption-section .data-table td:nth-child(2) { width: 21%; white-space: nowrap; }
+.order-consumption-section .data-table th:nth-child(3),
+.order-consumption-section .data-table td:nth-child(3) { width: 25%; white-space: nowrap; }
+.order-consumption-section .data-table th:nth-child(4),
+.order-consumption-section .data-table td:nth-child(4) { width: 19%; white-space: nowrap; }
 .recipe-components-table .data-table th:nth-child(1),
 .recipe-components-table .data-table td:nth-child(1) { width: 42px; }
 .recipe-components-table .data-table th:nth-child(2),

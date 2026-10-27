@@ -62,7 +62,15 @@ class ProductionController extends Controller
     {
         $data = $request->validate(['actual_boxes' => ['required', 'integer', 'gt:0', 'lte:'.$produccion->planned_boxes], 'completed_on' => ['required', 'date']], ['actual_boxes.lte' => 'Las cajas reales no pueden superar las cajas planificadas.']);
         abort_if(MonthlyClosure::where('month', substr($data['completed_on'], 0, 7))->exists(), 422, 'El mes está cerrado y no admite modificaciones.');
-        $this->inventoryService->closeProduction($produccion, (float) $data['actual_boxes'], $data['completed_on']);
+        try {
+            $this->inventoryService->closeProduction($produccion, (float) $data['actual_boxes'], $data['completed_on']);
+        } catch (ValidationException $e) {
+            if ($request->ajax()) {
+                return response()->json(['errors' => $e->errors()], 422);
+            }
+
+            throw $e;
+        }
 
         if ($request->ajax()) {
             $produccion->refresh();
