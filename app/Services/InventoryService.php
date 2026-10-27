@@ -19,6 +19,10 @@ class InventoryService
 {
     public function syncOrderInputConsumptions(Order $order): void
     {
+        // Orders only show the estimated consumption. Physical input consumption
+        // happens once, when the related production is closed.
+        return;
+
         DB::transaction(function () use ($order): void {
             $lockedOrder = Order::query()->lockForUpdate()->findOrFail($order->id);
             $lockedOrder->load('lines.product.recipes.input');
@@ -271,8 +275,29 @@ class InventoryService
             if ($boxes > (float) $lockedProduction->planned_boxes) {
                 throw ValidationException::withMessages(['production' => 'Las cajas reales no pueden superar las cajas planificadas.']);
             }
-            // Los insumos se descuentan al guardar el pedido. No se vuelven a
-            // descontar al cerrar producción para evitar doble consumo.
+            foreach ($lockedProduction->product->recipes as $recipe) {
+                if (! $recipe->input?->isMaterial()) {
+                    continue;
+                }
+
+                $required = (float) $recipe->qty_per_box * $boxes;
+                $input = Input::query()->lockForUpdate()->findOrFail($recipe->input_id);
+                if ((float) $input->stock < $required) {
+                    throw ValidationException::withMessages([
+                        'production' => "Stock insuficiente de {$input->name}. Disponible: {$input->formattedStock()} {$input->unit}; necesario: {$input->formattedQuantity($required)} {$input->unit}.",
+                    ]);
+                }
+
+                $input->decrement('stock', $required);
+                InventoryMovement::query()->create([
+                    'input_id' => $input->id,
+                    'kind' => 'Consumo de producción',
+                    'quantity' => -$required,
+                    'reference' => $lockedProduction->number,
+                    'user_id' => auth()->id(),
+                ]);
+            }
+
             $product = Product::query()->lockForUpdate()->findOrFail($lockedProduction->product_id);
             $product->increment('stock_boxes', $boxes);
             InventoryMovement::query()->create(['product_id' => $product->id, 'kind' => 'Ingreso producto terminado', 'quantity' => $boxes, 'reference' => $lockedProduction->number, 'user_id' => auth()->id()]);
@@ -331,7 +356,6 @@ class InventoryService
                 $total += $quantity * (float) $line->price_box;
                 InventoryMovement::query()->create(['product_id' => $product->id, 'kind' => 'Despacho de pedido', 'quantity' => -$quantity, 'reference' => $lockedOrder->number, 'user_id' => auth()->id()]);
 
-                $this->deductPackaging($product, $quantity, $lockedOrder->number);
             }
             if ($shipment->lines()->doesntExist()) {
                 $shipment->delete();

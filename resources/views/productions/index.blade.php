@@ -142,7 +142,8 @@
                         form.closest('details').removeAttribute('open');
                         Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Producción cerrada', showConfirmButton: false, timer: 2000 });
                     } else {
-                        Swal.fire('Error', res.data.message || 'No se pudo cerrar.', 'error');
+                        var message = res.data.errors ? Object.values(res.data.errors).flat().join('\n') : (res.data.message || 'No se pudo cerrar.');
+                        Swal.fire('Stock insuficiente', message, 'warning');
                     }
                 })
                 .catch(function() { Swal.fire('Error', 'No se pudo cerrar.', 'error'); });

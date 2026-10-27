@@ -72,7 +72,6 @@ class OrderController extends Controller
         $order = DB::transaction(function () use ($data): Order {
             $order = Order::create(collect($data)->except(['lines', 'expenses'])->all() + ['status' => 'pending']);
             $order->lines()->createMany($data['lines']);
-            $this->inventoryService->syncOrderInputConsumptions($order);
             $this->syncOrderExpenses($order, $data['expenses'] ?? []);
 
             return $order;
@@ -246,7 +245,6 @@ class OrderController extends Controller
                 $pedido->update(collect($data)->except(['lines', 'expenses'])->all());
                 if (isset($data['lines'])) {
                     $this->inventoryService->updateOrderLines($pedido, $data['lines']);
-                    $this->inventoryService->syncOrderInputConsumptions($pedido);
                 }
                 $this->syncOrderExpenses($pedido, $data['expenses'] ?? []);
                 AuditService::log('ACTUALIZACIÓN DE PEDIDO', "Actualizó pedido: {$pedido->number}", $pedido);
