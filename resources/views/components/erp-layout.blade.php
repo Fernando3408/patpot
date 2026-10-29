@@ -17,6 +17,12 @@
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script>
+        (function () {
+            var theme = localStorage.getItem('patpot-theme');
+            if (theme) document.documentElement.dataset.theme = theme;
+        })();
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body>
@@ -885,6 +891,24 @@
             var option = new Option(result.filename.replace(/\.[^.]+$/, ''), result.filename, true, true);
             select.add(option);
             window.chooseReferenceImage(result.filename, option.text);
+        };
+        window.updateVatPreview = function(input, targetId) {
+            var target = document.getElementById(targetId);
+            if (!target) return;
+            var net = Number(input.value || 0);
+            var format = function(value) { return '$' + Math.round(value).toLocaleString('es-CL'); };
+            target.innerHTML = 'IVA 19%: ' + (net ? format(net * .19) : '—') + '<br><strong>Total con IVA: ' + (net ? format(net * 1.19) : '—') + '</strong>';
+        };
+        window.updatePurchaseVat = function(input) {
+            var cell = input.closest('td');
+            var row = input.closest('tr');
+            var preview = row?.querySelector('.purchase-vat-preview');
+            var total = row?.querySelector('.purchase-vat-total');
+            if (!preview || !total) return;
+            var net = Number(input.value || 0);
+            var format = function(value) { return '$' + Math.round(value).toLocaleString('es-CL'); };
+            preview.textContent = 'IVA: ' + (net ? format(net * .19) : '—');
+            total.textContent = net ? format(net * 1.19) : '—';
         };
         document.addEventListener('click', function(event) {
             var pickerButton = event.target.closest('#reference-picker-label');

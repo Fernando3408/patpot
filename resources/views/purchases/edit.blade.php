@@ -46,7 +46,8 @@
                                 <tr>
                                     <th>Insumo</th>
                                     <th class="th-cantidad text-right">Cantidad</th>
-                                    <th class="text-right">Costo unitario</th>
+                                    <th class="text-right">Costo sin IVA</th>
+                                    <th class="text-right">Costo con IVA</th>
                                     <th class="text-right">Recibido</th>
                                     <th class="text-right"></th>
                                 </tr>
@@ -73,8 +74,9 @@
                                             <input type="number" step="1" min="1" name="lines[{{ $index }}][ordered_quantity]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.ordered_quantity", (int) $line->ordered_quantity) }}" @readonly($isReceived) required>
                                         </td>
                                         <td class="text-right">
-                                            <input type="number" step="1" min="0" name="lines[{{ $index }}][unit_cost]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.unit_cost", (int) $line->unit_cost) }}" @readonly($isReceived) required>
+                                            <input type="number" step="1" min="0" name="lines[{{ $index }}][unit_cost]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.unit_cost", (int) $line->unit_cost) }}" oninput="updatePurchaseVat(this)" @readonly($isReceived) required>
                                         </td>
+                                        <td class="text-right"><span class="purchase-vat-total">${{ number_format((float) $line->unit_cost * 1.19, 0, ',', '.') }}</span><small class="purchase-vat-preview">IVA: ${{ number_format((float) $line->unit_cost * .19, 0, ',', '.') }}</small></td>
                                         <td class="text-right font-bold">{{ $line->input?->formattedQuantity($line->received_quantity) ?? number_format($line->received_quantity, 0, ',', '.') }}</td>
                                         <td class="text-right">
                                             @if(! $isReceived)
@@ -100,10 +102,24 @@
                                             <input type="number" step="1" min="0" name="lines[{{ $index }}][unit_cost]" class="form-control form-control-sm text-right input-sm-narrow" value="{{ old("lines.$index.unit_cost") }}">
                                         </td>
                                         <td class="text-right text-muted">—</td>
+                                        <td class="text-right text-muted">—</td>
                                         <td></td>
                                     </tr>
                                 @endforeach
+                                @php
+                                    $purchaseNetTotal = $purchase->lines->sum(fn ($line) => (float) $line->ordered_quantity * (float) $line->unit_cost);
+                                    $purchaseQuantityTotal = $purchase->lines->sum(fn ($line) => (float) $line->ordered_quantity);
+                                @endphp
                             </tbody>
+                            <tfoot>
+                                <tr class="row-alt-bg">
+                                    <th colspan="2" class="text-right">Totales:</th>
+                                    <th class="text-right">${{ number_format($purchaseNetTotal, 0, ',', '.') }}</th>
+                                    <th class="text-right">${{ number_format($purchaseNetTotal * 1.19, 0, ',', '.') }}</th>
+                                    <th class="text-right">{{ number_format($purchaseQuantityTotal, 0, ',', '.') }}</th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                     <p class="text-xs text-muted mt-2">Las líneas con recepción registrada no se pueden modificar ni eliminar.</p>

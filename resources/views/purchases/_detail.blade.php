@@ -38,7 +38,8 @@
                     <tr>
                         <th>Insumo</th>
                         <th class="text-right">Cantidad pedida</th>
-                        <th class="text-right">Costo unitario</th>
+                        <th class="text-right">Costo unitario sin IVA</th>
+                        <th class="text-right">Costo unitario con IVA</th>
                         <th class="text-right">Recibido</th>
                         <th class="text-center th-progreso">Progreso</th>
                     </tr>
@@ -55,6 +56,7 @@
                             <td>{{ $line->input?->name ?? '—' }}</td>
                             <td class="text-right">{{ number_format($line->ordered_quantity, 0, ',', '.') }}</td>
                             <td class="text-right">${{ number_format($line->unit_cost, 0, ',', '.') }}</td>
+                            <td class="text-right">${{ number_format((float) $line->unit_cost * 1.19, 0, ',', '.') }}</td>
                             <td class="text-right">{{ number_format($line->received_quantity, 0, ',', '.') }}</td>
                             <td class="text-center">
                                 <div class="progress-bar-container">
@@ -63,8 +65,8 @@
                                 <span class="text-xs text-muted">{{ number_format($received, 0, ',', '.') }} / {{ number_format($ordered, 0, ',', '.') }}</span>
                             </td>
                         </tr>
-                    @endforeach
-                </tbody>
+                @endforeach
+            </tbody>
             </table>
         </div>
     </div>
@@ -83,8 +85,10 @@
                         <th>Fecha</th>
                         <th>Insumo</th>
                         <th class="text-right">Recibido</th>
-                        <th class="text-right">Costo unitario</th>
-                        <th class="text-right">Subtotal</th>
+                        <th class="text-right">Costo unitario sin IVA</th>
+                        <th class="text-right">Costo unitario con IVA</th>
+                        <th class="text-right">Subtotal sin IVA</th>
+                        <th class="text-right">Subtotal con IVA</th>
                         <th class="text-right">Acumulado</th>
                     </tr>
                 </thead>
@@ -100,12 +104,30 @@
                                 <td>{{ $rl->purchaseLine->input?->name ?? '—' }}</td>
                                 <td class="text-right">{{ number_format($rl->quantity, 0, ',', '.') }}</td>
                                 <td class="text-right">${{ number_format($rl->unit_cost, 0, ',', '.') }}</td>
+                                <td class="text-right">${{ number_format((float) $rl->unit_cost * 1.19, 0, ',', '.') }}</td>
                                 <td class="text-right">${{ number_format($subtotal, 0, ',', '.') }}</td>
+                                <td class="text-right">${{ number_format($subtotal * 1.19, 0, ',', '.') }}</td>
                                 <td class="text-right font-bold">{{ number_format($runningTotal, 0, ',', '.') }}</td>
                             </tr>
                         @endforeach
                     @endforeach
                 </tbody>
+                @php
+                    $receptionLines = $purchase->receptions->flatMap(fn ($reception) => $reception->lines);
+                    $receptionQuantityTotal = $receptionLines->sum(fn ($line) => (float) $line->quantity);
+                    $receptionNetTotal = $receptionLines->sum(fn ($line) => (float) $line->quantity * (float) $line->unit_cost);
+                @endphp
+                <tfoot>
+                    <tr class="row-alt-bg">
+                        <th colspan="2" class="text-right">Totales:</th>
+                        <th class="text-right">{{ number_format($receptionQuantityTotal, 0, ',', '.') }}</th>
+                        <th></th>
+                        <th></th>
+                        <th class="text-right">${{ number_format($receptionNetTotal, 0, ',', '.') }}</th>
+                        <th class="text-right">${{ number_format($receptionNetTotal * 1.19, 0, ',', '.') }}</th>
+                        <th class="text-right">{{ number_format($receptionQuantityTotal, 0, ',', '.') }}</th>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>

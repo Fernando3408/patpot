@@ -40,7 +40,8 @@
                         <tr>
                             <th>Insumo</th>
                             <th class="th-cantidad">Cantidad</th>
-                            <th class="th-precio">Costo unitario</th>
+                            <th class="th-precio">Costo sin IVA</th>
+                            <th class="th-precio">Costo con IVA</th>
                             <th class="th-action"></th>
                         </tr>
                     </thead>
@@ -61,8 +62,9 @@
                                     <input type="number" step="1" min="1" name="lines[{{ $index }}][ordered_quantity]" class="form-control" value="{{ old("lines.$index.ordered_quantity") }}" placeholder="0">
                                 </td>
                                 <td>
-                                    <input type="number" step="1" min="0" name="lines[{{ $index }}][unit_cost]" class="form-control" value="{{ old("lines.$index.unit_cost") }}" placeholder="$ 0">
+                                    <input type="number" step="1" min="0" name="lines[{{ $index }}][unit_cost]" class="form-control" value="{{ old("lines.$index.unit_cost") }}" placeholder="$ 0" oninput="updatePurchaseVat(this)">
                                 </td>
+                                <td class="text-right"><span class="purchase-vat-total">—</span><small class="purchase-vat-preview">IVA: —</small></td>
                                 <td class="text-center">
                                     <button type="button" class="btn btn-danger btn-sm btn-remove-line" title="Eliminar línea">&times;</button>
                                 </td>
@@ -150,8 +152,9 @@
                         <input type="number" step="1" min="1" name="lines[${lineIndex}][ordered_quantity]" class="form-control" value="" placeholder="0">
                     </td>
                     <td>
-                        <input type="number" step="1" min="0" name="lines[${lineIndex}][unit_cost]" class="form-control" value="" placeholder="$ 0">
-                    </td>
+                        <input type="number" step="1" min="0" name="lines[${lineIndex}][unit_cost]" class="form-control" value="" placeholder="$ 0" oninput="updatePurchaseVat(this)">
+                        </td>
+                        <td class="text-right"><span class="purchase-vat-total">—</span><small class="purchase-vat-preview">IVA: —</small></td>
                     <td class="text-center">
                         <button type="button" class="btn btn-danger btn-sm btn-remove-line" title="Eliminar línea">&times;</button>
                     </td>

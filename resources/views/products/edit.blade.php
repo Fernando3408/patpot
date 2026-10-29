@@ -63,8 +63,9 @@
         </div>
         <div class="form-group">
             <label class="form-label">Costo piso por caja ($)</label>
-            <input type="number" name="production_cost" class="form-control" value="{{ old('production_cost', $product->production_cost) }}" placeholder="Vacío = costo calculado" step="1" min="0">
+            <input type="number" name="production_cost" class="form-control" value="{{ old('production_cost', $product->production_cost) }}" placeholder="Vacío = costo calculado" step="1" min="0" oninput="updateVatPreview(this, 'product-vat-preview')">
             <p class="form-hint">Si se define, reemplaza el costo calculado por receta.</p>
+            <div id="product-vat-preview" class="vat-preview">IVA 19%: {{ $product->production_cost !== null ? '$'.number_format((float) $product->production_cost * .19, 0, ',', '.') : '—' }}<br><strong>Total con IVA: {{ $product->production_cost !== null ? '$'.number_format((float) $product->production_cost * 1.19, 0, ',', '.') : '—' }}</strong></div>
         </div>
         <div class="form-group">
             <label class="form-label">Estado</label>
