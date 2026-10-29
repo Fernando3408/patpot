@@ -5,7 +5,7 @@
         </div>
     </div>
 
-    <div class="admin-tabs"><button type="button" class="admin-tab is-active" data-panel="usersPanel">Usuarios del sistema</button><button type="button" class="admin-tab" data-panel="optionsPanel">Conceptos y categorías</button></div>
+    <div class="admin-tabs"><button type="button" class="admin-tab is-active" data-panel="usersPanel">Usuarios del sistema</button><button type="button" class="admin-tab" data-panel="optionsPanel">Conceptos y categorías</button><button type="button" class="admin-tab" data-panel="themesPanel">Temas</button></div>
     <div id="usersPanel" class="table-container admin-users-table">
         <table class="data-table">
             <thead>
@@ -52,6 +52,20 @@
         </table>
     </div>
 
+    <div id="themesPanel" class="form-card admin-options-panel is-hidden">
+        <h2 class="card__title">Temas del ERP</h2>
+        <p class="text-muted mt-2">Elige una paleta para personalizar la interfaz. Se guardará en este navegador.</p>
+        <div class="theme-picker-grid">
+            <button type="button" class="theme-choice" data-theme-choice="rose"><span class="theme-swatch theme-swatch--rose"></span><strong>Rosa empolvado</strong><small>Suave y elegante</small></button>
+            <button type="button" class="theme-choice" data-theme-choice="lavender"><span class="theme-swatch theme-swatch--lavender"></span><strong>Lavanda</strong><small>Sereno y delicado</small></button>
+            <button type="button" class="theme-choice" data-theme-choice="peach"><span class="theme-swatch theme-swatch--peach"></span><strong>Durazno</strong><small>Cálido y luminoso</small></button>
+            <button type="button" class="theme-choice" data-theme-choice="mint"><span class="theme-swatch theme-swatch--mint"></span><strong>Menta</strong><small>Fresco y natural</small></button>
+            <button type="button" class="theme-choice" data-theme-choice="berry"><span class="theme-swatch theme-swatch--berry"></span><strong>Frambuesa</strong><small>Intenso y femenino</small></button>
+            <button type="button" class="theme-choice" data-theme-choice="champagne"><span class="theme-swatch theme-swatch--champagne"></span><strong>Champagne</strong><small>Neutro y sofisticado</small></button>
+            <button type="button" class="theme-choice" data-theme-choice="default"><span class="theme-swatch theme-swatch--default"></span><strong>PatPot original</strong><small>Volver a los colores actuales</small></button>
+        </div>
+    </div>
+
     <div id="optionsPanel" class="form-card admin-options-panel is-hidden">
         <h2 class="card__title">Conceptos y categorías de gastos</h2>
         <form method="POST" action="{{ route('admin.expense-options.store') }}" class="form-grid mt-3">@csrf
@@ -65,11 +79,23 @@
         document.querySelectorAll('.admin-tab').forEach(function(tab) {
             tab.addEventListener('click', function() {
                 document.querySelectorAll('.admin-tab').forEach(function(item) { item.classList.remove('is-active'); });
-                document.querySelectorAll('#usersPanel, #optionsPanel').forEach(function(panel) { panel.classList.add('is-hidden'); });
+                 document.querySelectorAll('#usersPanel, #optionsPanel, #themesPanel').forEach(function(panel) { panel.classList.add('is-hidden'); });
                 tab.classList.add('is-active');
                 document.getElementById(tab.dataset.panel).classList.remove('is-hidden');
             });
         });
+        document.querySelectorAll('[data-theme-choice]').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var theme = button.dataset.themeChoice;
+                if (theme === 'default') { delete document.documentElement.dataset.theme; localStorage.removeItem('patpot-theme'); }
+                else { document.documentElement.dataset.theme = theme; localStorage.setItem('patpot-theme', theme); }
+                document.querySelectorAll('[data-theme-choice]').forEach(function(item) { item.classList.toggle('is-selected', item === button); });
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tema aplicado', showConfirmButton: false, timer: 1400 });
+            });
+        });
+        var savedTheme = localStorage.getItem('patpot-theme') || 'default';
+        if (savedTheme !== 'default') document.documentElement.dataset.theme = savedTheme;
+        document.querySelector('[data-theme-choice="' + savedTheme + '"]')?.classList.add('is-selected');
     </script>
 
     <script>

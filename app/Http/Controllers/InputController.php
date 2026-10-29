@@ -20,7 +20,7 @@ class InputController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Input::where('type', 'material')->with(['supplier', 'recipes.product.productions']);
+        $query = Input::with(['supplier', 'recipes.product.productions']);
 
         if ($request->filled('search')) {
             $search = $request->search;

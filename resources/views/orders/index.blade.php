@@ -29,8 +29,8 @@
                         <th>Pedido</th>
                         <th>Cliente</th>
                         <th>Productos</th>
-                        <th class="text-right">Total</th>
-                        <th class="text-right">Margen</th>
+                        <th class="text-right">Total sin IVA<br><small>con IVA</small></th>
+                        <th class="text-right">Margen sin IVA</th>
                         <th>Estado</th>
                         <th class="th-progreso">Progreso</th>
                         <th class="text-right"></th>
@@ -66,7 +66,8 @@
                                     $orderCost = $historicalCost > 0 ? $historicalCost : $order->lines->sum(fn($line) => $line->boxes * ($line->product?->cost_per_box ?? 0));
                                     $orderMargin = $orderTotal - $orderCost;
                                 @endphp
-                                <strong>${{ number_format($orderTotal, 0, ',', '.') }}</strong>
+                                 <strong>${{ number_format($orderTotal, 0, ',', '.') }}</strong>
+                                 <br><small class="text-muted">${{ number_format($orderTotal * 1.19, 0, ',', '.') }}</small>
                             </td>
                             <td class="text-right">
                                 <span class="{{ $orderMargin >= 0 ? 'text-positive' : 'text-negative' }} fw-600">${{ number_format($orderMargin, 0, ',', '.') }}</span>
@@ -214,14 +215,14 @@
             var card = document.createElement('div');
             card.className = 'card mt-4';
             var html = '<div class="card__header"><h2 class="card__title">Historial de despachos (' + json.historyCount + ')</h2></div>';
-            html += '<div class="card__body"><table class="data-table"><thead><tr><th>Fecha</th><th>Producto</th><th class="text-right">Cajas</th><th class="text-right">Precio/caja</th><th class="text-right">Subtotal</th><th class="text-right">Costo/caja</th><th class="text-right">Acumulado</th></tr></thead><tbody>';
+            html += '<div class="card__body"><table class="data-table"><thead><tr><th>Fecha</th><th>Producto</th><th class="text-right">Cajas</th><th class="text-right">Precio/caja sin IVA</th><th class="text-right">Precio/caja con IVA</th><th class="text-right">Subtotal sin IVA</th><th class="text-right">Subtotal con IVA</th><th class="text-right">Costo/caja sin IVA</th><th class="text-right">Acumulado</th></tr></thead><tbody>';
             var shownShipmentCosts = {};
             json.history.forEach(function(h) {
                 if (!shownShipmentCosts[h.shipment_id]) {
-                    html += '<tr class="row-total"><td colspan="7"><strong>Costos del despacho:</strong> Flete ' + h.freight_cost + ' · Gestión ' + h.management_cost + ' · Otros ' + h.other_cost + ' · Total variable ' + h.variable_total + '</td></tr>';
+                    html += '<tr class="row-total"><td colspan="9"><strong>Costos del despacho:</strong> Flete ' + h.freight_cost + ' · Gestión ' + h.management_cost + ' · Otros ' + h.other_cost + ' · Total variable ' + h.variable_total + '</td></tr>';
                     shownShipmentCosts[h.shipment_id] = true;
                 }
-                html += '<tr><td>' + h.date + '</td><td>' + h.product + '</td><td class="text-right">' + h.boxes.toLocaleString('es-CL') + '</td><td class="text-right">' + h.price_box + '</td><td class="text-right">' + h.subtotal + '</td><td class="text-right">' + h.cost_box + '</td><td class="text-right font-bold">' + h.accumulated.toLocaleString('es-CL') + '</td></tr>';
+                html += '<tr><td>' + h.date + '</td><td>' + h.product + '</td><td class="text-right">' + h.boxes.toLocaleString('es-CL') + '</td><td class="text-right">' + h.price_box + '</td><td class="text-right">' + h.price_box_vat + '</td><td class="text-right">' + h.subtotal + '</td><td class="text-right">' + h.subtotal_vat + '</td><td class="text-right">' + h.cost_box + '</td><td class="text-right font-bold">' + h.accumulated.toLocaleString('es-CL') + '</td></tr>';
             });
             html += '</tbody></table></div>';
             card.innerHTML = html;

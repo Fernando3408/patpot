@@ -44,22 +44,23 @@
         </div>
     </div></section>
 
-    <section class="input-form-section"><div class="input-form-section__heading"><div><h3 id="inventory-title">Inventario y costos</h3><p>Define stock disponible, mínimo de alerta y costo unitario.</p></div></div><div class="form-grid" id="inventory-fields">
-        <div class="form-group">
+    <section class="input-form-section"><div class="input-form-section__heading"><div><h3 id="inventory-title">{{ $input->isService() ? 'Costo del servicio' : 'Inventario y costos' }}</h3><p>Define stock disponible, mínimo de alerta y costo unitario.</p></div></div><div class="form-grid" id="inventory-fields">
+        <div class="form-group" style="{{ $input->isService() ? 'display:none' : '' }}">
             <label class="form-label">Stock actual</label>
             <input type="number" step="0.01" min="0" name="stock" class="form-control" value="{{ old('stock', floatval($input->stock)) }}">
         </div>
-        <div class="form-group">
+        <div class="form-group" style="{{ $input->isService() ? 'display:none' : '' }}">
             <label class="form-label">Stock mínimo <span class="text-danger">*</span></label>
             <input type="number" step="0.01" min="0" name="safety_stock" class="form-control" value="{{ old('safety_stock', floatval($input->safety_stock)) }}" required>
         </div>
-        <div class="form-group">
+        <div class="form-group" style="{{ $input->isService() ? 'display:none' : '' }}">
             <label class="form-label">Stock en tránsito</label>
             <input type="number" step="0.01" min="0" name="transit" class="form-control" value="{{ old('transit', floatval($input->transit)) }}">
         </div>
         <div class="form-group">
             <label class="form-label">Costo unitario ($)</label>
-            <input type="number" step="1" min="0" name="unit_cost" class="form-control" value="{{ old('unit_cost', floatval($input->unit_cost)) }}" required>
+            <input type="number" step="1" min="0" name="unit_cost" class="form-control" value="{{ old('unit_cost', floatval($input->unit_cost)) }}" required oninput="updateVatPreview(this, 'input-vat-preview')">
+            <div id="input-vat-preview" class="vat-preview">IVA 19%: ${{ number_format((float) $input->unit_cost * .19, 0, ',', '.') }}<br><strong>Total con IVA: ${{ number_format((float) $input->unit_cost * 1.19, 0, ',', '.') }}</strong></div>
         </div>
     </div></section>
 

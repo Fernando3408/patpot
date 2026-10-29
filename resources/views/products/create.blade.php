@@ -126,8 +126,10 @@
                         placeholder="Dejar vacío para costo calculado"
                         step="1"
                         min="0"
+                        oninput="updateVatPreview(this, 'product-vat-preview')"
                     >
                     <p class="text-xs text-gray-500 mt-1">Si se define, reemplaza el costo calculado por receta.</p>
+                    <div id="product-vat-preview" class="vat-preview">IVA 19%: —<br><strong>Total con IVA: —</strong></div>
                 </div>
 
                 <div class="form-group">

@@ -477,4 +477,25 @@
         }
     </script>
 
+    @if($alerts->count())
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const alerts = @json($alerts->values());
+                const rows = alerts.map(function (alert) {
+                    const color = alert.level === 'critical' ? '#b42318' : '#a15c00';
+                    return '<div style="text-align:left;border-left:4px solid ' + color + ';padding:8px 10px;margin:7px 0;background:#fff8f2;border-radius:6px"><strong>' + alert.title + '</strong><br><small>' + alert.module + ' · ' + alert.detail + '</small></div>';
+                }).join('');
+                Swal.fire({
+                    icon: alerts.some(a => a.level === 'critical') ? 'error' : 'warning',
+                    title: 'Alertas de atención (' + alerts.length + ')',
+                    html: '<div style="max-height:52vh;overflow:auto">' + rows + '</div>',
+                    confirmButtonText: 'Entendido',
+                    width: 680
+                }).then(function (result) {
+                    if (result.isConfirmed) Swal.close();
+                });
+            });
+        </script>
+    @endif
+
 </x-erp-layout>

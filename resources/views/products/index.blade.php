@@ -25,7 +25,16 @@
                 <tbody>
                     @foreach($products as $product)
                         <tr>
-                            <td class="font-bold">{{ $product->name }}</td>
+                            <td class="font-bold">
+                                <span class="product-reference-hover">
+                                    {{ $product->name }}
+                                    @if($product->reference_image)
+                                        <span class="product-reference-hover__preview">
+                                            <img src="{{ route('products.reference-image', ['filename' => $product->reference_image]) }}" alt="Imagen referencial de {{ $product->name }}">
+                                        </span>
+                                    @endif
+                                </span>
+                            </td>
                             <td class="text-xs">{{ $product->sku }}</td>
                             <td class="text-right font-bold">{{ number_format($product->stock_boxes, 0, ',', '.') }} cajas</td>
                             <td class="text-right font-bold">

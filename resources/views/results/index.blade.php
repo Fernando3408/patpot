@@ -15,9 +15,9 @@
 
     <div class="results-section-heading"><span>Resumen financiero</span><small>Período {{ $month }}</small></div>
     <div class="kpi-grid results-reference-kpis">
-        <div class="kpi-card kpi-card--sales"><span>Ventas</span><strong>${{ number_format($sales, 0, ',', '.') }}</strong><small>Ingresos despachados</small></div>
-        <div class="kpi-card"><span>Costo productos</span><strong>${{ number_format($productCost, 0, ',', '.') }}</strong><small>Materia prima y producción</small></div>
-        <div class="kpi-card"><span>Gastos asociados</span><strong>${{ number_format($expenses, 0, ',', '.') }}</strong><small>Despachos y pedidos</small></div>
+        <div class="kpi-card kpi-card--sales"><span>Ventas sin IVA</span><strong>${{ number_format($sales, 0, ',', '.') }}</strong><small>Con IVA: ${{ number_format($sales * 1.19, 0, ',', '.') }}</small></div>
+        <div class="kpi-card"><span>Costo productos sin IVA</span><strong>${{ number_format($productCost, 0, ',', '.') }}</strong><small>Con IVA: ${{ number_format($productCost * 1.19, 0, ',', '.') }}</small></div>
+        <div class="kpi-card"><span>Gastos sin IVA</span><strong>${{ number_format($expenses, 0, ',', '.') }}</strong><small>Con IVA: ${{ number_format($expenses * 1.19, 0, ',', '.') }}</small></div>
         <div class="kpi-card kpi-card--profit"><span>Utilidad bruta</span><strong>${{ number_format($grossProfit, 0, ',', '.') }}</strong><small>Margen {{ number_format($margin, 1, ',', '.') }}%</small></div>
         <div class="kpi-card"><span>Costos del mes</span><strong>${{ number_format($monthlyCosts, 0, ',', '.') }}</strong><small>Costos fijos y variables</small></div>
         <div class="kpi-card kpi-card--net"><span>Utilidad neta</span><strong>${{ number_format($netProfit, 0, ',', '.') }}</strong><small>Margen {{ number_format($netMargin, 1, ',', '.') }}%</small></div>

@@ -73,7 +73,8 @@
 
                 <div class="form-group">
                     <label class="form-label" for="unit_cost">Costo unitario ($)</label>
-                    <input type="number" step="1" id="unit_cost" name="unit_cost" class="form-control" value="{{ old('unit_cost', 0) }}" min="0">
+                    <input type="number" step="1" id="unit_cost" name="unit_cost" class="form-control" value="{{ old('unit_cost', 0) }}" min="0" oninput="updateVatPreview(this, 'input-vat-preview')">
+                    <div id="input-vat-preview" class="vat-preview">IVA 19%: $0<br><strong>Total con IVA: $0</strong></div>
                 </div>
             </div></section>
 

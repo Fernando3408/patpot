@@ -38,7 +38,8 @@
                     <tr>
                         <th>Producto</th>
                         <th class="text-right">Cajas</th>
-                        <th class="text-right">Precio/caja</th>
+                        <th class="text-right">Precio/caja sin IVA</th>
+                        <th class="text-right">Precio/caja con IVA</th>
                         <th class="text-right">Despachado</th>
                     </tr>
                 </thead>
@@ -48,6 +49,7 @@
                             <td>{{ $line->product?->name ?? '—' }}</td>
                             <td class="text-right">{{ number_format($line->boxes, 0, ',', '.') }}</td>
                             <td class="text-right">${{ number_format($line->price_box, 0, ',', '.') }}</td>
+                            <td class="text-right">${{ number_format((float) $line->price_box * 1.19, 0, ',', '.') }}</td>
                             <td class="text-right">{{ number_format($line->dispatched_boxes, 0, ',', '.') }}</td>
                         </tr>
                     @endforeach
@@ -70,9 +72,11 @@
                         <th>Fecha</th>
                         <th>Producto</th>
                         <th class="text-right">Cajas</th>
-                        <th class="text-right">Precio/caja</th>
-                        <th class="text-right">Subtotal</th>
-                        <th class="text-right">Costo/caja</th>
+                        <th class="text-right">Precio/caja sin IVA</th>
+                        <th class="text-right">Precio/caja con IVA</th>
+                        <th class="text-right">Subtotal sin IVA</th>
+                        <th class="text-right">Subtotal con IVA</th>
+                        <th class="text-right">Costo/caja sin IVA</th>
                         <th class="text-right">Acumulado</th>
                     </tr>
                 </thead>
@@ -82,7 +86,7 @@
                             $variableCostTotal = (float) $shipment->freight_cost + (float) $shipment->management_cost + (float) $shipment->other_cost;
                         @endphp
                         <tr class="row-total">
-                            <td colspan="7">
+                             <td colspan="9">
                                 <strong>Costos del despacho:</strong>
                                 Flete ${{ number_format($shipment->freight_cost, 0, ',', '.') }} ·
                                 Gestión ${{ number_format($shipment->management_cost, 0, ',', '.') }} ·
@@ -94,6 +98,8 @@
                             @php
                                 $runningTotal += (float) $sl->boxes;
                                 $subtotal = $sl->boxes * $sl->price_box;
+                                $priceWithVat = $sl->price_box * 1.19;
+                                $subtotalWithVat = $subtotal * 1.19;
                                 $costBox = (float) $sl->cost_box + (float) $sl->variable_cost_box;
                             @endphp
                             <tr>
@@ -101,7 +107,9 @@
                                 <td>{{ $sl->orderLine->product?->name ?? '—' }}</td>
                                 <td class="text-right">{{ (int) $sl->boxes }}</td>
                                 <td class="text-right">${{ number_format($sl->price_box, 0, ',', '.') }}</td>
+                                <td class="text-right">${{ number_format($priceWithVat, 0, ',', '.') }}</td>
                                 <td class="text-right">${{ number_format($subtotal, 0, ',', '.') }}</td>
+                                <td class="text-right">${{ number_format($subtotalWithVat, 0, ',', '.') }}</td>
                                 <td class="text-right">${{ number_format($costBox, 0, ',', '.') }}</td>
                                 <td class="text-right font-bold">{{ (int) $runningTotal }}</td>
                             </tr>

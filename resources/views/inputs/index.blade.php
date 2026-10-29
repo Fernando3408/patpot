@@ -29,7 +29,7 @@
                             <td>
                                 <strong>{{ $input->name }}</strong>
                                 @if ($input->category)
-                                    <br><span class="text-xs text-muted">{{ $input->category }}</span>
+                                    <br><span class="text-xs text-muted">{{ $input->isService() ? 'Servicio de maquila' : $input->category }}</span>
                                 @endif
                             </td>
                             <td>
@@ -44,14 +44,16 @@
                                     ? number_format((float) $value, 0, ',', '.')
                                     : rtrim(rtrim(number_format((float) $value, 2, ',', '.'), '0'), ',');
                             @endphp
-                            <td class="text-right font-bold">{{ $formatQuantity($input->stock) }}</td>
-                            <td class="text-right text-xs">{{ $formatQuantity($input->safety_stock) }}</td>
+                            <td class="text-right font-bold">{{ $input->isService() ? '—' : $formatQuantity($input->stock) }}</td>
+                            <td class="text-right text-xs">{{ $input->isService() ? '—' : $formatQuantity($input->safety_stock) }}</td>
                             <td class="text-xs font-bold">{{ $input->unit }}</td>
                             <td class="text-right text-xs font-bold">${{ number_format($input->unit_cost, 0, ',', '.') }}</td>
                             <td class="text-right text-xs font-bold">${{ number_format($input->unit_cost_with_vat, 0, ',', '.') }}</td>
                             <td>
                                 @php $level = $input->inventory_level; @endphp
-                                @if($level === 'ok')
+                                @if($input->isService())
+                                    <span class="text-muted">—</span>
+                                @elseif($level === 'ok')
                                     <span class="badge badge-success">Óptimo</span>
                                 @elseif($level === 'atencion')
                                     <span class="badge badge-warning">Atencion</span>
